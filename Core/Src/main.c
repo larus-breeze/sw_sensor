@@ -25,7 +25,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "usbd_cdc_if.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -766,9 +766,12 @@ void StartDefaultTask(void const * argument)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
+  osDelay(5000);
+  uint8_t buf[] = "HELLO\r\n";
   for(;;)
   {
-    osDelay(1);
+    CDC_Transmit_FS(buf,sizeof(buf));
+    osDelay(200);
   }
   /* USER CODE END 5 */
 }
