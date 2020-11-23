@@ -766,12 +766,24 @@ void StartDefaultTask(void const * argument)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
-  osDelay(5000);
+  //osDelay(5000);
   uint8_t buf[] = "HELLO\r\n";
   for(;;)
   {
-    CDC_Transmit_FS(buf,sizeof(buf));
+    //CDC_Transmit_FS(buf,sizeof(buf));
     osDelay(200);
+    HAL_GPIO_WritePin(GPIOD, LED_STATUS1_Pin,GPIO_PIN_SET);
+    osDelay(200);
+    HAL_GPIO_WritePin(GPIOD, LED_STATUS1_Pin,GPIO_PIN_RESET);
+    osDelay(200);
+    HAL_GPIO_WritePin(GPIOD, LED_STATUS2_Pin,GPIO_PIN_SET);
+    osDelay(200);
+    HAL_GPIO_WritePin(GPIOD, LED_STATUS2_Pin,GPIO_PIN_RESET);
+    osDelay(200);
+    HAL_GPIO_WritePin(GPIOD, LED_STATUS3_Pin,GPIO_PIN_SET);
+    osDelay(200);
+    HAL_GPIO_WritePin(GPIOD, LED_STATUS3_Pin,GPIO_PIN_RESET);
+
   }
   /* USER CODE END 5 */
 }
