@@ -62,10 +62,14 @@ void Error_Handler(void);
 #define SD_DETECT_GPIO_Port GPIOC
 #define SUPPLY_SENSE_Pin GPIO_PIN_0
 #define SUPPLY_SENSE_GPIO_Port GPIOC
+#define SPI1_NSS_Pin GPIO_PIN_4
+#define SPI1_NSS_GPIO_Port GPIOA
 #define L3GD20_INT1_Pin GPIO_PIN_0
 #define L3GD20_INT1_GPIO_Port GPIOB
 #define L3GD20_INT2_Pin GPIO_PIN_1
 #define L3GD20_INT2_GPIO_Port GPIOB
+#define SPI2_NSS_Pin GPIO_PIN_12
+#define SPI2_NSS_GPIO_Port GPIOB
 #define MTi_1IMU_PSEL0_Pin GPIO_PIN_10
 #define MTi_1IMU_PSEL0_GPIO_Port GPIOD
 #define MTi_1IMU_PSEL1_Pin GPIO_PIN_11

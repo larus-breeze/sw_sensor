@@ -30,7 +30,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+#include "spi.h"
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -465,7 +465,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
   hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
@@ -503,7 +503,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi2.Init.NSS = SPI_NSS_HARD_OUTPUT;
+  hspi2.Init.NSS = SPI_NSS_SOFT;
   hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
@@ -701,6 +701,12 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(SPI2_NSS_GPIO_Port, SPI2_NSS_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, MTi_1IMU_PSEL0_Pin|MTi_1IMU_PSEL1_Pin|MTi_1IMU_NRST_Pin|GPS_RESETN_Pin
                           |LED_STATUS1_Pin|LED_STATUS2_Pin|LED_STATUS3_Pin|BL_RESETB_Pin, GPIO_PIN_RESET);
 
@@ -713,11 +719,25 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(SD_DETECT_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : SPI1_NSS_Pin */
+  GPIO_InitStruct.Pin = SPI1_NSS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(SPI1_NSS_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : L3GD20_INT1_Pin L3GD20_INT2_Pin */
   GPIO_InitStruct.Pin = L3GD20_INT1_Pin|L3GD20_INT2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : SPI2_NSS_Pin */
+  GPIO_InitStruct.Pin = SPI2_NSS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(SPI2_NSS_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : MTi_1IMU_PSEL0_Pin MTi_1IMU_PSEL1_Pin MTi_1IMU_NRST_Pin GPS_RESETN_Pin
                            LED_STATUS1_Pin LED_STATUS2_Pin LED_STATUS3_Pin BL_RESETB_Pin */
@@ -764,13 +784,13 @@ void StartDefaultTask(void const * argument)
 {
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
+  SPI_Init(&hspi2);
   /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  //osDelay(5000);
-  uint8_t buf[] = "HELLO\r\n";
+  uint8_t tx_data[] = {0x80, 0xAA, 0xAA, 0xAA, 0x80};
+  uint8_t rx_data[5];
+
   for(;;)
   {
-    //CDC_Transmit_FS(buf,sizeof(buf));
     osDelay(200);
     HAL_GPIO_WritePin(GPIOD, LED_STATUS1_Pin,GPIO_PIN_SET);
     osDelay(200);
@@ -783,12 +803,13 @@ void StartDefaultTask(void const * argument)
     HAL_GPIO_WritePin(GPIOD, LED_STATUS3_Pin,GPIO_PIN_SET);
     osDelay(200);
     HAL_GPIO_WritePin(GPIOD, LED_STATUS3_Pin,GPIO_PIN_RESET);
+    SPI_Transceive(&hspi2,tx_data, rx_data, 5);
 
   }
   /* USER CODE END 5 */
 }
 
-/**
+ /**
   * @brief  Period elapsed callback in non blocking mode
   * @note   This function is called  when TIM1 interrupt took place, inside
   * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
