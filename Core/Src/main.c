@@ -9,10 +9,10 @@
   * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
   * All rights reserved.</center></h2>
   *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
+  * This software component is licensed by ST under Ultimate Liberty license
+  * SLA0044, the "License"; You may not use this file except in compliance with
+  * the License. You may obtain a copy of the License at:
+  *                             www.st.com/SLA0044
   *
   ******************************************************************************
   */
@@ -25,12 +25,12 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "usbd_cdc_if.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#include "spi.h"
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -52,6 +52,8 @@ I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
 
 SD_HandleTypeDef hsd;
+DMA_HandleTypeDef hdma_sdio_rx;
+DMA_HandleTypeDef hdma_sdio_tx;
 
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
@@ -70,6 +72,7 @@ osThreadId defaultTaskHandle;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_CAN1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
@@ -122,6 +125,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_CAN1_Init();
   MX_I2C1_Init();
   MX_I2C2_Init();
@@ -158,7 +162,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 512);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -436,9 +440,12 @@ static void MX_SDIO_SD_Init(void)
   hsd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
   hsd.Init.BusWide = SDIO_BUS_WIDE_1B;
   hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd.Init.ClockDiv = 0;
+  hsd.Init.ClockDiv = 2;
   /* USER CODE BEGIN SDIO_Init 2 */
-
+  //if (HAL_SD_Init(&hsd) != HAL_OK)
+  //  {
+  //    Error_Handler();
+  //  }
   /* USER CODE END SDIO_Init 2 */
 
 }
@@ -685,6 +692,25 @@ static void MX_USART6_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
+  /* DMA2_Stream6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream6_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream6_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -716,7 +742,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : SD_DETECT_Pin */
   GPIO_InitStruct.Pin = SD_DETECT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(SD_DETECT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : SPI1_NSS_Pin */
@@ -770,6 +796,9 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+FATFS fatfs;
+#define FATFS_WORK_LENGTH 1024
+BYTE fatfs_work[FATFS_WORK_LENGTH];
 
 /* USER CODE END 4 */
 
@@ -784,27 +813,50 @@ void StartDefaultTask(void const * argument)
 {
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
-  SPI_Init(&hspi2);
   /* USER CODE BEGIN 5 */
-  uint8_t tx_data[] = {0x80, 0xAA, 0xAA, 0xAA, 0x80};
-  uint8_t rx_data[5];
 
+  /*Register DMA SDIO callbacks*/
+  HAL_DMA_RegisterCallback(&hdma_sdio_rx, HAL_DMA_XFER_CPLT_CB_ID, BSP_SD_ReadCpltCallback);
+  HAL_DMA_RegisterCallback(&hdma_sdio_rx, HAL_DMA_XFER_ABORT_CB_ID, BSP_SD_AbortCallback);
+
+
+  HAL_DMA_RegisterCallback(&hdma_sdio_tx, HAL_DMA_XFER_CPLT_CB_ID, BSP_SD_WriteCpltCallback);
+  HAL_DMA_RegisterCallback(&hdma_sdio_tx, HAL_DMA_XFER_ABORT_CB_ID, BSP_SD_AbortCallback);
+
+
+  FRESULT fresult;
+  FIL fp;
+  uint8_t sd_card_detect = 0;
+  sd_card_detect = BSP_PlatformIsDetected();
+
+
+  fresult = f_mkfs("", FM_FAT32, 512, fatfs_work, FATFS_WORK_LENGTH);
+  if(FR_OK != fresult)
+  {
+  	  asm("bkpt 0");
+  }
+
+  fresult = f_mount(&fatfs, "", 0);
+
+
+
+  uint8_t testString[] = "The Soar Instrument..";
+  uint32_t writtenBytes = 0;
+  if (FR_OK == fresult)
+  {
+	  fresult = f_open(&fp, "testabc.txt",FA_CREATE_ALWAYS | FA_WRITE);
+
+	  if (FR_OK == fresult)
+	  {
+		  fresult = f_write (&fp, testString, 19, (UINT*)&writtenBytes);
+	  }
+  }
+  fresult = f_close (&fp);
+
+  /* Infinite loop */
   for(;;)
   {
-    osDelay(200);
-    HAL_GPIO_WritePin(GPIOD, LED_STATUS1_Pin,GPIO_PIN_SET);
-    osDelay(200);
-    HAL_GPIO_WritePin(GPIOD, LED_STATUS1_Pin,GPIO_PIN_RESET);
-    osDelay(200);
-    HAL_GPIO_WritePin(GPIOD, LED_STATUS2_Pin,GPIO_PIN_SET);
-    osDelay(200);
-    HAL_GPIO_WritePin(GPIOD, LED_STATUS2_Pin,GPIO_PIN_RESET);
-    osDelay(200);
-    HAL_GPIO_WritePin(GPIOD, LED_STATUS3_Pin,GPIO_PIN_SET);
-    osDelay(200);
-    HAL_GPIO_WritePin(GPIOD, LED_STATUS3_Pin,GPIO_PIN_RESET);
-    SPI_Transceive(&hspi2,tx_data, rx_data, 5);
-
+    osDelay(1);
   }
   /* USER CODE END 5 */
 }
@@ -838,7 +890,10 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-
+  __disable_irq();
+while (1)
+  {
+  }
   /* USER CODE END Error_Handler_Debug */
 }
 
@@ -854,7 +909,7 @@ void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
-     tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

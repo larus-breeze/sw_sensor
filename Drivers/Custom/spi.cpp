@@ -7,11 +7,15 @@
 
 #include "spi.h"
 #include "main.h"
-SPI_HandleTypeDef hspi1;
-SPI_HandleTypeDef hspi2;
+extern SPI_HandleTypeDef hspi1;
+extern SPI_HandleTypeDef hspi2;
+
 
 void SPI_Init(SPI_HandleTypeDef *hspi)
 {
+
+
+
 	  hspi1.Instance = SPI1;
 	  hspi1.Init.Mode = SPI_MODE_MASTER;
 	  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
@@ -49,6 +53,9 @@ void SPI_Init(SPI_HandleTypeDef *hspi)
 		  asm("bkpt 0");
 	  }
 }
+
+
+
 
 void SPI_Transceive(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData, uint16_t Size)
 {
