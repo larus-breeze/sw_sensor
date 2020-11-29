@@ -440,7 +440,7 @@ static void MX_SDIO_SD_Init(void)
   hsd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
   hsd.Init.BusWide = SDIO_BUS_WIDE_1B;
   hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd.Init.ClockDiv = 100;
+  hsd.Init.ClockDiv = 2;
   /* USER CODE BEGIN SDIO_Init 2 */
   //if (HAL_SD_Init(&hsd) != HAL_OK)
   //  {
@@ -854,11 +854,15 @@ void StartDefaultTask(void const * argument)
   uint32_t writtenBytes = 0;
   if (FR_OK == fresult)
   {
-	  fresult = f_open(&fp, "test123.txt",FA_CREATE_ALWAYS | FA_WRITE);
+	  fresult = f_open(&fp, "test888.txt",FA_CREATE_ALWAYS | FA_WRITE);
 
 	  if (FR_OK == fresult)
 	  {
-		  fresult = f_write (&fp, testString, 19, (UINT*)&writtenBytes);
+		  for(int i = 0; i < 1000000; i++)
+		  {
+			  fresult = f_write (&fp, testString, 19, (UINT*)&writtenBytes);
+			  ASSERT(fresult == FR_OK);
+		  }
 	  }
   }
   fresult = f_close (&fp);
