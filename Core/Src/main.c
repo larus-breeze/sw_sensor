@@ -854,7 +854,7 @@ void StartDefaultTask(void const * argument)
   uint32_t writtenBytes = 0;
   if (FR_OK == fresult)
   {
-	  fresult = f_open(&fp, "testabc.txt",FA_CREATE_ALWAYS | FA_WRITE);
+	  fresult = f_open(&fp, "test123.txt",FA_CREATE_ALWAYS | FA_WRITE);
 
 	  if (FR_OK == fresult)
 	  {

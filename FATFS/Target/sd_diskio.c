@@ -252,6 +252,7 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
 {
   DRESULT res = RES_ERROR;
   uint32_t timer;
+  uint8_t ret;
 #if (osCMSIS < 0x20000U)
   osEvent event;
 #else
@@ -271,7 +272,6 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
   }
 
 #if defined(ENABLE_SCRATCH_BUFFER)
-  uint8_t ret;
   if (!((uint32_t)buff & 0x3))
   {
 #endif
