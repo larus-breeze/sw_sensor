@@ -444,10 +444,6 @@ static void MX_SDIO_SD_Init(void)
   hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
   hsd.Init.ClockDiv = 4;
   /* USER CODE BEGIN SDIO_Init 2 */
-  //if (HAL_SD_Init(&hsd) != HAL_OK)
-  //  {
-  //    Error_Handler();
-  //  }
   /* USER CODE END SDIO_Init 2 */
 
 }
