@@ -203,7 +203,7 @@ void DMA2_Stream3_IRQHandler(void)
   HAL_DMA_IRQHandler(&hdma_sdio_rx);
   /* USER CODE BEGIN DMA2_Stream3_IRQn 1 */
   //BSP_SD_ReadCpltCallback();
-  /* USER CODE END DMA2_Stream3_IRQn 1 */     //BSP_SD_AbortCallback()
+  /* USER CODE END DMA2_Stream3_IRQn 1 */
 }
 
 /**

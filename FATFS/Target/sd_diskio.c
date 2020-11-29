@@ -46,10 +46,10 @@ Notice: depending on the HAL/SD driver the HAL_SD_ErrorCallback()
 may not be available.
 See BSP_SD_ErrorCallback() and BSP_SD_AbortCallback() below
 ==================================================================
-
+*/
 #define RW_ERROR_MSG       (uint32_t) 3
 #define RW_ABORT_MSG       (uint32_t) 4
-*/
+
 /*
  * the following Timeout is useful to give the control back to the applications
  * in case of errors in either BSP_SD_ReadCpltCallback() or BSP_SD_WriteCpltCallback()
@@ -85,7 +85,7 @@ See BSP_SD_ErrorCallback() and BSP_SD_AbortCallback() below
 * transfer data
 */
 /* USER CODE BEGIN enableScratchBuffer */
-/* #define ENABLE_SCRATCH_BUFFER */
+#define ENABLE_SCRATCH_BUFFER
 /* USER CODE END enableScratchBuffer */
 
 /* Private variables ---------------------------------------------------------*/
@@ -271,11 +271,12 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
   }
 
 #if defined(ENABLE_SCRATCH_BUFFER)
+  uint8_t ret;
   if (!((uint32_t)buff & 0x3))
   {
 #endif
     /* Fast path cause destination buffer is correctly aligned */
-    uint8_t ret = BSP_SD_ReadBlocks_DMA((uint32_t*)buff, (uint32_t)(sector), count);
+    ret = BSP_SD_ReadBlocks_DMA((uint32_t*)buff, (uint32_t)(sector), count);
 
     if (ret == MSD_OK) {
 #if (osCMSIS < 0x20000U)
@@ -665,7 +666,7 @@ void BSP_SD_ReadCpltCallback(void)
 }
 
 /* USER CODE BEGIN ErrorAbortCallbacks */
-/*
+
 void BSP_SD_AbortCallback(void)
 {
 #if (osCMSIS < 0x20000U)
@@ -675,7 +676,6 @@ void BSP_SD_AbortCallback(void)
    osMessageQueuePut(SDQueueID, (const void *)&msg, NULL, 0);
 #endif
 }
-*/
 /* USER CODE END ErrorAbortCallbacks */
 
 /* USER CODE BEGIN lastSection */

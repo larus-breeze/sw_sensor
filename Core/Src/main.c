@@ -25,7 +25,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "my_assert.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -440,7 +440,7 @@ static void MX_SDIO_SD_Init(void)
   hsd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
   hsd.Init.BusWide = SDIO_BUS_WIDE_1B;
   hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd.Init.ClockDiv = 2;
+  hsd.Init.ClockDiv = 100;
   /* USER CODE BEGIN SDIO_Init 2 */
   //if (HAL_SD_Init(&hsd) != HAL_OK)
   //  {
@@ -702,10 +702,10 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA2_Stream3_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
   /* DMA2_Stream6_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream6_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(DMA2_Stream6_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream6_IRQn);
 
 }
@@ -799,7 +799,8 @@ static void MX_GPIO_Init(void)
 FATFS fatfs;
 #define FATFS_WORK_LENGTH 1024
 BYTE fatfs_work[FATFS_WORK_LENGTH];
-
+extern DRESULT SD_ioctl (BYTE, BYTE, void*);
+extern DSTATUS SD_initialize(BYTE lun);
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -816,27 +817,36 @@ void StartDefaultTask(void const * argument)
   /* USER CODE BEGIN 5 */
 
   /*Register DMA SDIO callbacks*/
-  HAL_DMA_RegisterCallback(&hdma_sdio_rx, HAL_DMA_XFER_CPLT_CB_ID, BSP_SD_ReadCpltCallback);
-  HAL_DMA_RegisterCallback(&hdma_sdio_rx, HAL_DMA_XFER_ABORT_CB_ID, BSP_SD_AbortCallback);
+  HAL_DMA_RegisterCallback(&hdma_sdio_rx, HAL_DMA_XFER_CPLT_CB_ID, (void*)BSP_SD_ReadCpltCallback);
+  HAL_DMA_RegisterCallback(&hdma_sdio_rx, HAL_DMA_XFER_ABORT_CB_ID, (void*)BSP_SD_AbortCallback);
 
 
-  HAL_DMA_RegisterCallback(&hdma_sdio_tx, HAL_DMA_XFER_CPLT_CB_ID, BSP_SD_WriteCpltCallback);
-  HAL_DMA_RegisterCallback(&hdma_sdio_tx, HAL_DMA_XFER_ABORT_CB_ID, BSP_SD_AbortCallback);
+  HAL_DMA_RegisterCallback(&hdma_sdio_tx, HAL_DMA_XFER_CPLT_CB_ID, (void*)BSP_SD_WriteCpltCallback);
+  HAL_DMA_RegisterCallback(&hdma_sdio_tx, HAL_DMA_XFER_ABORT_CB_ID, (void*)BSP_SD_AbortCallback);
 
-
+  uint32_t statusBuff[5];
+  DRESULT res = RES_ERROR;
+  DSTATUS status;
   FRESULT fresult;
   FIL fp;
   uint8_t sd_card_detect = 0;
   sd_card_detect = BSP_PlatformIsDetected();
+  ASSERT(sd_card_detect == 1);
 
 
-  fresult = f_mkfs("", FM_FAT32, 512, fatfs_work, FATFS_WORK_LENGTH);
-  if(FR_OK != fresult)
-  {
-  	  asm("bkpt 0");
-  }
+  //fresult = f_mkfs("", FM_FAT32, 512, fatfs_work, FATFS_WORK_LENGTH);
+  //if(FR_OK != fresult)
+  //{
+  //	  asm("bkpt 0");
+  //}
 
   fresult = f_mount(&fatfs, "", 0);
+
+
+  status = SD_initialize(0);
+  res = SD_ioctl(0, GET_SECTOR_COUNT, statusBuff);
+  res = SD_ioctl(0, GET_SECTOR_SIZE, statusBuff);
+  res = SD_ioctl(0, GET_BLOCK_SIZE, statusBuff);
 
 
 
