@@ -22,6 +22,7 @@
 #include "cmsis_os.h"
 #include "fatfs.h"
 #include "usb_device.h"
+#include "FreeRTOS.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -104,7 +105,9 @@ void StartTestTask(void const * argument);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+#if configUSE_TRACE_FACILITY == 1
+	vTraceEnable(TRC_START);
+#endif
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/

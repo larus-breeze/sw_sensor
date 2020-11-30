@@ -8,6 +8,28 @@ extern SD_HandleTypeDef hsd;
 extern DMA_HandleTypeDef hdma_sdio_rx;
 extern DMA_HandleTypeDef hdma_sdio_tx;
 
+#ifndef ROM
+#define ROM const __attribute__ ((section (".rodata")))
+#endif
+
+ROM char testString[]=
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef"
+		"0123456789abcdef\0";
+
 void StartTestTask(void const * argument)
 {
 	  //if (HAL_SD_Init(&hsd) != HAL_OK)
@@ -33,9 +55,7 @@ void StartTestTask(void const * argument)
 
 	  osDelay(2000); //give micro sd card some time to...
 
-
 	  fresult = f_mount(&fatfs, "", 0);
-
 
 	  start = HAL_GetTick();
 	  char testString[] = "The Soar Instrument.\n";
@@ -49,8 +69,10 @@ void StartTestTask(void const * argument)
 		  {
 			  for(int i = 0; i < 1000000; i++)
 			  {
-				  fresult = f_write (&fp, testString, testStringLength, (UINT*)&writtenBytes);
+				  fresult = f_write (&fp, testString, 512 /*testStringLength */, (UINT*)&writtenBytes);
 				  ASSERT(fresult == FR_OK);
+
+//				  vTaskDelay(2);
 
 				  if ((i % 2000) == 0)
 				  {
