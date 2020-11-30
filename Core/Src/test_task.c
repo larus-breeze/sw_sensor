@@ -65,7 +65,7 @@ void StartTestTask(void const * argument)
 	  uint32_t start = 0, duration = 0;
 	  GPIO_PinState led_state = GPIO_PIN_RESET;
 
-	  osDelay(2000); //give micro sd card some time to...Not sure if required.
+	  osDelay(2000); //give micro sd card some time to...Not sure if required
 
 	  fresult = f_mount(&fatfs, "", 0);
 
@@ -92,6 +92,7 @@ void StartTestTask(void const * argument)
 	  }
 	  fresult = f_close (&fp);
 	  duration = HAL_GetTick() - start;
+	  HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
 	  HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
 
   /* Infinite loop */
