@@ -7,14 +7,11 @@
 
 #include "spi.h"
 #include "main.h"
-extern SPI_HandleTypeDef hspi1;
-extern SPI_HandleTypeDef hspi2;
-
+#include "my_assert.h"
+#define SPI_DEFAULT_TIMEOUT_MS  100
 
 void SPI_Init(SPI_HandleTypeDef *hspi)
 {
-
-
 
 	  hspi1.Instance = SPI1;
 	  hspi1.Init.Mode = SPI_MODE_MASTER;
@@ -30,8 +27,7 @@ void SPI_Init(SPI_HandleTypeDef *hspi)
 	  hspi1.Init.CRCPolynomial = 10;
 	  if (HAL_SPI_Init(&hspi1) != HAL_OK)
 	  {
-	    //TODO: add assert macro
-		  asm("bkpt 0");
+		  ASSERT(0);
 	  }
 
 	  /* SPI2 parameter configuration*/
@@ -49,70 +45,73 @@ void SPI_Init(SPI_HandleTypeDef *hspi)
 	  hspi2.Init.CRCPolynomial = 10;
 	  if (HAL_SPI_Init(&hspi2) != HAL_OK)
 	  {
-		  //TODO: add assert macro
-		  asm("bkpt 0");
+		  ASSERT(0);
 	  }
 }
-
 
 
 
 void SPI_Transceive(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData, uint16_t Size)
 {
 	HAL_StatusTypeDef status = HAL_OK;
+	status = HAL_SPI_TransmitReceive(hspi, pTxData, pRxData, Size, SPI_DEFAULT_TIMEOUT_MS);
+	ASSERT(HAL_OK == status);
+}
 
-	if(SPI1 == hspi->Instance)
-	{
-		HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_RESET);
-		status = HAL_SPI_TransmitReceive(hspi, pTxData, pRxData, Size, 100);
-		HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_SET);
-	}
 
-	else if (SPI2 == hspi->Instance)
-	{
+void SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint16_t Size)
+{
+	HAL_StatusTypeDef status = HAL_OK;
+	status = HAL_SPI_Transmit(hspi, pTxData, Size, SPI_DEFAULT_TIMEOUT_MS);
+	ASSERT(HAL_OK == status);
+}
 
-		HAL_GPIO_WritePin(SPI2_NSS_GPIO_Port, SPI2_NSS_Pin, GPIO_PIN_RESET);
-		status = HAL_SPI_TransmitReceive(hspi, pTxData, pRxData, Size, 100);
-		HAL_GPIO_WritePin(SPI2_NSS_GPIO_Port, SPI2_NSS_Pin, GPIO_PIN_SET);
-	}
-	else
-	{
-		/*Not implemented yet*/
-		//TODO: add assert
-	}
+void SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size)
+{
+	HAL_StatusTypeDef status = HAL_OK;
+	status = HAL_SPI_Receive(hspi, pRxData, Size, SPI_DEFAULT_TIMEOUT_MS);
+	ASSERT(HAL_OK == status);
 }
 
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	asm("bkpt 0");
+	ASSERT(0);
+
 }
 
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	asm("bkpt 0");
+	ASSERT(0);
+
 }
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	asm("bkpt 0");
+	ASSERT(0);
+
 }
 void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	asm("bkpt 0");
+	ASSERT(0);
+
 }
 void HAL_SPI_RxHalfCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	asm("bkpt 0");
+	ASSERT(0);
+
 }
 void HAL_SPI_TxRxHalfCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	asm("bkpt 0");
+	ASSERT(0);
+
 }
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 {
-	asm("bkpt 0");
+	ASSERT(0);
+
 }
 void HAL_SPI_AbortCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	asm("bkpt 0");
+	ASSERT(0);
+
 }

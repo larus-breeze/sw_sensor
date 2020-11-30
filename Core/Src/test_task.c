@@ -2,6 +2,9 @@
 #include "main.h"
 #include "fatfs.h"
 #include "string.h"
+#include "usbd_cdc_if.h"
+#include "stm_l3gd20.h"
+#include "stdio.h"
 
 FATFS fatfs;
 extern SD_HandleTypeDef hsd;
@@ -98,12 +101,69 @@ void RunFATFSTestTask(void)
 
 void RunL3GD20TestTask(void)
 {
+	L3GD20_Initialize();
+
+	osDelay(100); //Let sensor gather some data in FIFO.
+#define BUFFERSIZE 50
+#define NUMBER_OF_CALIBRATIONRUNS 100
+	char printbuf[BUFFERSIZE];
+	uint8_t size = 0;
+	float gyro_xyz[] = {0.0,0.0,0.0};
+	float gyro_xyz_calib[] = {0.0,0.0,0.0};
+	int16_t gyro_xyzint[] = {0,0,0};
+	uint32_t counter = 0;
+
+
+	HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_SET);
+	for(int i = 0; i<NUMBER_OF_CALIBRATIONRUNS; i++)
+	{
+		L3GD20_ReadData(gyro_xyz);
+		for(int n = 0; n<3; n++)
+		{
+			gyro_xyz_calib[n] = gyro_xyz_calib[n] + gyro_xyz[n];
+		}
+		osDelay(100);
+	}
+	for(int i = 0; i<3; i++)
+	{
+		gyro_xyz_calib[i] = gyro_xyz_calib[i] / (float)NUMBER_OF_CALIBRATIONRUNS;
+	}
+	HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
+
+	for(;;)
+	{
+		L3GD20_ReadData(gyro_xyz);
+		for (int i = 0; i<3; i++)
+		{
+			gyro_xyz[i] = gyro_xyz[i] - gyro_xyz_calib[i];
+			gyro_xyzint[i] = (int16_t)(gyro_xyz[i] * 10.0);
+		}
+		size = sprintf(printbuf, "Raw Gyro XYZ: %05d   %05d   %05d \r\n", gyro_xyzint[0], gyro_xyzint[1], gyro_xyzint[2]);
+		ASSERT(BUFFERSIZE >= size);
+
+		counter++;
+		if (counter%1 == 0)
+		{
+			CDC_Transmit_FS((uint8_t*)printbuf, size);
+		}
+		osDelay(100);
+
+
+	}
+
+
 
 }
 
 void StartTestTask(void const * argument)
 {
-	RunFATFSTestTask();
+	osDelay(5000); //Let USB Connect First.
+
+	//RunFATFSTestTask();
+
+	RunL3GD20TestTask();
+
+
 	/* Infinite loop */
 	for(;;)
 	{
