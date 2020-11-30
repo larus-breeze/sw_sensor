@@ -14,21 +14,21 @@ extern DMA_HandleTypeDef hdma_sdio_tx;
 
 ROM char testString[]=
 		"0123456789abcdef"
+		"0123456789abcd\r\n"
 		"0123456789abcdef"
+		"0123456789abcd\r\n"
 		"0123456789abcdef"
+		"0123456789abcd\r\n"
 		"0123456789abcdef"
+		"0123456789abcd\r\n"
 		"0123456789abcdef"
+		"0123456789abcd\r\n"
 		"0123456789abcdef"
+		"0123456789abcd\r\n"
 		"0123456789abcdef"
+		"0123456789abcd\r\n"
 		"0123456789abcdef"
-		"0123456789abcdef"
-		"0123456789abcdef"
-		"0123456789abcdef"
-		"0123456789abcdef"
-		"0123456789abcdef"
-		"0123456789abcdef"
-		"0123456789abcdef"
-		"0123456789abcdef\0";
+		"0123456789abcd\r\n";
 
 void StartTestTask(void const * argument)
 {
@@ -58,23 +58,23 @@ void StartTestTask(void const * argument)
 	  fresult = f_mount(&fatfs, "", 0);
 
 	  start = HAL_GetTick();
-	  char testString[] = "The Soar Instrument.\n";
-	  uint8_t testStringLength = strlen(testString);
+//	  char testString[] = "The Soar Instrument.\n";
+//	  uint8_t testStringLength = strlen(testString);
 	  uint32_t writtenBytes = 0;
 	  if (FR_OK == fresult)
 	  {
-		  fresult = f_open(&fp, "test2111.txt",FA_CREATE_ALWAYS | FA_WRITE);
+		  fresult = f_open(&fp, "pattern.txt",FA_CREATE_ALWAYS | FA_WRITE);
 
 		  if (FR_OK == fresult)
 		  {
-			  for(int i = 0; i < 1000000; i++)
+			  for(int i = 0; i < 2048*8; i++) // write 8 Mbytes
 			  {
 				  fresult = f_write (&fp, testString, 512 /*testStringLength */, (UINT*)&writtenBytes);
-				  ASSERT(fresult == FR_OK);
+				  ASSERT( (fresult == FR_OK) && (writtenBytes == 512));
 
 //				  vTaskDelay(2);
 
-				  if ((i % 2000) == 0)
+				  if ((i % 200) == 0)
 				  {
 				  HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, led_state);
 				  led_state = (~led_state) & 0x01;
@@ -85,6 +85,8 @@ void StartTestTask(void const * argument)
 	  fresult = f_close (&fp);
 	  duration = HAL_GetTick() - start;
 	  HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
+
+	  HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
 
   /* Infinite loop */
   for(;;)
