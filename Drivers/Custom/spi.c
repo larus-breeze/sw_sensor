@@ -8,45 +8,25 @@
 #include "spi.h"
 #include "main.h"
 #include "my_assert.h"
+#include "queue.h"
 #define SPI_DEFAULT_TIMEOUT_MS  100
+
+extern SPI_HandleTypeDef hspi1;
+extern SPI_HandleTypeDef hspi2;
+extern DMA_HandleTypeDef hdma_spi2_rx;
+extern DMA_HandleTypeDef hdma_spi2_tx;
+static QueueHandle_t SPI2_Tx_Cpl_Message_Id = NULL;
+static QueueHandle_t SPI2_Rx_Cpl_Message_Id = NULL;
 
 void SPI_Init(SPI_HandleTypeDef *hspi)
 {
+	/*Basic configuration already done at this point.*/
+	/*Configure DMA Callbacks SPI1*/
 
-	  hspi1.Instance = SPI1;
-	  hspi1.Init.Mode = SPI_MODE_MASTER;
-	  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-	  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-	  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-	  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-	  hspi1.Init.NSS = SPI_NSS_SOFT;
-	  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
-	  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-	  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-	  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-	  hspi1.Init.CRCPolynomial = 10;
-	  if (HAL_SPI_Init(&hspi1) != HAL_OK)
-	  {
-		  ASSERT(0);
-	  }
-
-	  /* SPI2 parameter configuration*/
-	  hspi2.Instance = SPI2;
-	  hspi2.Init.Mode = SPI_MODE_MASTER;
-	  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
-	  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
-	  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
-	  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
-	  hspi2.Init.NSS = SPI_NSS_SOFT;
-	  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
-	  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
-	  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
-	  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-	  hspi2.Init.CRCPolynomial = 10;
-	  if (HAL_SPI_Init(&hspi2) != HAL_OK)
-	  {
-		  ASSERT(0);
-	  }
+	/*Configure DMA Callbacks SPI2*/
+	HAL_DMA_RegisterCallback(hdma_spi2_rx, HAL_DMA_XFER_CPLT_CB_ID, HAL_SPI_RxCpltCallback);
+	HAL_DMA_RegisterCallback(hdma_spi2_tx, HAL_DMA_XFER_CPLT_CB_ID, HAL_SPI_TxCpltCallback);
+    SPI2_CPL_Message_Id =  xQueueCreate(1,0);
 }
 
 
@@ -54,40 +34,107 @@ void SPI_Init(SPI_HandleTypeDef *hspi)
 void SPI_Transceive(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData, uint16_t Size)
 {
 	HAL_StatusTypeDef status = HAL_OK;
+	BaseType_t queue_status = pdFALSE;
 	status = HAL_SPI_TransmitReceive(hspi, pTxData, pRxData, Size, SPI_DEFAULT_TIMEOUT_MS);
 	ASSERT(HAL_OK == status);
+	queue_status == xQueueReceive(SPI2_CPL_Message_Id, 0, SPI_DEFAULT_TIMEOUT_MS);
+	ASSERT(pdTRUE == queue_status);
 }
 
 
 void SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint16_t Size)
 {
 	HAL_StatusTypeDef status = HAL_OK;
-	status = HAL_SPI_Transmit(hspi, pTxData, Size, SPI_DEFAULT_TIMEOUT_MS);
+	BaseType_t queue_status = pdFALSE;
+	status = HAL_SPI_Transmit_DMA(hspi, pTxData, Size);
 	ASSERT(HAL_OK == status);
+	queue_status == xQueueReceive(SPI2_CPL_Message_Id, 0, SPI_DEFAULT_TIMEOUT_MS);
+	ASSERT(pdTRUE == queue_status);
 }
 
 void SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size)
 {
 	HAL_StatusTypeDef status = HAL_OK;
-	status = HAL_SPI_Receive(hspi, pRxData, Size, SPI_DEFAULT_TIMEOUT_MS);
+	BaseType_t queue_status = pdFALSE;
+	status = HAL_SPI_Receive_DMA(hspi, pRxData, Size);
 	ASSERT(HAL_OK == status);
+	queue_status == xQueueReceive(SPI2_CPL_Message_Id, 0, SPI_DEFAULT_TIMEOUT_MS);
+	ASSERT(pdTRUE == queue_status);
 }
 
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	ASSERT(0);
+	xHigherPriorityTaskWokenByPost = pdFALSE;
+	BaseType_t queue_status;
 
+	if (hspi->Instance == SPI1)
+	{
+		ASSERT(0);
+	}
+	else if (hspi->Instance == SPI2)
+	{
+		queue_status = xQueueSendFromISR(SPI2_CPL_Message_Id, 0, &xHigherPriorityTaskWokenByPost);
+		ASSERT(pdTRUE == queue_status);
+	}
+	else
+	{
+		ASSERT(0);
+	}
+
+	if( xHigherPriorityTaskWokenByPost )
+	{
+		taskYIELD_YIELD_FROM_ISR();
+	}
 }
 
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	ASSERT(0);
+	xHigherPriorityTaskWokenByPost = pdFALSE;
+	BaseType_t queue_status;
 
+	if (hspi->Instance == SPI1)
+	{
+		ASSERT(0);
+	}
+	else if (hspi->Instance == SPI2)
+	{
+		queue_status = xQueueSendFromISR(SPI2_CPL_Message_Id, 0, &xHigherPriorityTaskWokenByPost);
+		ASSERT(pdTRUE == queue_status);
+	}
+	else
+	{
+		ASSERT(0);
+	}
+
+	if( xHigherPriorityTaskWokenByPost )
+	{
+		taskYIELD_YIELD_FROM_ISR();
+	}
 }
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	ASSERT(0);
+	xHigherPriorityTaskWokenByPost = pdFALSE;
+	BaseType_t queue_status;
+
+	if (hspi->Instance == SPI1)
+	{
+		ASSERT(0);
+	}
+	else if (hspi->Instance == SPI2)
+	{
+		queue_status = xQueueSendFromISR(SPI2_CPL_Message_Id, 0, &xHigherPriorityTaskWokenByPost);
+		ASSERT(pdTRUE == queue_status);
+	}
+	else
+	{
+		ASSERT(0);
+	}
+
+	if( xHigherPriorityTaskWokenByPost )
+	{
+		taskYIELD_YIELD_FROM_ISR();
+	}
 
 }
 void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef *hspi)
