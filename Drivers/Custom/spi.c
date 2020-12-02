@@ -46,9 +46,9 @@ void SPI_Transceive(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData,
 {
 	HAL_StatusTypeDef status = HAL_OK;
 	BaseType_t queue_status = pdFALSE;
-	status = HAL_SPI_TransmitReceive(hspi, pTxData, pRxData, Size, SPI_DEFAULT_TIMEOUT_MS);
+	status = HAL_SPI_TransmitReceive_DMA(hspi, pTxData, pRxData, Size );
 	ASSERT(HAL_OK == status);
-	queue_status == xQueueReceive(SPI2_CPL_Message_Id, 0, SPI_DEFAULT_TIMEOUT_MS);
+	queue_status = xQueueReceive(SPI2_CPL_Message_Id, 0, SPI_DEFAULT_TIMEOUT_MS);
 	ASSERT(pdTRUE == queue_status);
 }
 
@@ -59,7 +59,7 @@ void SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint16_t Size)
 	BaseType_t queue_status = pdFALSE;
 	status = HAL_SPI_Transmit_DMA(hspi, pTxData, Size);
 	ASSERT(HAL_OK == status);
-	queue_status == xQueueReceive(SPI2_CPL_Message_Id, 0, SPI_DEFAULT_TIMEOUT_MS);
+	queue_status = xQueueReceive(SPI2_CPL_Message_Id, 0, SPI_DEFAULT_TIMEOUT_MS);
 	ASSERT(pdTRUE == queue_status);
 }
 
@@ -69,7 +69,7 @@ void SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size)
 	BaseType_t queue_status = pdFALSE;
 	status = HAL_SPI_Receive_DMA(hspi, pRxData, Size);
 	ASSERT(HAL_OK == status);
-	queue_status == xQueueReceive(SPI2_CPL_Message_Id, 0, SPI_DEFAULT_TIMEOUT_MS);
+	queue_status = xQueueReceive(SPI2_CPL_Message_Id, 0, SPI_DEFAULT_TIMEOUT_MS);
 	ASSERT(pdTRUE == queue_status);
 }
 
@@ -93,10 +93,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 		ASSERT(0);
 	}
 
-	if( xHigherPriorityTaskWokenByPost )
-	{
-		taskYIELD_YIELD_FROM_ISR();
-	}
+	portYIELD_FROM_ISR(xHigherPriorityTaskWokenByPost);
 }
 
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
@@ -118,10 +115,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		ASSERT(0);
 	}
 
-	if( xHigherPriorityTaskWokenByPost )
-	{
-		taskYIELD_YIELD_FROM_ISR();
-	}
+	portYIELD_FROM_ISR(xHigherPriorityTaskWokenByPost);
 }
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
@@ -142,34 +136,27 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 		ASSERT(0);
 	}
 
-	if( xHigherPriorityTaskWokenByPost )
-	{
-		taskYIELD_YIELD_FROM_ISR();
-	}
-
+	portYIELD_FROM_ISR(xHigherPriorityTaskWokenByPost);
 }
+
+static uint32_t cnt[] = {0,0,0,0,0};
 void HAL_SPI_TxHalfCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	ASSERT(0);
-
+	cnt[0]++;
 }
 void HAL_SPI_RxHalfCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	ASSERT(0);
-
+	cnt[1]++;
 }
 void HAL_SPI_TxRxHalfCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	ASSERT(0);
-
+	cnt[2]++;
 }
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 {
-	ASSERT(0);
-
+	cnt[3]++;
 }
 void HAL_SPI_AbortCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	ASSERT(0);
-
+	cnt[4]++;
 }
