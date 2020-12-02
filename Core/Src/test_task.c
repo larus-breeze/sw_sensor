@@ -152,10 +152,8 @@ void StartTestTask(void const * argument)
 {
 	osDelay(5000); //Let USB Connect First.
 
-	//RunFATFSTestTask();
-
+	RunFATFSTestTask();
 	RunL3GD20TestTask();
-
 
 	/* Infinite loop */
 	for(;;)
