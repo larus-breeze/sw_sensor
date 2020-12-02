@@ -8,6 +8,7 @@
 #include "spi.h"
 #include "main.h"
 #include "my_assert.h"
+#include "FreeRTOS.h"
 #include "queue.h"
 #define SPI_DEFAULT_TIMEOUT_MS  100
 
@@ -15,8 +16,18 @@ extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern DMA_HandleTypeDef hdma_spi2_rx;
 extern DMA_HandleTypeDef hdma_spi2_tx;
-static QueueHandle_t SPI2_Tx_Cpl_Message_Id = NULL;
-static QueueHandle_t SPI2_Rx_Cpl_Message_Id = NULL;
+static QueueHandle_t SPI2_CPL_Message_Id = NULL;
+
+void DMATX_cpl()
+{
+	ASSERT(0);
+}
+
+void DMARX_cpl()
+{
+	ASSERT(0);
+}
+
 
 void SPI_Init(SPI_HandleTypeDef *hspi)
 {
@@ -24,8 +35,8 @@ void SPI_Init(SPI_HandleTypeDef *hspi)
 	/*Configure DMA Callbacks SPI1*/
 
 	/*Configure DMA Callbacks SPI2*/
-	HAL_DMA_RegisterCallback(hdma_spi2_rx, HAL_DMA_XFER_CPLT_CB_ID, HAL_SPI_RxCpltCallback);
-	HAL_DMA_RegisterCallback(hdma_spi2_tx, HAL_DMA_XFER_CPLT_CB_ID, HAL_SPI_TxCpltCallback);
+	HAL_DMA_RegisterCallback(&hdma_spi2_rx, HAL_DMA_XFER_CPLT_CB_ID, DMATX_cpl);
+	HAL_DMA_RegisterCallback(&hdma_spi2_tx, HAL_DMA_XFER_CPLT_CB_ID, DMARX_cpl);
     SPI2_CPL_Message_Id =  xQueueCreate(1,0);
 }
 
@@ -65,7 +76,7 @@ void SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size)
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	xHigherPriorityTaskWokenByPost = pdFALSE;
+	BaseType_t xHigherPriorityTaskWokenByPost = pdFALSE;
 	BaseType_t queue_status;
 
 	if (hspi->Instance == SPI1)
@@ -90,7 +101,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	xHigherPriorityTaskWokenByPost = pdFALSE;
+	BaseType_t xHigherPriorityTaskWokenByPost = pdFALSE;
 	BaseType_t queue_status;
 
 	if (hspi->Instance == SPI1)
@@ -114,7 +125,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 }
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	xHigherPriorityTaskWokenByPost = pdFALSE;
+	BaseType_t xHigherPriorityTaskWokenByPost = pdFALSE;
 	BaseType_t queue_status;
 
 	if (hspi->Instance == SPI1)
