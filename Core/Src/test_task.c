@@ -101,18 +101,17 @@ void RunFATFSTestTask(void)
 
 void RunL3GD20TestTask(void)
 {
+	SPI_Init(&hspi2);
 	L3GD20_Initialize();
 
 	osDelay(100); //Let sensor gather some data in FIFO.
-#define BUFFERSIZE 50
-#define NUMBER_OF_CALIBRATIONRUNS 100
+#define BUFFERSIZE 100
+#define NUMBER_OF_CALIBRATIONRUNS 500
 	char printbuf[BUFFERSIZE];
 	uint8_t size = 0;
 	float gyro_xyz[] = {0.0,0.0,0.0};
 	float gyro_xyz_calib[] = {0.0,0.0,0.0};
 	int16_t gyro_xyzint[] = {0,0,0};
-	uint32_t counter = 0;
-
 
 	HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_SET);
 	for(int i = 0; i<NUMBER_OF_CALIBRATIONRUNS; i++)
@@ -122,7 +121,7 @@ void RunL3GD20TestTask(void)
 		{
 			gyro_xyz_calib[n] = gyro_xyz_calib[n] + gyro_xyz[n];
 		}
-		osDelay(100);
+		osDelay(10);
 	}
 	for(int i = 0; i<3; i++)
 	{
@@ -136,23 +135,17 @@ void RunL3GD20TestTask(void)
 		for (int i = 0; i<3; i++)
 		{
 			gyro_xyz[i] = gyro_xyz[i] - gyro_xyz_calib[i];
-			gyro_xyzint[i] = (int16_t)(gyro_xyz[i] * 10.0);
+			gyro_xyzint[i] = (int16_t)(gyro_xyz[i]);
 		}
-		size = sprintf(printbuf, "Raw Gyro XYZ: %05d   %05d   %05d \r\n", gyro_xyzint[0], gyro_xyzint[1], gyro_xyzint[2]);
+		size = sprintf(printbuf, "Raw Gyro XYZ: %6d   %6d   %6d \r\n", gyro_xyzint[0], gyro_xyzint[1], gyro_xyzint[2]);
 		ASSERT(BUFFERSIZE >= size);
 
-		counter++;
-		if (counter%1 == 0)
+		for(int i = 0; i < size; i++)
 		{
-			CDC_Transmit_FS((uint8_t*)printbuf, size);
+			ITM_SendChar(printbuf[i]);
 		}
-		osDelay(100);
-
-
+		osDelay(10);
 	}
-
-
-
 }
 
 void StartTestTask(void const * argument)
