@@ -156,7 +156,7 @@ void RunFXOS8700TestTask(void)
 
 	for(;;)
 	{
-		I2C_Read(&hi2c1, 0x1E, rx_buf, 5);
+		I2C_Read(&hi2c1, 0x3C, rx_buf, 5);
 		osDelay(100);
 	}
 }

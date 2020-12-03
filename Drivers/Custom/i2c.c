@@ -109,3 +109,14 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
 	ASSERT(pdTRUE == queue_status);
 	portYIELD_FROM_ISR(xHigherPriorityTaskWokenByPost);
 }
+
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
+{
+	ASSERT(0);
+}
+
+
+void HAL_I2C_AbortCpltCallback(I2C_HandleTypeDef *hi2c)
+{
+	ASSERT(0);
+}
