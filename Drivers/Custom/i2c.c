@@ -1,4 +1,5 @@
 #include "i2c.h"
+#include "main.h"
 #include "my_assert.h"
 #include "FreeRTOS.h"
 #include "queue.h"
@@ -8,7 +9,7 @@ static QueueHandle_t I2C1_CPL_Message_Id = NULL;
 static QueueHandle_t I2C2_CPL_Message_Id = NULL;
 
 
-void I2C_Init()
+void I2C_Init(void)
 {
 	if (I2C1_CPL_Message_Id == NULL)
 	{

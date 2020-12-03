@@ -5,6 +5,7 @@
 #include "usbd_cdc_if.h"
 #include "stm_l3gd20.h"
 #include "stdio.h"
+#include "i2c.h"
 
 FATFS fatfs;
 extern SD_HandleTypeDef hsd;
@@ -148,12 +149,25 @@ void RunL3GD20TestTask(void)
 	}
 }
 
+void RunFXOS8700TestTask(void)
+{
+	I2C_Init();
+	uint8_t rx_buf[10];
+
+	for(;;)
+	{
+		I2C_Read(&hi2c1, 0x1E, rx_buf, 5);
+		osDelay(100);
+	}
+}
+
 void StartTestTask(void const * argument)
 {
 	osDelay(5000); //Let USB Connect First.
 
-	RunFATFSTestTask();
-	RunL3GD20TestTask();
+	//RunFATFSTestTask();
+	//RunL3GD20TestTask();
+	RunFXOS8700TestTask();
 
 	/* Infinite loop */
 	for(;;)

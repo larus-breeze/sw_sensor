@@ -12,9 +12,9 @@
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
 
-void I2C_Init();
-void I2C_Read();
-void I2C_Write();
+void I2C_Init(void);
+void I2C_Read(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size);
+void I2C_Write(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size);
 
 
 #endif /* CUSTOM_I2C_H_ */
