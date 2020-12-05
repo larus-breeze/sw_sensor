@@ -109,6 +109,8 @@ void StartTestTask(void const * argument);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+	SystemCoreClock = 168000000; // dirty patch but works well :-)
+
 #if configUSE_TRACE_FACILITY == 1
 	vTraceEnable(TRC_START);
 #endif
@@ -832,7 +834,7 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    osDelay(portMAX_DELAY);  // Sleep forever
   }
   /* USER CODE END 5 */
 }
