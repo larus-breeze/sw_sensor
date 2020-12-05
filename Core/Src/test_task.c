@@ -6,6 +6,7 @@
 #include "stm_l3gd20.h"
 #include "stdio.h"
 #include "i2c.h"
+#include "fxos8700cq.h"
 
 FATFS fatfs;
 extern SD_HandleTypeDef hsd;
@@ -152,18 +153,36 @@ void RunL3GD20TestTask(void)
 void RunFXOS8700TestTask(void)
 {
 	I2C_Init();
-	uint8_t rx_buf[10];
+	float xyz_acc[] = {0,0,0};
+	float xyz_mag[] = {0,0,0};
+#define BUFFERSIZE 100
+	char printbuf[BUFFERSIZE];
+	uint8_t size = 0;
+
+	FXOS8700_Initialize(ACCEL_RANGE_4G);
 
 	for(;;)
 	{
-		I2C_Read(&hi2c1, 0x3C, rx_buf, 5);
-		osDelay(100);
+		FXOS8700_get(xyz_acc, xyz_mag);
+
+		size = sprintf(printbuf, "XYZ: ACC: %6d   %6d   %6d  ", (int16_t)(xyz_acc[0]*100), (int16_t)(xyz_acc[1]*100), (int16_t)(xyz_acc[2]*100));
+		for(int i = 0; i < size; i++)
+		{
+			ITM_SendChar(printbuf[i]);
+		}
+
+		size = sprintf(printbuf, "MAG: %6d   %6d   %6d \r\n", (int16_t)(xyz_mag[0]*100), (int16_t)(xyz_mag[1]*100), (int16_t)(xyz_mag[2]*100));
+		for(int i = 0; i < size; i++)
+		{
+			ITM_SendChar(printbuf[i]);
+		}
+		osDelay(10);
 	}
 }
 
 void StartTestTask(void const * argument)
 {
-	osDelay(5000); //Let USB Connect First.
+	//osDelay(5000); //Let USB Connect First.
 
 	//RunFATFSTestTask();
 	//RunL3GD20TestTask();
