@@ -109,6 +109,7 @@ void StartTestTask(void const * argument);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+	SystemCoreClockUpdate();
 	SystemCoreClock = 168000000; // dirty patch but works well :-)
 
 #if configUSE_TRACE_FACILITY == 1
