@@ -32,15 +32,25 @@ ENTRY(Reset_Handler)
 _estack = ORIGIN(RAM) + LENGTH(RAM);	/* end of "RAM" Ram type memory */
 
 _Min_Heap_Size = 0x200 ;	/* required amount of heap  */
-_Min_Stack_Size = 0x400 ;	/* required amount of stack */
+Stack_Size = 0x400 ;	/* required amount of stack */
 
 /* Memories definition */
 MEMORY
 {
-  CCMRAM    (xrw)    : ORIGIN = 0x10000000,   LENGTH = 64K
-  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 128K
-  FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 1024K
+  CCMRAM    (rw)     : ORIGIN = 0x10000000,   LENGTH = 64K
+  RAM    	(rw)	 : ORIGIN = 0x20000000,   LENGTH = 128K
+  FLASH     (rx)     : ORIGIN = 0x8000000,    LENGTH = 1024K
 }
+
+__FLASH_segment_start__ = ORIGIN( FLASH );
+__FLASH_segment_end__ = __FLASH_segment_start__ + LENGTH( FLASH );
+
+__SRAM_segment_start__ = ORIGIN( RAM );
+__SRAM_segment_end__ = __SRAM_segment_start__ + LENGTH( RAM );
+
+_Privileged_Functions_Region_Size = 0x4000;
+_Privileged_Data_Region_Size = 256;
+_Common_Data_Region_Size = 16384; /* cross-check with common.h ! */
 
 /* Sections */
 SECTIONS
@@ -53,10 +63,23 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH
 
+	privileged_functions :
+	{
+ 	__privileged_functions_start__ = . ;
+	__syscalls_flash_start__ = . ;
+		KEEP(*(.isr_vector))
+		*(privileged_functions)
+	. = ALIGN( _Privileged_Functions_Region_Size );
+	__privileged_functions_end__ = .;
+	__syscalls_flash_end__ = . ;
+	} > FLASH	
+
+
   /* The program code and other data into "FLASH" Rom type memory */
   .text :
   {
     . = ALIGN(4);
+    _stext = .;        /* define a global symbols at start of code */
     *(.text)           /* .text sections (code) */
     *(.text*)          /* .text* sections (code) */
     *(.glue_7)         /* glue arm to thumb code */
@@ -122,6 +145,12 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH
 
+  .framebuffer :
+  {
+    *(framebuffer)
+    . = ALIGN( 0x10000);
+  } >RAM
+
   /* Used by the startup to initialize data */
   _sidata = LOADADDR(.data);
 
@@ -132,6 +161,13 @@ SECTIONS
     _sdata = .;        /* create a global symbol at data start */
     *(.data)           /* .data sections */
     *(.data*)          /* .data* sections */
+
+	/* COMMON Block */
+	. = ALIGN( _Common_Data_Region_Size );
+	__common_data_start__ = . ;
+    *(common_data)
+	. = ALIGN( _Common_Data_Region_Size );
+	__common_data_end__ = . ;
 
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
@@ -161,9 +197,50 @@ SECTIONS
     PROVIDE ( end = . );
     PROVIDE ( _end = . );
     . = . + _Min_Heap_Size;
-    . = . + _Min_Stack_Size;
     . = ALIGN(8);
   } >RAM
+
+  /* MEMORY_bank1 section, code must be located here explicitly            */
+  /* Example: extern int foo(void) __attribute__ ((section (".mb1text"))); */
+  .memory_b1_text :
+  {
+    *(.mb1text)        /* .mb1text sections (code) */
+    *(.mb1text*)       /* .mb1text* sections (code)  */
+    *(.mb1rodata)      /* read-only data (constants) */
+    *(.mb1rodata*)
+  } >MEMORY_B1
+
+    /* Core Coupled Memory CCM section */
+  .system_ram(NOLOAD) :
+  {
+  	. = . + Stack_Size;
+  	_estack = .;
+    /* This is used by the startup in order to initialize the .bss secion */
+    _s_system_ram = .;         /* define a global symbol at bss start */
+
+	/* FreeRTOS System Memory */
+	. = ALIGN( _Privileged_Data_Region_Size );
+	__privileged_data_start__ = . ;
+    *(privileged_data)
+	. = ALIGN( _Privileged_Data_Region_Size );
+	__privileged_data_end__ = . ;
+
+	/* user data block, mainly used for task stacks */
+	__user_data_start__ = . ;
+    *(user_data)
+	__user_data_end__ = . ;
+
+	/* FreeRTOS heap block, used for task stacks, queues, semaphores etc. */
+    . = ALIGN(4);
+	__FreeRTOS_heap_begin__ = . ;
+/*    . = . + _FreeRTOS_heap_size; unused, use all remaining space ! */ 
+
+    . = ALIGN(0x10000); /* locate this to end of CCM */
+/*	equiv.: . = __CCRAM_segment_end__;	*/
+
+	__FreeRTOS_heap_end__ = .;
+    _e_system_ram = .;
+  } >CCMRAM
 
   /* Remove information from the compiler libraries */
   /DISCARD/ :

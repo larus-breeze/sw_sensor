@@ -91,6 +91,9 @@ LoopFillZerobss:
 
 /* Call the clock system intitialization function.*/
   bl  SystemInit   
+
+  bl initialize_RTOS_memory
+
 /* Call static constructors */
     bl __libc_init_array
 /* Call the application's entry point.*/
@@ -108,7 +111,8 @@ LoopFillZerobss:
     .section  .text.Default_Handler,"ax",%progbits
 Default_Handler:
 Infinite_Loop:
-  b  Infinite_Loop
+	bkpt 0 // undefined interrupt handler triggered
+  	b  Infinite_Loop
   .size  Default_Handler, .-Default_Handler
 /******************************************************************************
 *

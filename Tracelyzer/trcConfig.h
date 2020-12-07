@@ -133,7 +133,7 @@ extern "C" {
  * TRC_FREERTOS_VERSION_9_0_2					If using FreeRTOS v9.0.2
  * TRC_FREERTOS_VERSION_10_0_0					If using FreeRTOS v10.0.0 or later
  *****************************************************************************/
-#define TRC_CFG_FREERTOS_VERSION TRC_FREERTOS_VERSION_10_0_0
+#define TRC_CFG_FREERTOS_VERSION TRC_FREERTOS_VERSION_10_4_0
 
 /*******************************************************************************
  * TRC_CFG_SCHEDULING_ONLY
@@ -290,8 +290,8 @@ extern "C" {
  * for details see TRC_ALLOC_CUSTOM_BUFFER and vTraceSetRecorderDataBuffer().
  ******************************************************************************/
 
-#define TRC_CFG_RECORDER_BUFFER_ALLOCATION TRC_RECORDER_BUFFER_ALLOCATION_STATIC
-//#define TRC_CFG_RECORDER_BUFFER_ALLOCATION TRC_RECORDER_BUFFER_ALLOCATION_CUSTOM
+//#define TRC_CFG_RECORDER_BUFFER_ALLOCATION TRC_RECORDER_BUFFER_ALLOCATION_STATIC
+#define TRC_CFG_RECORDER_BUFFER_ALLOCATION TRC_RECORDER_BUFFER_ALLOCATION_CUSTOM
 
 /******************************************************************************
  * TRC_CFG_MAX_ISR_NESTING

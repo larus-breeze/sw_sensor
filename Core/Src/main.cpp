@@ -19,13 +19,13 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
+//#include "cmsis_os.h"
 #include "fatfs.h"
 #include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "FreeRTOS.h"
+#include "FreeRTOS_wrapper.h"
 #include "my_assert.h"
 /* USER CODE END Includes */
 
@@ -94,7 +94,7 @@ static void MX_CAN2_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
-void StartTestTask(void const * argument);
+extern "C" void StartTestTask(void * argument);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -109,8 +109,9 @@ void StartTestTask(void const * argument);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	SystemCoreClockUpdate();
-	SystemCoreClock = 168000000; // dirty patch but works well :-)
+  /* Configure the system clock */
+  SystemClock_Config();
+  SystemCoreClockUpdate();
 
 #if configUSE_TRACE_FACILITY == 1
 	vTraceEnable(TRC_START);
@@ -125,9 +126,6 @@ int main(void)
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
 
@@ -169,32 +167,23 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
-
+#if 0
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 512);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal |portPRIVILEGE_BIT, 0, 512);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  osThreadDef(testTask, StartTestTask, osPriorityNormal, 0, 512);
+  osThreadDef(testTask, StartTestTask, osPriorityNormal|portPRIVILEGE_BIT, 0, 512);
   testTaskHandle = osThreadCreate(osThread(testTask), NULL);
   /* USER CODE END RTOS_THREADS */
-
+#endif
   /* Start scheduler */
   osKernelStart();
-
-  /* We should never get here as control is now taken by the scheduler */
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
 }
+
+// Task test_task( StartTestTask);
 
 /**
   * @brief System Clock Configuration
