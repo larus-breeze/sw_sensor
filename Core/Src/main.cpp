@@ -91,7 +91,7 @@ static void MX_USART6_UART_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_CAN2_Init(void);
-void StartDefaultTask(void const * argument);
+void StartDefaultTask(void * argument);
 
 /* USER CODE BEGIN PFP */
 extern "C" void StartTestTask(void * argument);
@@ -183,7 +183,8 @@ int main(void)
   osKernelStart();
 }
 
-// Task test_task( StartTestTask);
+Task def_task( StartDefaultTask, "DEFAULT", configMINIMAL_STACK_SIZE*3);
+Task test_task( StartTestTask, "TEST", configMINIMAL_STACK_SIZE*3);
 
 /**
   * @brief System Clock Configuration
@@ -815,7 +816,7 @@ static void MX_GPIO_Init(void)
   * @retval None
   */
 /* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void const * argument)
+void StartDefaultTask(void * argument)
 {
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
@@ -849,37 +850,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
   /* USER CODE END Callback 1 */
 }
-
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
+void Error_Handler( void)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-while (1)
-  {
-  }
-  /* USER CODE END Error_Handler_Debug */
+	asm("bkpt 0");
 }
-
-#ifdef  USE_FULL_ASSERT
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t *file, uint32_t line)
-{
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
-}
-#endif /* USE_FULL_ASSERT */
-
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
