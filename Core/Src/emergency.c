@@ -102,11 +102,11 @@ MemManage_Handler(void)
       " ite eq                          		\n"
       " mrseq r0, msp                   		\n"
       " mrsne r0, psp                   		\n"
-      " ldr r1, [r0, #24]                    		\n"
+      " ldr r1, [r0, #24]                    	\n"
       " ldr r2, instruction_address_const  		\n"
       " str r1, [r2]                    		\n"
-      " bkpt	0			                \n"
-      " bx lr                               		\n"
+      " bkpt	0			                	\n"
+      " bx lr                               	\n"
       " instruction_address_const: .word Bad_Instruction_Address \n"
   );
 }

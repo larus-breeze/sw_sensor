@@ -18,6 +18,6 @@ void blink( void *)
 	}
 }
 
-Task alife_blinker( blink, "BLINK");
+RestrictedTask alife_blinker( blink, "BLINK");
 
 

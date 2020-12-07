@@ -12,5 +12,3 @@ void harakiri( void *)
 }
 
 // RestrictedTask commit_suicide( harakiri);
-
-

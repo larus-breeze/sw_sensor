@@ -2,7 +2,6 @@
 #define COMMON_H
 
 #include "stdint.h"
-#include "memory.h"
 
 extern uint32_t __common_data_start__[];
 extern uint32_t __common_data_end__[];
