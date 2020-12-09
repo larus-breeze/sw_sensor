@@ -28,7 +28,7 @@ void getPressure(void*) {
 	for (;;) {
 		delay(500);
 		ms5611_static.update();
-		ms5611_pitot.update(); //second works but first does not.
+		ms5611_pitot.update();
 
 		pressure_static = ms5611_static.get_pressure();
 		pressure_pitot = ms5611_pitot.get_pressure();
