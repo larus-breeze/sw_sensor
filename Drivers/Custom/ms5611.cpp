@@ -1,4 +1,3 @@
-//#include "system_configuration.h"
 #include <ms5611.h>
 #include "FreeRTOS.h"
 #include "task.h"
@@ -7,10 +6,7 @@
 #include "main.h"
 
 /* Address of ms5611 device- LSB can be set to 1 / 0 - thus two of these devices can be used */
-// 0xEC means CSB (bit0) of the adress is connected to vcc //
-#ifndef MS5611_ADDRESS
-#define MS5611_ADDRESS 0xEC // 0xEC(static) or 0xED(pitot)
-#endif
+// 0xEC means CSB (bit0) of the adress is connected to vcc   0xEE if connected to gnd //
 #define MS5611_I2C &hi2c2
 
 /* Ms5611 register locations */
@@ -31,12 +27,12 @@
 
 void MS5611::start_pressure_conversion(void) {
 	uint8_t data = CMD_ADC_CONV | CMD_ADC_D1 | CMD_ADC_4096;
-	I2C_Write(MS5611_I2C, MS5611_ADDRESS, &data, 1);
+	I2C_Write(MS5611_I2C, I2C_address, &data, 1);
 }
 
 void MS5611::start_temperature_conversion(void) {
 	uint8_t data = CMD_ADC_CONV | CMD_ADC_D2 | CMD_ADC_4096;
-	I2C_Write(MS5611_I2C, MS5611_ADDRESS, &data, 1);
+	I2C_Write(MS5611_I2C, I2C_address, &data, 1);
 }
 inline uint8_t MS5611::get_crc4() {
 	int32_t cnt;
@@ -73,7 +69,7 @@ inline uint32_t MS5611::read_24_bits(void) {
 	uint8_t Buffer_Rx[RX_BUFLEN];
 	uint32_t data = 0;
 
-	I2C_ReadRegister(MS5611_I2C, MS5611_ADDRESS, CMD_ADC_READ, 1, Buffer_Rx,
+	I2C_ReadRegister(MS5611_I2C, I2C_address, CMD_ADC_READ, 1, Buffer_Rx,
 			RX_BUFLEN);
 
 	for (uint8_t i = 0; i < RX_BUFLEN; i++)
@@ -165,25 +161,22 @@ inline uint16_t MS5611::read_coef(uint8_t coef_num) {
 	static const uint8_t RX_BUFLEN = 2;
 	uint8_t Buffer_Rx[RX_BUFLEN];
 	uint8_t reg = CMD_PROM_RD + coef_num * 2;
-	I2C_ReadRegister(MS5611_I2C, MS5611_ADDRESS, reg, 1, Buffer_Rx, RX_BUFLEN);
+	I2C_ReadRegister(MS5611_I2C, I2C_address, reg, 1, Buffer_Rx, RX_BUFLEN);
 	return (Buffer_Rx[0] << 8) + Buffer_Rx[1];
 }
 
 inline uint32_t MS5611::getRawDx(uint8_t cmd) {
 	uint8_t reg = CMD_ADC_CONV | cmd;
-	uint8_t tx_dummy = 0;
-	I2C_Write(MS5611_I2C, MS5611_ADDRESS, &reg, 1);
+	I2C_Write(MS5611_I2C, I2C_address, &reg, 1);
 	vTaskDelay(10);
 
 	return read_24_bits();
 }
 
-//static ROM uint8_t CMD3=CMD_RESET;
-
 void MS5611::initialize(void) {
 	errorcount = 0;
 	uint8_t reg = CMD_RESET;
-	I2C_Write(MS5611_I2C, MS5611_ADDRESS, &reg, 1);
+	I2C_Write(MS5611_I2C, I2C_address, &reg, 1);
 	vTaskDelay(3);
 
 	for (uint8_t j = 0; j < 8; j++)

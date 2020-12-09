@@ -165,14 +165,14 @@ void RunFXOS8700TestTask(void) {
 					(int16_t) (xyz_acc[0] * 100), (int16_t) (xyz_acc[1] * 100),
 					(int16_t) (xyz_acc[2] * 100));
 			for (int i = 0; i < size; i++) {
-				ITM_SendChar(printbuf[i]);
+				//ITM_SendChar(printbuf[i]);
 			}
 
 			size = sprintf(printbuf, "MAG: %6d   %6d   %6d \r\n",
 					(int16_t) (xyz_mag[0] * 100), (int16_t) (xyz_mag[1] * 100),
 					(int16_t) (xyz_mag[2] * 100));
 			for (int i = 0; i < size; i++) {
-				ITM_SendChar(printbuf[i]);
+				//ITM_SendChar(printbuf[i]);
 			}
 		}
 		vTaskDelayUntil(&tickCount, 10);
