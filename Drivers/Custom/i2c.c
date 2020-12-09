@@ -19,7 +19,14 @@ void I2C_Init(void)
 	{
 		I2C2_CPL_Message_Id =  xQueueCreate(1,0);
 	}
+
+	/*  Resolve busy flag problem if it apears.
+	__HAL_RCC_I2C1_FORCE_RESET();
+	vTaskDelay(5);
+	__HAL_RCC_I2C1_RELEASE_RESET();
+  	*/
 }
+
 
 
 void I2C_Read(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size)
