@@ -19,6 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "memory.h"
 //#include "cmsis_os.h"
 #include "fatfs.h"
 #include "usb_device.h"
@@ -56,12 +57,12 @@ SD_HandleTypeDef hsd;
 DMA_HandleTypeDef hdma_sdio_rx;
 DMA_HandleTypeDef hdma_sdio_tx;
 
-SPI_HandleTypeDef hspi1;
-SPI_HandleTypeDef hspi2;
-DMA_HandleTypeDef hdma_spi1_rx;
-DMA_HandleTypeDef hdma_spi1_tx;
-DMA_HandleTypeDef hdma_spi2_rx;
-DMA_HandleTypeDef hdma_spi2_tx;
+COMMON SPI_HandleTypeDef hspi1;
+COMMON SPI_HandleTypeDef hspi2;
+COMMON DMA_HandleTypeDef hdma_spi1_rx;
+COMMON DMA_HandleTypeDef hdma_spi1_tx;
+COMMON DMA_HandleTypeDef hdma_spi2_rx;
+COMMON DMA_HandleTypeDef hdma_spi2_tx;
 
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart1;

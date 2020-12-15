@@ -1,9 +1,3 @@
-/*
- * alife_blinker.cpp
- *
- *  Created on: Dec 6, 2020
- *      Author: schaefer
- */
 #include "main.h"
 #include "FreeRTOS_wrapper.h"
 

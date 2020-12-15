@@ -4,11 +4,14 @@
  *  Created on: Dec 9, 2020
  *      Author: mbetz
  */
+#include "system_configuration.h"
 #include "main.h"
 #include "FreeRTOS_wrapper.h"
 #include "i2c.h"
 #include "ms5611.h"
 #include "stdio.h"
+
+#if RUN_MS5611_MODULE == 1
 
 void getPressure(void*) {
 	acquire_privileges(); /*I2C HAL functions cause MPU exception.*/
@@ -50,3 +53,4 @@ void getPressure(void*) {
 
 RestrictedTask ms5611_reading(getPressure, "Pressure", 256);
 
+#endif

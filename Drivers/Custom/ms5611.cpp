@@ -1,9 +1,12 @@
+#include "system_configuration.h"
 #include <ms5611.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "my_assert.h"
 #include "i2c.h"
 #include "main.h"
+
+#if RUN_MS5611_MODULE == 1
 
 /* Address of ms5611 device- LSB can be set to 1 / 0 - thus two of these devices can be used */
 // 0xEC means CSB (bit0) of the adress is connected to vcc   0xEE if connected to gnd //
@@ -197,3 +200,5 @@ void MS5611::initialize(void) {
 	measure_temperature = true;
 	vTaskDelay(15);
 }
+
+#endif
