@@ -185,7 +185,7 @@ int main(void)
 }
 
 Task def_task( StartDefaultTask, "DEFAULT", configMINIMAL_STACK_SIZE*3);
-Task test_task( StartTestTask, "TEST", configMINIMAL_STACK_SIZE*3);
+//Task test_task( StartTestTask, "TEST", configMINIMAL_STACK_SIZE*3);
 
 /**
   * @brief System Clock Configuration

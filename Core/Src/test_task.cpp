@@ -56,13 +56,13 @@ void RunFATFSTestTask(void) {
 
 	/*Register DMA SDIO callbacks*/
 	HAL_DMA_RegisterCallback(&hdma_sdio_rx, HAL_DMA_XFER_CPLT_CB_ID,
-			(void*) BSP_SD_ReadCpltCallback);
+			(void (*)(DMA_HandleTypeDef *)) BSP_SD_ReadCpltCallback);
 	HAL_DMA_RegisterCallback(&hdma_sdio_rx, HAL_DMA_XFER_ABORT_CB_ID,
-			(void*) BSP_SD_AbortCallback);
+			(void (*)(DMA_HandleTypeDef *)) BSP_SD_AbortCallback);
 	HAL_DMA_RegisterCallback(&hdma_sdio_tx, HAL_DMA_XFER_CPLT_CB_ID,
-			(void*) BSP_SD_WriteCpltCallback);
+			(void (*)(DMA_HandleTypeDef *)) BSP_SD_WriteCpltCallback);
 	HAL_DMA_RegisterCallback(&hdma_sdio_tx, HAL_DMA_XFER_ABORT_CB_ID,
-			(void*) BSP_SD_AbortCallback);
+			(void (*)(DMA_HandleTypeDef *)) BSP_SD_AbortCallback);
 
 	FRESULT fresult;
 	FIL fp;
@@ -88,9 +88,8 @@ void RunFATFSTestTask(void) {
 				ASSERT((fresult == FR_OK) && (writtenBytes == 512));
 
 				if ((i % 200) == 0) {
-					HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS1_Pin,
-							led_state);
-					led_state = (~led_state) & 0x01;
+					HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, led_state);
+					led_state =  led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
 				}
 			}
 		}

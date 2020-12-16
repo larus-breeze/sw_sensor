@@ -37,7 +37,7 @@ void SPI_Transceive(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData,
 	SPI_sync(hspi);
 }
 
-void SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint16_t Size)
+void SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint16_t Size, uint32_t)
 {
 	HAL_StatusTypeDef status = HAL_OK;
 	status = HAL_SPI_Transmit_DMA(hspi, pTxData, Size);
@@ -46,7 +46,7 @@ void SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint16_t Size)
 }
 
 
-void SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size)
+void SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size, uint32_t)
 {
 	HAL_StatusTypeDef status = HAL_OK;
 	status = HAL_SPI_Receive_DMA(hspi, pRxData, Size);
