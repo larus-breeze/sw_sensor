@@ -5,6 +5,7 @@
 #include "xbusdef.h"
 #include "mtssp_interface.h"
 #include "mtssp_driver_spi.h"
+#include "xbusmessageid.h"
 
 #define IMU_PSEL0  GPIO_PIN_10
 #define IMU_PSEL1  GPIO_PIN_11
@@ -70,6 +71,16 @@ void readDataFrom_MTI( MtsspInterface* m_device)
 	}
 }
 
+static ROM uint8_t xbusData[] = {0x20, 0x30, 0x00, 0x0A};	// (Output mode: Euler angles (0x2030) at 10 Hz)
+
+void configure_MTI_data_output( MtsspInterface* m_device)
+{
+	XbusMessage msg(XMID_SetOutputConfig);
+	msg.m_length = sizeof(xbusData);
+	msg.m_data = (uint8_t *)xbusData;
+	m_device->sendXbusMessage(&msg);
+}
+
 /*!	\brief Returns the value of the DataReady line
 */
 static bool checkDataReadyLine()
@@ -84,12 +95,32 @@ static void run( void *)
 
 	init_ports_and_reset_mti();
 
+	configure_MTI_data_output( &IMU_interface);
+
 	for( synchronous_timer t(10); true; t.sync())
 	{
 		readDataFrom_MTI( &IMU_interface);
 	}
 }
+#define STACKSIZE 512
 
-RestrictedTask mti_driver( run, "MTI_1");
+uint32_t __ALIGNED(STACKSIZE) stack_buffer[STACKSIZE];
+
+static TaskParameters_t p =
+{
+		run,
+		"MTI_drv",
+		STACKSIZE,
+		0,
+		STANDARD_TASK_PRIORITY,
+		stack_buffer,
+	{
+		{ COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
+		{ 0, 0, 0 },
+		{ 0, 0, 0 }
+	}
+};
+
+RestrictedTask mti_driver( p);
 
 

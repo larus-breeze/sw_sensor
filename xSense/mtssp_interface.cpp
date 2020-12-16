@@ -78,14 +78,13 @@ void MtsspInterface::configureProtocol(uint8_t dataReadyConfig)
 	m_driver->write(XBUS_CONFIGURE_PROTOCOL, &dataReadyConfig, sizeof(dataReadyConfig));
 }
 
-static COMMON uint8_t status[4];
-
 /*!	\brief Read the pipe status
 	\param[out] notificationMessageSize: The number of pending notification bytes
 	\param[out] measurementMessageSize: The number of pending measurement bytes
 */
 void MtsspInterface::readPipeStatus(uint16_t& notificationMessageSize, uint16_t& measurementMessageSize)
 {
+	uint8_t status[4];
 	m_driver->read(XBUS_PIPE_STATUS, status, sizeof(status));
 	notificationMessageSize = status[0] | (status[1] << 8);
 	measurementMessageSize = status[2] | (status[3] << 8);
@@ -103,14 +102,13 @@ void MtsspInterface::readFromPipe(uint8_t* buffer, uint16_t size, uint8_t pipe)
 	m_driver->read(pipe, buffer, size);
 }
 
-
 /*! \brief Sends an xbus message to the motion tracker
 	\param[in] xbusMessage Pointer to xbus message which should be send
 */
 void MtsspInterface::sendXbusMessage(XbusMessage const* xbusMessage)
 {
-	uint8_t buffer[128];
-	size_t rawLength = XbusMessage_createRawMessage(buffer, xbusMessage, m_driver->busFormat());
+	uint8_t buffer[128]={0};
+	size_t rawLength = XbusMessage_createRawMessage((uint8_t *)buffer, xbusMessage, m_driver->busFormat());
 	m_driver->writeRaw(buffer, rawLength);
 }
 
