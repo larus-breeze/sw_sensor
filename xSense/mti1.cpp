@@ -38,36 +38,30 @@ static inline void init_ports_and_reset_mti(void) // GPIO stuff
 	delay(1);
 }
 
-static COMMON uint8_t m_dataBuffer[256];
-static COMMON uint8_t counter=100;
+#define DATA_BUFSIZE_BYTES 256
 
 /*!	\brief Read data from the Notification and Control pipes of the device
 */
-void readDataFrom_MTI( MtsspInterface* m_device)
+void readDataFrom_MTI( MtsspInterface* device, uint8_t * dataBuffer)
 {
 	uint16_t notificationMessageSize;
 	uint16_t measurementMessageSize;
-	m_device->readPipeStatus(notificationMessageSize, measurementMessageSize);
+	device->readPipeStatus(notificationMessageSize, measurementMessageSize);
 
-	m_dataBuffer[0] = XBUS_PREAMBLE;
-	m_dataBuffer[1] = XBUS_MASTERDEVICE;
+	dataBuffer[0] = XBUS_PREAMBLE;
+	dataBuffer[1] = XBUS_MASTERDEVICE;
 
-	if (notificationMessageSize && notificationMessageSize < sizeof(m_dataBuffer))
+	if (notificationMessageSize && notificationMessageSize < DATA_BUFSIZE_BYTES)
 	{
-		m_device->readFromPipe(&m_dataBuffer[2], notificationMessageSize, XBUS_NOTIFICATION_PIPE);
+		device->readFromPipe(&dataBuffer[2], notificationMessageSize, XBUS_NOTIFICATION_PIPE);
 //		handleEvent(EVT_XbusMessage, m_dataBuffer);
 	}
 
-	if (measurementMessageSize && measurementMessageSize < sizeof(m_dataBuffer))
+	if (measurementMessageSize && measurementMessageSize < DATA_BUFSIZE_BYTES)
 	{
-		m_device->readFromPipe(&m_dataBuffer[2], measurementMessageSize, XBUS_MEASUREMENT_PIPE);
+		device->readFromPipe(&dataBuffer[2], measurementMessageSize, XBUS_MEASUREMENT_PIPE);
 //		handleEvent(EVT_XbusMessage, m_dataBuffer);
-		--counter;
-		if( counter ==0)
-		{
-			counter = 100;
-			heartbeat();
-		}
+		heartbeat();
 	}
 }
 
@@ -90,6 +84,7 @@ static bool checkDataReadyLine()
 
 static void run( void *)
 {
+	uint8_t dataBuffer[DATA_BUFSIZE_BYTES];
 	MtsspDriverSpi SPI_driver;
 	MtsspInterface IMU_interface( & SPI_driver);
 
@@ -99,7 +94,7 @@ static void run( void *)
 
 	for( synchronous_timer t(10); true; t.sync())
 	{
-		readDataFrom_MTI( &IMU_interface);
+		readDataFrom_MTI( &IMU_interface, dataBuffer);
 	}
 }
 #define STACKSIZE 512
