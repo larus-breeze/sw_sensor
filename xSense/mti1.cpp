@@ -18,7 +18,7 @@
 COMMON float acc[3];
 COMMON float mag[3];
 COMMON float gyro[3];
-COMMON TaskHandle_t MTi_task;
+COMMON Semaphore MTi_ready;
 
 extern RestrictedTask mti_driver;
 
@@ -95,6 +95,9 @@ void readDataFrom_MTI( MtsspInterface* device, uint8_t * buf)
 	}
 }
 
+/**
+  * @brief EXTI15_10 interrupt handler
+  */
 extern "C" void EXTI15_10_IRQHandler(void)
 {
   HAL_GPIO_EXTI_IRQHandler(IMU_DRDY);
@@ -107,26 +110,29 @@ extern "C" void EXTI15_10_IRQHandler(void)
   */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  if((GPIO_Pin == IMU_DRDY) && MTi_task)
-	  mti_driver.notify_from_ISR( 1, eSetBits);
+  if(GPIO_Pin == IMU_DRDY)
+//	  mti_driver.notify_from_ISR( 1, eSetBits);
+	  MTi_ready.signal_from_ISR();
 }
 
 /*!	\brief Returns the value of the DataReady line
 */
-//static bool checkDataReadyLine(void)
-//{
-//	return HAL_GPIO_ReadPin( IMU_PORT, IMU_DRDY ) == GPIO_PIN_SET;
-//}
+static bool checkDataReadyLine(void)
+{
+	return HAL_GPIO_ReadPin( IMU_PORT, IMU_DRDY ) == GPIO_PIN_SET;
+}
 
 static ROM uint8_t config_data[] = // config: ACC GYRO MAG STATUS
   {0x40,0x20,0x00,0x64,0x80,0x20,0x00,0x64,0xC0,0x20,0x00,0x64,0xE0,0x20,0x00,0x00};
 
 inline void sync_data_ready(void)
 {
-	xTaskNotifyStateClear(MTi_task);
-	notify_take(1, 10);
+//	xTaskNotifyStateClear(MTi_task);
+//	notify_take(1, 10);
 //	for( bool ready=checkDataReadyLine(); ! ready; ready=checkDataReadyLine())
 //		delay(2);
+	if( ! checkDataReadyLine())
+		MTi_ready.wait(10);
 }
 
 static void run( void *)
@@ -134,8 +140,6 @@ static void run( void *)
 	acquire_privileges();
 	init_ports_and_reset_mti();
 	drop_privileges();
-
-	MTi_task=xTaskGetCurrentTaskHandle();
 
 	uint8_t buf[DATA_BUFSIZE_BYTES];
 	MtsspDriverSpi SPI_driver;
@@ -161,7 +165,7 @@ static void run( void *)
 	XbusMessage cnf( XMID_GotoMeasurement);
 	IMU_interface.sendXbusMessage( &cnf);
 
-	for( synchronous_timer t(10); true; t.sync())
+	while( true)
 	{
 		sync_data_ready();
 		readDataFrom_MTI( &IMU_interface, buf);
