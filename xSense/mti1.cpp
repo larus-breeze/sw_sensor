@@ -44,80 +44,45 @@ static inline void init_ports_and_reset_mti(void) // GPIO stuff
 	delay(1);
 }
 
-#define DATA_BUFSIZE_BYTES 256
+#define DATA_BUFSIZE_BYTES 128
 
 typedef union{ float f; uint32_t u;} float_word;
 
 /*!	\brief Read data from the Notification and Control pipes of the device
 */
-void readDataFrom_MTI( MtsspInterface* device, uint8_t * dataBuffer)
+void readDataFrom_MTI( MtsspInterface* device, uint8_t * buf)
 {
 	uint16_t notificationMessageSize;
 	uint16_t measurementMessageSize;
 	device->readPipeStatus(notificationMessageSize, measurementMessageSize);
 
-	dataBuffer[0] = XBUS_PREAMBLE;
-	dataBuffer[1] = XBUS_MASTERDEVICE;
+	buf[0] = XBUS_PREAMBLE;
+	buf[1] = XBUS_MASTERDEVICE;
 
 	if (notificationMessageSize && notificationMessageSize < DATA_BUFSIZE_BYTES)
 	{
-		device->readFromPipe(&dataBuffer[2], notificationMessageSize, XBUS_NOTIFICATION_PIPE);
+		device->readFromPipe(&buf[2], notificationMessageSize, XBUS_NOTIFICATION_PIPE);
 	}
 
 	if (measurementMessageSize && measurementMessageSize < DATA_BUFSIZE_BYTES)
 	{
-		device->readFromPipe(&dataBuffer[2], measurementMessageSize, XBUS_MEASUREMENT_PIPE);
-		if(dataBuffer[4]==0x40 && dataBuffer[0x13]==0x80 && dataBuffer[0x22]==0xC0)
+		device->readFromPipe(&buf[2], measurementMessageSize, XBUS_MEASUREMENT_PIPE);
+		if(buf[4]==0x40 && buf[0x13]==0x80 && buf[0x22]==0xC0)
 		{
 			float_word x;
-			x.u=__REV( *(uint32_t*)(dataBuffer+0x07+0)), acc[0]=x.f;
-			x.u=__REV( *(uint32_t*)(dataBuffer+0x07+4)), acc[1]=x.f;
-			x.u=__REV( *(uint32_t*)(dataBuffer+0x07+8)), acc[2]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x07+0)), acc[0]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x07+4)), acc[1]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x07+8)), acc[2]=x.f;
 
-			x.u=__REV( *(uint32_t*)(dataBuffer+0x16+0)), gyro[0]=x.f;
-			x.u=__REV( *(uint32_t*)(dataBuffer+0x16+4)), gyro[1]=x.f;
-			x.u=__REV( *(uint32_t*)(dataBuffer+0x16+8)), gyro[2]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x16+0)), gyro[0]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x16+4)), gyro[1]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x16+8)), gyro[2]=x.f;
 
-			x.u=__REV( *(uint32_t*)(dataBuffer+0x25+0)), mag[0]=x.f;
-			x.u=__REV( *(uint32_t*)(dataBuffer+0x25+4)), mag[1]=x.f;
-			x.u=__REV( *(uint32_t*)(dataBuffer+0x25+8)), mag[2]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x25+0)), mag[0]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x25+4)), mag[1]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x25+8)), mag[2]=x.f;
 		}
 	}
-}
-
-static ROM uint8_t config_data[] = // ACC GYRO MAG STATUS
-  {0x40,0x20,0x00,0x64,0x80,0x20,0x00,0x64,0xC0,0x20,0x00,0x64,0xE0,0x20,0x00,0x00};
-
-void configure_MTI_data_output( MtsspInterface* device, uint8_t * dataBuffer)
-{
-	volatile unsigned loops=0;
-	uint16_t notificationMessageSize;
-	uint16_t measurementMessageSize;
-
-	XbusMessage cnf( XMID_GotoConfig);
-	device->sendXbusMessage(&cnf);
-	do
-	{
-		++loops;
-		delay(1);
-		device->readPipeStatus(notificationMessageSize, measurementMessageSize);
-		if (notificationMessageSize && notificationMessageSize < DATA_BUFSIZE_BYTES)
-		{
-			device->readFromPipe(&dataBuffer[2], notificationMessageSize, XBUS_NOTIFICATION_PIPE);
-		}
-
-		if (measurementMessageSize && measurementMessageSize < DATA_BUFSIZE_BYTES)
-		{
-			device->readFromPipe(&dataBuffer[2], measurementMessageSize, XBUS_MEASUREMENT_PIPE);
-
-		}
-
-	}while(notificationMessageSize > 10);
-
-	XbusMessage msg(XMID_SetOutputConfig);
-	msg.m_length = sizeof(config_data);
-	msg.m_data = (uint8_t *)config_data;
-	device->sendXbusMessage(&msg);
 }
 
 /*!	\brief Returns the value of the DataReady line
@@ -127,37 +92,47 @@ static bool checkDataReadyLine(void)
 	return HAL_GPIO_ReadPin( IMU_PORT, IMU_DRDY ) == GPIO_PIN_SET;
 }
 
+static ROM uint8_t config_data[] = // config: ACC GYRO MAG STATUS
+  {0x40,0x20,0x00,0x64,0x80,0x20,0x00,0x64,0xC0,0x20,0x00,0x64,0xE0,0x20,0x00,0x00};
+
 inline void sync_data_ready(void)
 {
-	for( bool ready=false; ! ready; ready=checkDataReadyLine())
-		delay(1);
+	for( bool ready=checkDataReadyLine(); ! ready; ready=checkDataReadyLine())
+		delay(2);
 }
 
 static void run( void *)
 {
-	uint8_t dataBuffer[DATA_BUFSIZE_BYTES];
+	uint8_t buf[DATA_BUFSIZE_BYTES];
 	MtsspDriverSpi SPI_driver;
 	MtsspInterface IMU_interface( & SPI_driver);
 
 	init_ports_and_reset_mti();
 
 	sync_data_ready();
+	readDataFrom_MTI( &IMU_interface, buf);
 
-	readDataFrom_MTI( &IMU_interface, dataBuffer);
-
-	configure_MTI_data_output( &IMU_interface, dataBuffer);
+	XbusMessage go_cnf( XMID_GotoConfig);
+	IMU_interface.sendXbusMessage(&go_cnf);
 
 	sync_data_ready();
+	readDataFrom_MTI( &IMU_interface, buf);
 
-	readDataFrom_MTI( &IMU_interface, dataBuffer);
+	XbusMessage msg(XMID_SetOutputConfig);
+	msg.m_length = sizeof(config_data);
+	msg.m_data = (uint8_t *)config_data;
+	IMU_interface.sendXbusMessage(&msg);
+
+	sync_data_ready();
+	readDataFrom_MTI( &IMU_interface, buf);
 
 	XbusMessage cnf( XMID_GotoMeasurement);
 	IMU_interface.sendXbusMessage( &cnf);
 
-	for( synchronous_timer t(8); true; t.sync())
+	for( synchronous_timer t(10); true; t.sync())
 	{
 		sync_data_ready();
-		readDataFrom_MTI( &IMU_interface, dataBuffer);
+		readDataFrom_MTI( &IMU_interface, buf);
 	}
 }
 

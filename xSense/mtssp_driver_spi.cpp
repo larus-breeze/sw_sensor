@@ -36,11 +36,6 @@
 #include "stm32f4xx_hal.h"
 #include "spi.h"
 
-#if 0
-#include "board.h"
-#include "init_spi.h"
-#include "wait.h"
-#endif
 /*!	\class MtsspDriverSpi
 	\brief MtsspDriver for the SPI bus
 */
@@ -52,13 +47,6 @@
 
 extern SPI_HandleTypeDef hspi1;
 
-void wait_us(unsigned)
-{
-	taskYIELD(); // workaround for short delay
-}
-
-static COMMON 	uint8_t buffer[4];
-
 /*!	\brief Perform a blocking write transfer on the SPI bus
 	\param[in] opcode Opcode to use
 	\param[in] data Pointer to data to be written
@@ -66,15 +54,14 @@ static COMMON 	uint8_t buffer[4];
 */
 void MtsspDriverSpi::write(uint8_t opcode, uint8_t const* data, int dataLength)
 {
+	uint8_t buffer[4];
 	HAL_GPIO_WritePin(CHIP_SELECT_PORT, CHIP_SELECT_PIN, GPIO_PIN_RESET);
-	wait_us(4);
 	buffer[0] = opcode;
 	buffer[1] = 0;
 	buffer[2] = 0;
 	buffer[3] = 0;
 	SPI_Transmit(&hspi1, buffer, sizeof(buffer), TIMEOUT_MS);
 	SPI_Transmit(&hspi1, (uint8_t*)data, dataLength, TIMEOUT_MS);
-	wait_us(4);
 	HAL_GPIO_WritePin(CHIP_SELECT_PORT, CHIP_SELECT_PIN, GPIO_PIN_SET);
 }
 
@@ -85,15 +72,14 @@ void MtsspDriverSpi::write(uint8_t opcode, uint8_t const* data, int dataLength)
 */
 void MtsspDriverSpi::read(uint8_t opcode, uint8_t* dest, int dataLength)
 {
+	uint8_t buffer[4];
 	HAL_GPIO_WritePin(CHIP_SELECT_PORT, CHIP_SELECT_PIN, GPIO_PIN_RESET);
-	wait_us(4);
 	buffer[0] = opcode;
 	buffer[1] = 0;
 	buffer[2] = 0;
 	buffer[3] = 0;
 	SPI_Transmit(&hspi1, buffer, sizeof(buffer), TIMEOUT_MS);
 	SPI_Receive(&hspi1, dest, dataLength, TIMEOUT_MS);
-	wait_us(4);
 	HAL_GPIO_WritePin(CHIP_SELECT_PORT, CHIP_SELECT_PIN, GPIO_PIN_SET);
 }
 
@@ -105,9 +91,7 @@ void MtsspDriverSpi::read(uint8_t opcode, uint8_t* dest, int dataLength)
 void MtsspDriverSpi::writeRaw(uint8_t const* data, int dataLength)
 {
 	HAL_GPIO_WritePin(CHIP_SELECT_PORT, CHIP_SELECT_PIN, GPIO_PIN_RESET);
-	wait_us(4);
 	SPI_Transmit(&hspi1, (uint8_t*)data, dataLength, TIMEOUT_MS);
-	wait_us(4);
 	HAL_GPIO_WritePin(CHIP_SELECT_PORT, CHIP_SELECT_PIN, GPIO_PIN_SET);
 }
 
