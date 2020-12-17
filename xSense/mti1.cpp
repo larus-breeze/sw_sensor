@@ -18,6 +18,9 @@
 COMMON float acc[3];
 COMMON float mag[3];
 COMMON float gyro[3];
+COMMON TaskHandle_t MTi_task;
+
+extern RestrictedTask mti_driver;
 
 static inline void init_ports_and_reset_mti(void) // GPIO stuff
 {
@@ -37,6 +40,13 @@ static inline void init_ports_and_reset_mti(void) // GPIO stuff
 	GPIO_InitStruct.Pin = IMU_NRST;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
 	HAL_GPIO_Init(IMU_PORT, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = IMU_DRDY;
+	GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+	HAL_GPIO_Init(IMU_PORT, &GPIO_InitStruct);
+
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 15, 0);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 	HAL_GPIO_WritePin( IMU_PORT, IMU_NRST, GPIO_PIN_RESET);
 	delay(1);
@@ -85,29 +95,51 @@ void readDataFrom_MTI( MtsspInterface* device, uint8_t * buf)
 	}
 }
 
+extern "C" void EXTI15_10_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(IMU_DRDY);
+}
+
+/**
+  * @brief EXTI line detection callbacks
+  * @param GPIO_Pin: Specifies the pins connected EXTI line
+  * @retval None
+  */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  if((GPIO_Pin == IMU_DRDY) && MTi_task)
+	  mti_driver.notify_from_ISR( 1, eSetBits);
+}
+
 /*!	\brief Returns the value of the DataReady line
 */
-static bool checkDataReadyLine(void)
-{
-	return HAL_GPIO_ReadPin( IMU_PORT, IMU_DRDY ) == GPIO_PIN_SET;
-}
+//static bool checkDataReadyLine(void)
+//{
+//	return HAL_GPIO_ReadPin( IMU_PORT, IMU_DRDY ) == GPIO_PIN_SET;
+//}
 
 static ROM uint8_t config_data[] = // config: ACC GYRO MAG STATUS
   {0x40,0x20,0x00,0x64,0x80,0x20,0x00,0x64,0xC0,0x20,0x00,0x64,0xE0,0x20,0x00,0x00};
 
 inline void sync_data_ready(void)
 {
-	for( bool ready=checkDataReadyLine(); ! ready; ready=checkDataReadyLine())
-		delay(2);
+	xTaskNotifyStateClear(MTi_task);
+	notify_take(1, 10);
+//	for( bool ready=checkDataReadyLine(); ! ready; ready=checkDataReadyLine())
+//		delay(2);
 }
 
 static void run( void *)
 {
+	acquire_privileges();
+	init_ports_and_reset_mti();
+	drop_privileges();
+
+	MTi_task=xTaskGetCurrentTaskHandle();
+
 	uint8_t buf[DATA_BUFSIZE_BYTES];
 	MtsspDriverSpi SPI_driver;
 	MtsspInterface IMU_interface( & SPI_driver);
-
-	init_ports_and_reset_mti();
 
 	sync_data_ready();
 	readDataFrom_MTI( &IMU_interface, buf);
