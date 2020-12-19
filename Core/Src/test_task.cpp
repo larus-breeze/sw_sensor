@@ -1,5 +1,6 @@
 #include "my_assert.h"
 #include "main.h"
+#include "FreeRTOS_wrapper.h"
 #include "fatfs.h"
 #include "string.h"
 #include "usbd_cdc_if.h"
@@ -50,7 +51,8 @@ ROM char testString[] = "0123456789abcdef"
 		"0123456789abcdef"
 		"0123456789abcd\r\n";
 
-void RunFATFSTestTask(void) {
+void RunFATFSTestTask(void *)
+{
 	HAL_SD_DeInit(&hsd);
 	osDelay(100);  //Not sure if required.
 
@@ -98,7 +100,11 @@ void RunFATFSTestTask(void) {
 	duration = HAL_GetTick() - start;
 	HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
+	while( true)
+		suspend();
 }
+
+Task SD_tester( RunFATFSTestTask, "SD_IO", 256);
 
 void RunL3GD20TestTask(void) {
 	SPI_Init(&hspi2);
@@ -176,19 +182,4 @@ void RunFXOS8700TestTask(void) {
 		}
 		vTaskDelayUntil(&tickCount, 10);
 	}
-}
-
-void StartTestTask(void const *argument) {
-	//osDelay(5000); //Let USB Connect First.
-
-	//RunFATFSTestTask();
-	//RunL3GD20TestTask();
-	RunFXOS8700TestTask();
-
-
-	TickType_t tickCount = xTaskGetTickCount();
-	for (;;) {
-		vTaskDelayUntil(&tickCount, 10);
-	}
-	/* USER CODE END 5 */
 }

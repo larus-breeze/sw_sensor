@@ -85,6 +85,9 @@ extern uint8_t __FreeRTOS_heap_end__;
 #define configMESSAGE_BUFFER_LENGTH_TYPE         size_t
 /* USER CODE END MESSAGE_BUFFER_LENGTH_TYPE */ 
 
+#define configSTACK_DEPTH_TYPE    uint32_t
+
+
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES                    0
 #define configMAX_CO_ROUTINE_PRIORITIES          ( 2 )

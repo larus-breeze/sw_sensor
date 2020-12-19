@@ -125,7 +125,7 @@ static bool checkDataReadyLine(void)
 static ROM uint8_t config_data[] = // config: ACC GYRO MAG STATUS
   {0x40,0x20,0x00,0x64,0x80,0x20,0x00,0x64,0xC0,0x20,0x00,0x64,0xE0,0x20,0x00,0x00};
 
-inline void sync_data_ready(void)
+inline void wait_until_MTi_reports_data_ready(void)
 {
 //	xTaskNotifyStateClear(MTi_task);
 //	notify_take(1, 10);
@@ -145,13 +145,13 @@ static void run( void *)
 	MtsspDriverSpi SPI_driver;
 	MtsspInterface IMU_interface( & SPI_driver);
 
-	sync_data_ready();
+	wait_until_MTi_reports_data_ready();
 	readDataFrom_MTI( &IMU_interface, buf);
 
 	XbusMessage go_cnf( XMID_GotoConfig);
 	IMU_interface.sendXbusMessage(&go_cnf);
 
-	sync_data_ready();
+	wait_until_MTi_reports_data_ready();
 	readDataFrom_MTI( &IMU_interface, buf);
 
 	XbusMessage msg(XMID_SetOutputConfig);
@@ -159,7 +159,7 @@ static void run( void *)
 	msg.m_data = (uint8_t *)config_data;
 	IMU_interface.sendXbusMessage(&msg);
 
-	sync_data_ready();
+	wait_until_MTi_reports_data_ready();
 	readDataFrom_MTI( &IMU_interface, buf);
 
 	XbusMessage cnf( XMID_GotoMeasurement);
@@ -167,14 +167,14 @@ static void run( void *)
 
 	while( true)
 	{
-		sync_data_ready();
+		wait_until_MTi_reports_data_ready();
 		readDataFrom_MTI( &IMU_interface, buf);
 	}
 }
 
-#define STACKSIZE 512
+#define STACKSIZE 128
 
-uint32_t __ALIGNED(STACKSIZE) stack_buffer[STACKSIZE];
+uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 
 static TaskParameters_t p =
 {
@@ -182,7 +182,7 @@ static TaskParameters_t p =
 		"MTI_drv",
 		STACKSIZE,
 		0,
-		STANDARD_TASK_PRIORITY,
+		STANDARD_TASK_PRIORITY+2,
 		stack_buffer,
 	{
 		{ COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
