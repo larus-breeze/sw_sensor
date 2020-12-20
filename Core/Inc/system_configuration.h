@@ -8,5 +8,6 @@
 
 #define RUN MS5611_MODULE 	0
 #define RUN_SPI_TESTER		0
+#define RUN_CAN_TESTER		1
 
 #endif /* SRC_SYSTEM_CONFIGURATION_H_ */
