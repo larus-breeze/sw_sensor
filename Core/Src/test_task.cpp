@@ -1,3 +1,4 @@
+#include "system_configuration.h"
 #include "my_assert.h"
 #include "main.h"
 #include "FreeRTOS_wrapper.h"
@@ -8,6 +9,8 @@
 #include "stdio.h"
 #include "i2c.h"
 #include "fxos8700cq.h"
+
+#if RUN_SDIO_TEST
 
 FATFS fatfs;
 extern SD_HandleTypeDef hsd;
@@ -105,6 +108,8 @@ void RunFATFSTestTask(void *)
 }
 
 Task SD_tester( RunFATFSTestTask, "SD_IO", 256);
+
+#endif
 
 void RunL3GD20TestTask(void) {
 	SPI_Init(&hspi2);
