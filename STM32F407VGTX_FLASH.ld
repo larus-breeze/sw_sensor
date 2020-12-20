@@ -200,17 +200,7 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
-  /* MEMORY_bank1 section, code must be located here explicitly            */
-  /* Example: extern int foo(void) __attribute__ ((section (".mb1text"))); */
-  .memory_b1_text :
-  {
-    *(.mb1text)        /* .mb1text sections (code) */
-    *(.mb1text*)       /* .mb1text* sections (code)  */
-    *(.mb1rodata)      /* read-only data (constants) */
-    *(.mb1rodata*)
-  } >MEMORY_B1
-
-    /* Core Coupled Memory CCM section */
+  /* Core Coupled Memory CCM section */
   .system_ram(NOLOAD) :
   {
   	. = . + Stack_Size;

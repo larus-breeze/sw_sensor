@@ -10,6 +10,8 @@
 #include "usb_device.h"
 #include "usbd_cdc.h"
 
+#if ACTIVATE_USB
+
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
 ROM uint8_t text[]="The quick brown fox jumps over the lazy dogs head 01234567890 \r\n";
@@ -26,3 +28,5 @@ void USB_runnable( void *)
 }
 
 RestrictedTask USB_task(USB_runnable, "USB", 256, 0, STANDARD_TASK_PRIORITY | portPRIVILEGE_BIT);
+
+#endif
