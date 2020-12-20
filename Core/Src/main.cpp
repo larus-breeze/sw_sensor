@@ -184,9 +184,6 @@ int main(void)
   osKernelStart();
 }
 
-Task def_task( StartDefaultTask, "DEFAULT", configMINIMAL_STACK_SIZE*3);
-//Task test_task( StartTestTask, "TEST", configMINIMAL_STACK_SIZE*3);
-
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -805,30 +802,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(FXOS8700_RST_GPIO_Port, &GPIO_InitStruct);
 
-}
-
-/* USER CODE BEGIN 4 */
-/* USER CODE END 4 */
-
-/* USER CODE BEGIN Header_StartDefaultTask */
-/**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void * argument)
-{
-  /* init code for USB_DEVICE */
-  MX_USB_DEVICE_Init();
-  /* USER CODE BEGIN 5 */
-
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(portMAX_DELAY);  // Sleep forever
-  }
-  /* USER CODE END 5 */
 }
 
  /**
