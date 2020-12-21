@@ -649,6 +649,10 @@ public:
 	{
 		PreviousWakeTime = xTaskGetTickCount();
 	}
+	inline void re_synchronize(TickType_t time)
+	{
+		PreviousWakeTime = time;
+	}
 	//! synchronous delay using DelayUntil(...)
 	inline void delay(TickType_t duration)
 	{
