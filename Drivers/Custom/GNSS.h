@@ -101,10 +101,10 @@ typedef struct
 } coordinates_t;
 
 
-class GPS_type
+class GNSS_type
 {
 public:
-  GPS_type ();
+  GNSS_type ();
   GPS_Result update( const uint8_t * data);
   GPS_Result update_delta( const uint8_t * data);
   void reset_reference( void)
@@ -136,5 +136,7 @@ private:
   int32_t longitude_reference;
   float latitude_scale;
 };
+
+extern GNSS_type GNSS;
 
 #endif /* DRIVER_GPS_H_ */

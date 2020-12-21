@@ -108,6 +108,16 @@ static void usart_tester_runnable (void*)
 #endif
 	  continue;
 	}
+      notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 20);
+      if( notify_result != pdTRUE)
+	{
+	  HAL_UART_Abort (&huart4);
+#if UART4_LED_STATUS
+	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
+	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
+#endif
+	  continue;
+	}
       HAL_UART_Abort (&huart4);
       t.re_synchronize(xTaskGetTickCount() - 16);
       if ((buffer[0] != 0xb5) || (buffer[1] != 'b'))

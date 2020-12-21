@@ -1,13 +1,18 @@
 #include "system_configuration.h"
 #include "GNSS.h"
 #include "math.h"
+#include "common.h"
+
+enum{ NORTH, EAST, DOWN};
+
+COMMON GNSS_type GNSS;
 
 #define SCALE_MM 0.001
 #define SCALE_MM_NEG -0.001
 #define DEG_2_METER 111111.111e-7 // (10000 / 90) m / degree on great circle
 #define ANGLE_SCALE 1e-7d
 
-GPS_type::GPS_type() :
+GNSS_type::GNSS_type() :
 		fix_type(FIX_none),
 		latitude_reference(0),
 		longitude_reference(0),
@@ -17,7 +22,7 @@ GPS_type::GPS_type() :
 		num_SV(0)
 	{}
 
-GPS_Result GPS_type::update(const uint8_t * data)
+GPS_Result GNSS_type::update(const uint8_t * data)
 {
 	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01)
 			|| (data[3] != 0x07))
@@ -83,7 +88,7 @@ GPS_Result GPS_type::update(const uint8_t * data)
 	return GPS_HAVE_FIX;
 }
 
-GPS_Result GPS_type::update_delta(const uint8_t * data)
+GPS_Result GNSS_type::update_delta(const uint8_t * data)
 {
 	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01)
 			|| (data[3] != 0x3c))

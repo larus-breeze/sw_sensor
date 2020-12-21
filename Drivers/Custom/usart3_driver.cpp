@@ -41,7 +41,7 @@ static inline void MX_USART3_UART_Init (void)
     hdma_usart3_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     hdma_usart3_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
     hdma_usart3_rx.Init.Mode = DMA_NORMAL;
-    hdma_usart3_rx.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_usart3_rx.Init.Priority = DMA_PRIORITY_MEDIUM;
     hdma_usart3_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_usart3_rx) != HAL_OK)
       ASSERT(0);
@@ -87,6 +87,8 @@ static void usart_tester_runnable (void*)
   synchronous_timer t(100);
   while (true)
     {
+      for( uint32_t i=0; i < GPS_DMA_buffer_SIZE; ++i)
+	buffer[i]=0x5a;
       result = HAL_UART_Receive_DMA (&huart3, buffer, GPS_DMA_buffer_SIZE);
       if( result != HAL_OK)
 	{
@@ -97,6 +99,7 @@ static void usart_tester_runnable (void*)
 #endif
 	  continue;
 	}
+      // wait for half transfer interrupt
       uint32_t pulNotificationValue;
       BaseType_t notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 20);
       if( notify_result != pdTRUE)
@@ -108,10 +111,23 @@ static void usart_tester_runnable (void*)
 #endif
 	  continue;
 	}
+      // wait for transfer complete interrupt
+      notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 20);
+      if( notify_result != pdTRUE)
+	{
+	  HAL_UART_Abort (&huart3);
+#if UART3_LED_STATUS
+	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
+	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
+#endif
+	  continue;
+	}
       HAL_UART_Abort (&huart3);
       t.re_synchronize(xTaskGetTickCount() - 16);
-      if ((buffer[0] != 0xb5) || (buffer[1] != 'b'))
-	{
+
+//      if ((buffer[0] != 0xb5) || (buffer[1] != 'b'))
+      if( GNSS.update(buffer) == GPS_ERROR)
+      {
 #if UART3_LED_STATUS
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
