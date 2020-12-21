@@ -11,4 +11,8 @@
 #define RUN_CAN_TESTER		0
 #define ACTIVATE_USB		0
 
+#define USE_DIFF_GNSS		1
+#define UART3_LED_STATUS	0
+#define UART4_LED_STATUS	1
+
 #endif /* SRC_SYSTEM_CONFIGURATION_H_ */

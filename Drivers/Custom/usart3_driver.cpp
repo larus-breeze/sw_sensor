@@ -79,8 +79,7 @@ DMA1_Stream1_IRQHandler (void)
 
 static uint8_t buffer[GPS_DMA_buffer_SIZE];
 
-void
-usart_tester_runnable (void*)
+static void usart_tester_runnable (void*)
 {
   USART3_task_Id = xTaskGetCurrentTaskHandle();
   MX_USART3_UART_Init ();
@@ -92,8 +91,10 @@ usart_tester_runnable (void*)
       if( result != HAL_OK)
 	{
 	  HAL_UART_Abort (&huart3);
+#if UART3_LED_STATUS
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
+#endif
 	  continue;
 	}
       uint32_t pulNotificationValue;
@@ -101,22 +102,28 @@ usart_tester_runnable (void*)
       if( notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart3);
+#if UART3_LED_STATUS
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
+#endif
 	  continue;
 	}
       HAL_UART_Abort (&huart3);
       t.re_synchronize(xTaskGetTickCount() - 16);
       if ((buffer[0] != 0xb5) || (buffer[1] != 'b'))
 	{
+#if UART3_LED_STATUS
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
+#endif
 	  HAL_UART_Abort (&huart3);
 	  delay (50);
 	  continue;
 	}
+#if UART3_LED_STATUS
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_SET);
+#endif
       t.sync();
     }
 }
