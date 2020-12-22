@@ -87,8 +87,6 @@ static void usart_tester_runnable (void*)
   synchronous_timer t(100);
   while (true)
     {
-      for( uint32_t i=0; i < GPS_DMA_buffer_SIZE; ++i)
-	buffer[i]=0x5a;
       result = HAL_UART_Receive_DMA (&huart3, buffer, GPS_DMA_buffer_SIZE);
       if( result != HAL_OK)
 	{
@@ -144,4 +142,4 @@ static void usart_tester_runnable (void*)
     }
 }
 
-Task usart3_task (usart_tester_runnable, "USART3");
+Task usart3_task (usart_tester_runnable, "GNSS");
