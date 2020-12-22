@@ -28,23 +28,10 @@
 /* USER CODE BEGIN Includes */
 #include "FreeRTOS_wrapper.h"
 #include "my_assert.h"
-/* USER CODE END Includes */
+#include "common.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
+COMMON observation_t observations;
 
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 
 CAN_HandleTypeDef hcan1;
@@ -67,11 +54,6 @@ COMMON DMA_HandleTypeDef hdma_spi2_tx;
 COMMON UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart6;
 
-osThreadId defaultTaskHandle;
-/* USER CODE BEGIN PV */
-osThreadId testTaskHandle;
-/* USER CODE END PV */
-
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
@@ -87,15 +69,6 @@ static void MX_ADC1_Init(void);
 static void MX_USART3_UART_Init(void);
 void StartDefaultTask(void * argument);
 
-/* USER CODE BEGIN PFP */
-extern "C" void StartTestTask(void * argument);
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
 /**
   * @brief  The application entry point.
   * @retval int
@@ -110,20 +83,7 @@ int main(void)
 #if configUSE_TRACE_FACILITY == 1
 	vTraceEnable(TRC_START);
 #endif
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
@@ -137,39 +97,8 @@ int main(void)
   MX_USART6_UART_Init();
   MX_FATFS_Init();
   MX_ADC1_Init();
-  /* USER CODE BEGIN 2 */
 
-  /* USER CODE END 2 */
-
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
-
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
-
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
-
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
-#if 0
-  /* Create the thread(s) */
-  /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal |portPRIVILEGE_BIT, 0, 512);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
-
-  /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
-  osThreadDef(testTask, StartTestTask, osPriorityNormal|portPRIVILEGE_BIT, 0, 512);
-  testTaskHandle = osThreadCreate(osThread(testTask), NULL);
-  /* USER CODE END RTOS_THREADS */
-#endif
-  /* Start scheduler */
-  osKernelStart();
+  asm("b vTaskStartScheduler"); // point of no return
 }
 
 /**

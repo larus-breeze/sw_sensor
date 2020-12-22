@@ -21,45 +21,47 @@ extern DMA_HandleTypeDef hdma_sdio_tx;
 #define ROM const __attribute__ ((section (".rodata")))
 #endif
 
-ROM char testString[] = "0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n"
-		"0123456789abcdef"
-		"0123456789abcd\r\n";
+ROM char testString[] =
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n"
+  "0123456789abcdef"
+  "0123456789abcd\r\n";
 
 void RunFATFSTestTask(void *)
 {
 	HAL_SD_DeInit(&hsd);
 	osDelay(100);  //Not sure if required.
 
-	/*Register DMA SDIO callbacks*/
+/*
+	Register DMA SDIO callbacks
 	HAL_DMA_RegisterCallback(&hdma_sdio_rx, HAL_DMA_XFER_CPLT_CB_ID,
 			(void (*)(DMA_HandleTypeDef *)) BSP_SD_ReadCpltCallback);
 	HAL_DMA_RegisterCallback(&hdma_sdio_rx, HAL_DMA_XFER_ABORT_CB_ID,
@@ -69,6 +71,7 @@ void RunFATFSTestTask(void *)
 	HAL_DMA_RegisterCallback(&hdma_sdio_tx, HAL_DMA_XFER_ABORT_CB_ID,
 			(void (*)(DMA_HandleTypeDef *)) BSP_SD_AbortCallback);
 
+*/
 	FRESULT fresult;
 	FIL fp;
 	uint8_t sd_card_detect = 0;

@@ -15,9 +15,6 @@
 #define IMU_NRST   GPIO_PIN_13
 #define IMU_PORT   GPIOD
 
-COMMON float acc[3];
-COMMON float mag[3];
-COMMON float gyro[3];
 COMMON Semaphore MTi_ready;
 
 extern RestrictedTask mti_driver;
@@ -80,17 +77,26 @@ void readDataFrom_MTI( MtsspInterface* device, uint8_t * buf)
 		if(buf[4]==0x40 && buf[0x13]==0x80 && buf[0x22]==0xC0)
 		{
 			float_word x;
-			x.u = __REV( *(uint32_t*)(buf+0x07+0)); acc[0]=x.f;
-			x.u = __REV( *(uint32_t*)(buf+0x07+4)); acc[1]=x.f;
-			x.u = __REV( *(uint32_t*)(buf+0x07+8)); acc[2]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x07+0));
+			observations.acc[0]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x07+4));
+			observations.acc[1]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x07+8));
+			observations.acc[2]=x.f;
 
-			x.u = __REV( *(uint32_t*)(buf+0x16+0)); gyro[0]=x.f;
-			x.u = __REV( *(uint32_t*)(buf+0x16+4)); gyro[1]=x.f;
-			x.u = __REV( *(uint32_t*)(buf+0x16+8)); gyro[2]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x16+0));
+			observations.gyro[0]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x16+4));
+			observations.gyro[1]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x16+8));
+			observations.gyro[2]=x.f;
 
-			x.u = __REV( *(uint32_t*)(buf+0x25+0)); mag[0]=x.f;
-			x.u = __REV( *(uint32_t*)(buf+0x25+4)); mag[1]=x.f;
-			x.u = __REV( *(uint32_t*)(buf+0x25+8)); mag[2]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x25+0));
+			observations.mag[0]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x25+4));
+			observations.mag[1]=x.f;
+			x.u = __REV( *(uint32_t*)(buf+0x25+8));
+			observations.mag[2]=x.f;
 		}
 	}
 }
@@ -174,12 +180,12 @@ static void run( void *)
 
 #define STACKSIZE 128
 
-uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
+static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 
 static TaskParameters_t p =
 {
 		run,
-		"MTI_drv",
+		"IMU",
 		STACKSIZE,
 		0,
 		STANDARD_TASK_PRIORITY+2,

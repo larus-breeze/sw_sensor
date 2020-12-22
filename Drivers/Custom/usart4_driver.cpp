@@ -138,4 +138,4 @@ static void usart_tester_runnable (void*)
     }
 }
 
-Task usart4_task (usart_tester_runnable, "USART4");
+Task usart4_task (usart_tester_runnable, "D-GNSS");

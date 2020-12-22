@@ -50,7 +50,7 @@ __SRAM_segment_end__ = __SRAM_segment_start__ + LENGTH( RAM );
 
 _Privileged_Functions_Region_Size = 0x4000;
 _Privileged_Data_Region_Size = 256;
-_Common_Data_Region_Size = 16384; /* cross-check with common.h ! */
+_Common_Data_Region_Size = 8192; /* cross-check with common.h ! */
 
 /* Sections */
 SECTIONS
