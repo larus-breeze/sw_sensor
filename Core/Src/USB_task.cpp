@@ -4,6 +4,7 @@
  * @brief   USB CDC functionality
  ******************************************************************************/
 
+#include "system_configuration.h"
 #include "main.h"
 #include "FreeRTOS_wrapper.h"
 #include "memory.h"

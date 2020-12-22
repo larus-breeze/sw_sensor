@@ -37,8 +37,8 @@ ADC_HandleTypeDef hadc1;
 CAN_HandleTypeDef hcan1;
 CAN_HandleTypeDef hcan2;
 
-I2C_HandleTypeDef hi2c1;
-I2C_HandleTypeDef hi2c2;
+COMMON I2C_HandleTypeDef hi2c1;
+COMMON I2C_HandleTypeDef hi2c2;
 
 SD_HandleTypeDef hsd;
 DMA_HandleTypeDef hdma_sdio_rx;

@@ -212,7 +212,7 @@ void can_tester_runnable( void *)
 	{
 		CAN_driver.send(TX_packet, 10);
 		TX_packet.data_l++;
-		delay(100);
+		delay(50);
 		if( CAN_driver.receive(RX_packet, NO_WAIT))
 		{
 			if( RX_packet.id==0x65)

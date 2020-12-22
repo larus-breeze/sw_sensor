@@ -7,7 +7,8 @@
 
 static QueueHandle_t I2C1_CPL_Message_Id = NULL;
 static QueueHandle_t I2C2_CPL_Message_Id = NULL;
-volatile unsigned I2C_error_count;
+volatile unsigned I2C1_error_count;
+volatile unsigned I2C2_error_count;
 
 void I2C_Init(void)
 {
@@ -206,13 +207,21 @@ void HAL_I2C_MemTxCpltCallback(I2C_HandleTypeDef *hi2c)
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
 {
-  ++I2C_error_count;
-//  ASSERT(0);
+  if( hi2c == &hi2c1)
+    ++I2C1_error_count;
+  else if ( hi2c == &hi2c2)
+    ++I2C2_error_count;
+  else
+    ASSERT(0);
 }
 
 
 void HAL_I2C_AbortCpltCallback(I2C_HandleTypeDef *hi2c)
 {
-  ++I2C_error_count;
-//  ASSERT(0);
+  if( hi2c == &hi2c1)
+    ++I2C1_error_count;
+  else if ( hi2c == &hi2c2)
+    ++I2C2_error_count;
+  else
+    ASSERT(0);
 }

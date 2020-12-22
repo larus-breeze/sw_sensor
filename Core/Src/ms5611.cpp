@@ -46,7 +46,7 @@ void getPressure (void*)
       t.sync();
       ms5611_pitot.update ();
 
-      observations.pressure_pitot = ms5611_pitot.get_pressure ();
+      observations.pressure_absolute = ms5611_pitot.get_pressure ();
 
 #if STATISTICS
       temperature_pitot = ms5611_pitot.get_temperature ();

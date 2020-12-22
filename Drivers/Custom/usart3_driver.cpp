@@ -79,7 +79,7 @@ DMA1_Stream1_IRQHandler (void)
 
 static uint8_t buffer[GPS_DMA_buffer_SIZE];
 
-static void usart_tester_runnable (void*)
+static void GNSS_runnable (void*)
 {
   USART3_task_Id = xTaskGetCurrentTaskHandle();
   MX_USART3_UART_Init ();
@@ -142,4 +142,4 @@ static void usart_tester_runnable (void*)
     }
 }
 
-Task usart3_task (usart_tester_runnable, "GNSS");
+Task usart3_task (GNSS_runnable, "GNSS", 256, 0, STANDARD_TASK_PRIORITY+1);

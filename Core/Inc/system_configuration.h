@@ -8,8 +8,8 @@
 
 #define RUN_MS5611_MODULE 	1
 #define RUN_SPI_TESTER		0
-#define RUN_CAN_TESTER		0
-#define ACTIVATE_USB		0
+#define RUN_CAN_TESTER		1
+#define ACTIVATE_USB		1
 
 #define USE_DIFF_GNSS		1
 #define UART3_LED_STATUS	0

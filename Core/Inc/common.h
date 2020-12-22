@@ -15,6 +15,7 @@ typedef struct
   float acc[3];
   float mag[3];
   float gyro[3];
+  float pressure_absolute;
   float pressure_pitot;
 }
 observation_t;
