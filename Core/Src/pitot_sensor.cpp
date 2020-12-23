@@ -10,6 +10,13 @@
 #include "common.h"
 
 #define I2C_ADDRESS (0x28<<1) // 7 bits left-adjusted
+/*
+ * Bereich: 80% von 16384 counts auf 1PSI verteilt
+ * ergibt 6895 Pa / 13107 counts = 0.5261 Pa / count
+ */
+
+#define SPAN 0.5261f
+#define OFFSET 1638 // exakt 0.1 * 16384
 
 static void runnable( void *)
 {
@@ -17,14 +24,14 @@ static void runnable( void *)
 
   I2C_Init();
 
-//  drop_privileges(); later...
+  drop_privileges();
 
   for( synchronous_timer t(10); true; t.sync())
     {
       I2C_Read( &hi2c1, I2C_ADDRESS, data, 2);
       ASSERT(( data[0] & 0xC0)==0); 			// no error flags !
       uint16_t raw_data = (data[0] << 8) | data[1];
-      observations.pressure_pitot = raw_data * 0.42082257; // 16384 = 1PSI = 6894.757 Pa
+      observations.pressure_pitot = (float)( raw_data - OFFSET) * SPAN;
     }
 }
 
