@@ -17,6 +17,7 @@ typedef struct
   float gyro[3];
   float pressure_absolute;
   float pressure_pitot;
+  float MEMS_gyro[3];
 }
 observation_t;
 

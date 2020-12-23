@@ -347,13 +347,13 @@ void L3GD20_ReadData( float data[3])
 		switch( axis)
 		{
 		case 0:
-			data[1] = -all_values;
-		break;
-		case 1:
 			data[0] = -all_values;
 		break;
+		case 1:
+			data[1] = -all_values;
+		break;
 		case 2:
-			data[2] = -all_values;
+			data[2] = +all_values;
 		break;
 		}
 	}

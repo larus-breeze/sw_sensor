@@ -18,12 +18,15 @@ extern DMA_HandleTypeDef hdma_spi2_tx;
 COMMON  static TaskHandle_t SPI1_task_Id = NULL;
 COMMON  static TaskHandle_t SPI2_task_Id = NULL;
 
-static inline void SPI_sync(SPI_HandleTypeDef *hspi)
+static inline void register_SPI_usertask(SPI_HandleTypeDef *hspi)
 {
 	if (hspi->Instance == SPI1)
 		SPI1_task_Id = xTaskGetCurrentTaskHandle();
 	else
 		SPI2_task_Id = xTaskGetCurrentTaskHandle();
+}
+static inline void SPI_sync(SPI_HandleTypeDef *hspi)
+{
 	uint32_t pulNotificationValue;
 	BaseType_t result = xTaskNotifyWait( 0xffffffff, 0, &pulNotificationValue, SPI_DEFAULT_TIMEOUT_MS);
 	ASSERT( result == pdTRUE);
@@ -31,6 +34,7 @@ static inline void SPI_sync(SPI_HandleTypeDef *hspi)
 
 void SPI_Transceive(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData, uint16_t Size)
 {
+	register_SPI_usertask( hspi);
 	HAL_StatusTypeDef status = HAL_OK;
 	status = HAL_SPI_TransmitReceive_DMA(hspi, pTxData, pRxData, Size );
 	ASSERT(HAL_OK == status);
@@ -39,6 +43,7 @@ void SPI_Transceive(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData,
 
 void SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint16_t Size, uint32_t)
 {
+	register_SPI_usertask( hspi);
 	HAL_StatusTypeDef status = HAL_OK;
 	status = HAL_SPI_Transmit_DMA(hspi, pTxData, Size);
 	ASSERT(HAL_OK == status);
@@ -48,6 +53,7 @@ void SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint16_t Size, uint
 
 void SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size, uint32_t)
 {
+	register_SPI_usertask( hspi);
 	HAL_StatusTypeDef status = HAL_OK;
 	status = HAL_SPI_Receive_DMA(hspi, pRxData, Size);
 	ASSERT(HAL_OK == status);
