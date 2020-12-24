@@ -14,8 +14,8 @@
 
 #define USE_DIFF_GNSS		1
 #define UART3_LED_STATUS	0
-#define UART4_LED_STATUS	1
-#define uSD_LED_STATUS		0
+#define UART4_LED_STATUS	0
+#define uSD_LED_STATUS		1
 
 #define RUN_DATA_LOGGER		1
 #define RUN_SDIO_TEST		0

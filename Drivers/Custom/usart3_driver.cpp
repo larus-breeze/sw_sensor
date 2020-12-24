@@ -84,7 +84,7 @@ static void GNSS_runnable (void*)
   USART3_task_Id = xTaskGetCurrentTaskHandle();
   MX_USART3_UART_Init ();
   volatile HAL_StatusTypeDef result;
-  synchronous_timer t(100);
+
   while (true)
     {
       result = HAL_UART_Receive_DMA (&huart3, buffer, GPS_DMA_buffer_SIZE);
@@ -99,7 +99,7 @@ static void GNSS_runnable (void*)
 	}
       // wait for half transfer interrupt
       uint32_t pulNotificationValue;
-      BaseType_t notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 20);
+      BaseType_t notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 100);
       if( notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart3);
@@ -110,7 +110,7 @@ static void GNSS_runnable (void*)
 	  continue;
 	}
       // wait for transfer complete interrupt
-      notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 20);
+      notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 10);
       if( notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart3);
@@ -121,7 +121,6 @@ static void GNSS_runnable (void*)
 	  continue;
 	}
       HAL_UART_Abort (&huart3);
-      t.re_synchronize(xTaskGetTickCount() - 16);
 
 //      if ((buffer[0] != 0xb5) || (buffer[1] != 'b'))
       if( GNSS.update(buffer) == GPS_ERROR)
@@ -138,7 +137,7 @@ static void GNSS_runnable (void*)
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_SET);
 #endif
-      t.sync();
+      delay( 50);
     }
 }
 

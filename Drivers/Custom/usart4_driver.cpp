@@ -12,10 +12,6 @@
 COMMON UART_HandleTypeDef huart4;
 COMMON DMA_HandleTypeDef hdma_uart4_rx;
 COMMON  static TaskHandle_t USART4_task_Id = NULL;
-COMMON uint32_t errorcount_1;
-COMMON uint32_t errorcount_2;
-COMMON uint32_t errorcount_3;
-COMMON uint32_t errorcount_4;
 
 /**
  * @brief USART4 Initialization Function
@@ -93,7 +89,6 @@ static void D_GNSS_runnable (void*)
       result = HAL_UART_Receive_DMA (&huart4, buffer, DGNSS_DMA_buffer_SIZE);
       if( result != HAL_OK)
 	{
-	  ++errorcount_1;
 	  HAL_UART_Abort (&huart4);
 #if UART4_LED_STATUS
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
@@ -105,7 +100,6 @@ static void D_GNSS_runnable (void*)
       BaseType_t notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 100);
       if( notify_result != pdTRUE)
 	{
-	  ++errorcount_2;
 	  HAL_UART_Abort (&huart4);
 #if UART4_LED_STATUS
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
@@ -116,7 +110,6 @@ static void D_GNSS_runnable (void*)
       notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 10);
       if( notify_result != pdTRUE)
 	{
-	  ++errorcount_3;
 	  HAL_UART_Abort (&huart4);
 #if UART4_LED_STATUS
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
@@ -129,19 +122,17 @@ static void D_GNSS_runnable (void*)
       if( GNSS.update_delta(buffer) == GPS_ERROR)
 	{
 #if UART4_LED_STATUS
-	  ++errorcount_4;
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
 #endif
-	  HAL_UART_Abort (&huart4);
-	  delay (10);
+	  delay( 150); // uBlox sends every 200ms for 3ms
 	  continue;
 	}
 #if UART4_LED_STATUS
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_SET);
 #endif
-      delay( 150);
+      delay( 150); // uBlox sends every 200ms for 3ms
     }
 }
 
