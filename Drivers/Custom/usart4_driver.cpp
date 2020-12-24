@@ -84,7 +84,7 @@ static void D_GNSS_runnable (void*)
   USART4_task_Id = xTaskGetCurrentTaskHandle();
   MX_USART4_UART_Init ();
   volatile HAL_StatusTypeDef result;
-  synchronous_timer t(100);
+  synchronous_timer t(200);
   while (true)
     {
       result = HAL_UART_Receive_DMA (&huart4, buffer, DGNSS_DMA_buffer_SIZE);
@@ -98,7 +98,7 @@ static void D_GNSS_runnable (void*)
 	  continue;
 	}
       uint32_t pulNotificationValue;
-      BaseType_t notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 20);
+      BaseType_t notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 100);
       if( notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart4);
@@ -108,7 +108,7 @@ static void D_GNSS_runnable (void*)
 #endif
 	  continue;
 	}
-      notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 20);
+      notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 10);
       if( notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart4);
@@ -119,15 +119,16 @@ static void D_GNSS_runnable (void*)
 	  continue;
 	}
       HAL_UART_Abort (&huart4);
-      t.re_synchronize(xTaskGetTickCount() - 16);
-      if ((buffer[0] != 0xb5) || (buffer[1] != 'b'))
+      t.re_synchronize(xTaskGetTickCount() - 10);
+//      if ((buffer[0] != 0xb5) || (buffer[1] != 'b'))
+      if( GNSS.update_delta(buffer) == GPS_ERROR)
 	{
 #if UART4_LED_STATUS
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
 #endif
 	  HAL_UART_Abort (&huart4);
-	  delay (50);
+	  delay (10);
 	  continue;
 	}
 #if UART4_LED_STATUS

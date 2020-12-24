@@ -17,11 +17,11 @@ void getPressure (void*)
   I2C_Init ();
   drop_privileges();
 
-//  MS5611 ms5611_static (0xEE);
-  MS5611 ms5611_pitot (0xEC);
+  MS5611 ms5611_static (0xEE);
+//  MS5611 ms5611_pitot (0xEC);
 
 //  ms5611_static.initialize ();
-  ms5611_pitot.initialize ();
+  ms5611_static.initialize ();
 
 //  volatile float pressure_static = 0.0f;
 //  volatile float temperature_static = 0.0f;
@@ -31,11 +31,11 @@ void getPressure (void*)
 //    ms5611_static.update ();
 //    pressure_static = ms5611_static.get_pressure ();
 //    temperature_static = ms5611_static.get_temperature ();
-      ms5611_pitot.update ();
+      ms5611_static.update ();
       t.sync();
-      ms5611_pitot.update ();
+      ms5611_static.update ();
 
-      observations.pressure_absolute = ms5611_pitot.get_pressure ();
+      observations.pressure_absolute = ms5611_static.get_pressure ();
 
       t.sync();
     }

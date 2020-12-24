@@ -9,6 +9,8 @@
 #include "i2c.h"
 #include "common.h"
 
+#if RUN_PITOT_MODULE
+
 #define I2C_ADDRESS (0x28<<1) // 7 bits left-adjusted
 /*
  * Bereich: 80% von 16384 counts auf 1PSI verteilt
@@ -37,4 +39,5 @@ static void runnable( void *)
 
 RestrictedTask pitot_reading ( runnable, "PITOT", 256, 0, STANDARD_TASK_PRIORITY | portPRIVILEGE_BIT);
 
+#endif
 

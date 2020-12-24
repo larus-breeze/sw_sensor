@@ -30,7 +30,13 @@ void data_logger_runnable(void*)
   FIL fp;
   uint8_t sd_card_detect = 0;
   sd_card_detect = BSP_PlatformIsDetected ();
-  ASSERT(sd_card_detect == 1);
+
+  // wait until sd card is detected
+  while( sd_card_detect != 1)
+    delay(1000);
+
+  delay(500); // wait until card is plugged correctly
+
   GPIO_PinState led_state = GPIO_PIN_RESET;
 
   uint32_t writtenBytes = 0;
@@ -57,8 +63,10 @@ void data_logger_runnable(void*)
 	      buf_ptr = buffer + rest;
 
 	      f_sync( &fp);
+#if uSD_LED_STATUS
 	      HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, led_state);
 	      led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
+#endif
 	    }
 	}
     }
