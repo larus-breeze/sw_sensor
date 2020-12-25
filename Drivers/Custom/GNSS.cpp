@@ -70,12 +70,14 @@ GPS_Result GNSS_type::update(const uint8_t * data)
 
 	coordinates.position[DOWN] = (double)(p->height) * SCALE_MM_NEG;
 	coordinates.geo_sep_dm = (p->height_ellip - p->height) / 100;
-
+#if 0 // use precise sampling rate todo: BUGGY
 	// use new - old timestamp to compute exact sample rate
 	float sample_rate = 1e-9f / (
 	    ((float)(p->nano) - (float)(coordinates.nano)) +
 	    (p->second - coordinates.second) * 1e+9f);
-
+#else
+#define sample_rate 50.0f // 200ms
+#endif
 	// record new time
 	coordinates.year   = p->year % 100;
 	coordinates.month  = p->month;
@@ -88,8 +90,8 @@ GPS_Result GNSS_type::update(const uint8_t * data)
 	float velocity_north = p->velocity[NORTH] * SCALE_MM;
 	float velocity_east  = p->velocity[EAST] * SCALE_MM;
 
-	coordinates.acceleration[NORTH]= (velocity_north - p->velocity[NORTH]) * sample_rate;
-	coordinates.acceleration[EAST] = (velocity_east  - p->velocity[EAST])  * sample_rate;
+	coordinates.acceleration[NORTH]= (velocity_north - coordinates.velocity[NORTH]) * sample_rate;
+	coordinates.acceleration[EAST] = (velocity_east  - coordinates.velocity[EAST])  * sample_rate;
 
 	coordinates.velocity[NORTH] = velocity_north;
 	coordinates.velocity[EAST]  = velocity_east;
@@ -117,8 +119,7 @@ GPS_Result GNSS_type::update_delta(const uint8_t * data)
 	coordinates.relPosNED[DOWN] =0.01f*(p->relPosD) + 0.0001f * p->relPosHP_D;
 
 	coordinates.relPosHeading = p->relPosheading * 1.745329252e-7f; // 1e-5 deg -> rad
-	coordinates.relPosLength  = 0.01f*(p->relPoslength) + 0.0001f * p->relPosHP_len;
-//	coordinates.relPosLength = (float)(p->flags); // patch
+//	coordinates.relPosLength  = 0.01f*(p->relPoslength) + 0.0001f * p->relPosHP_len;
 
 //	return ( p->flags == 0b0100110111) ? GPS_HAVE_FIX : GPS_NO_FIX; // for two F9P receivers
 	return ( p->flags == 0b1100110111) ? GPS_HAVE_FIX : GPS_NO_FIX; // for F9P + F9H receiver

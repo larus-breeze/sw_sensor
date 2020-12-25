@@ -86,7 +86,7 @@ typedef struct
 #if USE_DIFF_GNSS
   float3vector relPosNED;	//
   float relPosHeading;
-  float relPosLength;
+//  float relPosLength; 	// not in use by now
 #endif
   double latitude;		//!< degrees
   double longitude;		//!< degrees
@@ -98,7 +98,7 @@ typedef struct
   uint8_t hour;
   uint8_t minute;
   uint8_t second;
-  uint32_t nano;		// nanoseconds from time stamp
+  int32_t nano;		// nanoseconds from time stamp
   int16_t geo_sep_dm;		// (WGS ellipsoid height - elevation MSL) in 0.1m units
 } coordinates_t;
 

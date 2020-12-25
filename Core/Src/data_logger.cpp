@@ -17,7 +17,7 @@ extern SD_HandleTypeDef hsd;
 extern DMA_HandleTypeDef hdma_sdio_rx;
 extern DMA_HandleTypeDef hdma_sdio_tx;
 
-#define BUFSIZE 512
+#define BUFSIZE 1024
 #define RESERVE 256
 static uint8_t  __ALIGNED(BUFSIZE) buffer[BUFSIZE+RESERVE];
 
