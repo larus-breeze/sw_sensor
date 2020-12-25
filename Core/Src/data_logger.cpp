@@ -18,7 +18,7 @@ extern DMA_HandleTypeDef hdma_sdio_rx;
 extern DMA_HandleTypeDef hdma_sdio_tx;
 
 #define BUFSIZE 512
-#define RESERVE 128
+#define RESERVE 256
 static uint8_t  __ALIGNED(BUFSIZE) buffer[BUFSIZE+RESERVE];
 
 void data_logger_runnable(void*)
@@ -52,8 +52,12 @@ void data_logger_runnable(void*)
 	    {
 	      memcpy( buf_ptr, (uint8_t *)&observations, sizeof(observations) );
 	      buf_ptr += sizeof(observations);
+#if LOG_COORDINATES
+	      memcpy( buf_ptr, (uint8_t *)&(GNSS.coordinates), sizeof(coordinates_t) );
+	      buf_ptr += sizeof(coordinates_t);
+#endif
 	      if( buf_ptr < buffer+BUFSIZE)
-		  continue;
+		  continue; // buffer only filled partially
 
 	      fresult = f_write (&fp, buffer, BUFSIZE, (UINT*) &writtenBytes);
 	      ASSERT((fresult == FR_OK) && (writtenBytes == BUFSIZE));

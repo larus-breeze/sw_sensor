@@ -9,6 +9,8 @@
 #include "cmsis_gcc.h"
 #include "stdint.h"
 
+#if RUN_MTi_1_MODULE
+
 #define IMU_PSEL0  GPIO_PIN_10
 #define IMU_PSEL1  GPIO_PIN_11
 #define IMU_DRDY   GPIO_PIN_12
@@ -199,4 +201,4 @@ static TaskParameters_t p =
 
 RestrictedTask mti_driver( p);
 
-
+#endif

@@ -10,6 +10,8 @@
 #include "stm_l3gd20.h"
 #include "common.h"
 
+#if RUN_CHIPSENS_MODULE
+
 #define SCALING 1.527e-4f
 
 static void runnable (void*)
@@ -47,3 +49,5 @@ static TaskParameters_t p =
 };
 
 RestrictedTask chip_sensor_task( p);
+
+#endif

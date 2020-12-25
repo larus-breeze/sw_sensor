@@ -1,8 +1,6 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include "stdint.h"
-
 extern uint32_t __common_data_start__[];
 extern uint32_t __common_data_end__[];
 #define COMMON_SIZE 8192 // cross-check linker *.ld file !
@@ -22,5 +20,12 @@ typedef struct
 observation_t;
 
 extern observation_t observations;
+
+#ifdef __cplusplus
+
+#include "GNSS.h"
+extern GNSS_type GNSS;
+
+#endif // __cplusplus
 
 #endif

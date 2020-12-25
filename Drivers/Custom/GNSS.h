@@ -22,7 +22,7 @@ typedef struct
   uint8_t second;
   uint8_t valid;	// bits MSB -> LSB mag-decl tim-res time data
   uint32_t tAcc; 	// timing accuracy
-  int32_t nano; 	// time fraction
+  int32_t nano; 	// time fraction, signed
   uint8_t fix_type;
   uint8_t fix_flags;
   uint8_t reserved1;
@@ -80,6 +80,7 @@ typedef struct
 {
   float3vector position;  	//!< NED / meters
   float3vector velocity;  	//!< NED / m/s
+  float3vector acceleration;  	//!< NED / m/s^2 (from velocity delta)
   float  heading_motion;	// degrees
   float  speed_motion;		// m/s
 #if USE_DIFF_GNSS
@@ -97,6 +98,7 @@ typedef struct
   uint8_t hour;
   uint8_t minute;
   uint8_t second;
+  uint32_t nano;		// nanoseconds from time stamp
   int16_t geo_sep_dm;		// (WGS ellipsoid height - elevation MSL) in 0.1m units
 } coordinates_t;
 

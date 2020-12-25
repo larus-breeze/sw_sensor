@@ -38,13 +38,6 @@ GPS_Result GNSS_type::update(const uint8_t * data)
 	coordinates.date = p->day + (p->month) * 100 + (p->year) * 10000;
 #endif
 
-	coordinates.year   = p->year % 100;
-	coordinates.month  = p->month;
-	coordinates.day    = p->day;
-	coordinates.hour   = p->hour;
-	coordinates.minute = p->minute;
-	coordinates.second = p->second;
-
 	/* Pack date and time into a DWORD variable */
 	FAT_time = ((p->year - 1980) << 25) + (p->month << 21) + (p->day << 16)
 			+ (p->hour << 11) + (p->minute << 5) + (p->second >> 1);
@@ -63,8 +56,8 @@ GPS_Result GNSS_type::update(const uint8_t * data)
 				cosf((float) (p->latitude) * ANGLE_SCALE) * DEG_2_METER;
 	}
 
-	volatile unsigned lat_raw=p->latitude;
-	volatile double lat_double=lat_raw;
+	unsigned lat_raw=p->latitude;
+	double lat_double=lat_raw;
 	coordinates.latitude = lat_double;
 	coordinates.latitude *= ANGLE_SCALE;
 //	coordinates.latitude = (double) (p->latitude) * ANGLE_SCALE;
@@ -78,8 +71,28 @@ GPS_Result GNSS_type::update(const uint8_t * data)
 	coordinates.position[DOWN] = (double)(p->height) * SCALE_MM_NEG;
 	coordinates.geo_sep_dm = (p->height_ellip - p->height) / 100;
 
-	coordinates.velocity[NORTH] = p->velocity[NORTH] * SCALE_MM;
-	coordinates.velocity[EAST]  = p->velocity[EAST]  * SCALE_MM;
+	// use new - old timestamp to compute exact sample rate
+	float sample_rate = 1e-9f / (
+	    ((float)(p->nano) - (float)(coordinates.nano)) +
+	    (p->second - coordinates.second) * 1e+9f);
+
+	// record new time
+	coordinates.year   = p->year % 100;
+	coordinates.month  = p->month;
+	coordinates.day    = p->day;
+	coordinates.hour   = p->hour;
+	coordinates.minute = p->minute;
+	coordinates.second = p->second;
+	coordinates.nano   = p->nano;
+
+	float velocity_north = p->velocity[NORTH] * SCALE_MM;
+	float velocity_east  = p->velocity[EAST] * SCALE_MM;
+
+	coordinates.acceleration[NORTH]= (velocity_north - p->velocity[NORTH]) * sample_rate;
+	coordinates.acceleration[EAST] = (velocity_east  - p->velocity[EAST])  * sample_rate;
+
+	coordinates.velocity[NORTH] = velocity_north;
+	coordinates.velocity[EAST]  = velocity_east;
 	coordinates.velocity[DOWN]  = p->velocity[DOWN]  * SCALE_MM_NEG;
 
 	coordinates.speed_motion    = p->gSpeed * SCALE_MM;
