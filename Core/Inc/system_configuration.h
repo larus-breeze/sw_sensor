@@ -18,8 +18,9 @@
 #define UART4_LED_STATUS	0
 #define uSD_LED_STATUS		1
 
-#define RUN_DATA_LOGGER		1
+#define RUN_DATA_LOGGER		0
 #define LOG_COORDINATES		1
+#define RUN_OFFLINE_CALCULATION 1
 
 #define RUN_SPI_TESTER		0
 #define RUN_SDIO_TEST		0
