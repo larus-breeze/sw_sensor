@@ -3,8 +3,6 @@
 #include "math.h"
 #include "common.h"
 
-enum{ NORTH, EAST, DOWN};
-
 COMMON GNSS_type GNSS;
 
 #define SCALE_MM 0.001

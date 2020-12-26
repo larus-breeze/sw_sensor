@@ -11,6 +11,8 @@
 #include "system_configuration.h"
 #include "float3vector.h"
 
+enum { NORTH, EAST, DOWN};
+
 typedef struct
 {
   uint32_t iTOW; // time of week
