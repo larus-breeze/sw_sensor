@@ -7,8 +7,7 @@
 #include "variointegrator.h"
 #include "arm_math.h"
 #include "vsqrtf.h"
-#include "INS.h"
-#include "GNSS.h"
+#include "navigator.h"
 #include "serial_io.h"
 #include "NMEA_format.h"
 #include "atmosphere.h"
@@ -68,31 +67,17 @@ void offline_runnable (void*)
   uint64_t start_time;
 
   size_t bytes_transferred;
-
-  INS_type ins (0.005);
-  atmosphere_t atmosphere (101325.0f);
-  flight_observer_t flight_observer;
-  vario_integrator_t vario_integrator;
-  float3vector GNSS_acceleration =
-    { 0 };
-  float3vector GNSS_velocity_previous =
-    { 0 };
-
-  unsigned integrator_sequencer = 0;
+  navigator_t navigator;
+  flight_observer_t &flight_observer=navigator.get_flight_observer();
+  float3vector GNSS_acceleration = { 0 };
+  float3vector GNSS_velocity_previous = { 0 };
 
   acquire_privileges(); // sd-writing works only in privileged mode
-
-/*
-  BSP_SD_Init ();
-  SD_driver_t drv;
-  if (!drv.healthy ())
-    asm("bkpt 0");
-*/
 
   if (f_open (&InFile, "116_sim.FLG", FA_READ) != FR_OK)
     asm("bkpt 0");
 
-  out_file output_file ( (char *)"116.FSM", true);
+  out_file output_file ( (char *)"116_gac.FSM", true);
   if (!output_file.healthy ())
     asm("bkpt 0");
 
@@ -107,12 +92,17 @@ void offline_runnable (void*)
       init.r = 0.0f;
       init.n = 0.0f;
       init.y = x.c.relPosHeading;
-      ins.set_from_euler (init.r, init.n, init.y);
+      navigator.set_from_euler (init.r, init.n, init.y);
     }
   else
     asm("bkpt 0");
 
 //  synchronous_timer t(5);
+
+  bool toggler_200_to_100Hz = false;
+  float3vector old_acc=0;
+  float3vector old_mag=0;
+  float3vector old_gyro=0;
 
   while ((FR_OK
       == f_read (&InFile, (void*) &x, sizeof(input_data_t), &bytes_transferred))
@@ -129,56 +119,39 @@ void offline_runnable (void*)
 	  GNSS_acceleration = speed_now - GNSS_velocity_previous;
 	  GNSS_velocity_previous = speed_now;
 	  GNSS_acceleration *= 10.0f;
+	  navigator.update_GNSS (x.c, GNSS_acceleration);
 	}
 
-      x.nav_correction = ins.update_diff_GNSS (x.m.gyro, x.m.acc, x.c.velocity,
-					       GNSS_acceleration,
-					       x.c.relPosHeading,
-					       x.c.speed_motion);
-
-      x.gyro_correction = ins.gyro_correction;
-
-      // pressure stuff update ****************************************************************
-
-      atmosphere.set_pressure (x.m.static_pressure); // absolute static pressure
-
-      float TAS = atmosphere.get_velocity_from_dynamic_pressure (
-	  x.m.pitot_pressure);
-
-      float3vector true_airspeed;
-      true_airspeed[NORTH] = ins.get_north () * TAS;
-      true_airspeed[EAST] = ins.get_east () * TAS;
-      true_airspeed[DOWN] = ins.get_down () * TAS; // todo: do we need this one ?
-
-      // run flight observer ****************************************************************
-
-      flight_observer.update (x.c.velocity, GNSS_acceleration, ins.get_acc (),
-			      true_airspeed, x.c.position[DOWN], TAS);
-
-      ++integrator_sequencer;
-      if (integrator_sequencer >= 20) // save power by calling integrator @ 10Hz
+//      x.gyro_correction = navigator.get_gyro_correction();
+      if( toggler_200_to_100Hz)
 	{
-	  vario_integrator.update (flight_observer.get_vario_TAS (),
-				   ins.get_euler ().y,
-				   ins.get_circling_state ());
-	  integrator_sequencer = 0;
-	  x.integrator_vario = vario_integrator.get_value ();
+	  navigator.update_pabs(x.m.static_pressure);
+	  navigator.update_pitot(x.m.pitot_pressure);
+	  navigator.update_IMU(
+	      (x.m.acc+old_acc) * 0.5f,
+	      (x.m.mag+old_mag) * 0.5f,
+	      (x.m.gyro+old_gyro) * 0.5f
+	      );
 	}
+      else
+	{
+	  old_acc=x.m.acc;
+	  old_mag=x.m.mag;
+	  old_gyro=x.m.gyro;
+	}
+      toggler_200_to_100Hz = ! toggler_200_to_100Hz;
 
-      x.vario_uncompensated = flight_observer.get_vario_uncompensated ();
-      x.speed_compensation_TAS = flight_observer.get_speed_compensation_TAS ();
-      x.speed_compensation_INS = flight_observer.get_speed_compensation_INS ();
-      x.vario =
-	  (ins.get_circling_state () == CIRCLING) ?
-	      flight_observer.get_vario_TAS () :
-	      flight_observer.get_vario_INS ();
-      x.wind = flight_observer.get_wind ();
-      x.euler = ins.get_euler ();
+      x.vario_uncompensated 	= flight_observer.get_vario_uncompensated ();
+      x.speed_compensation_TAS 	= flight_observer.get_speed_compensation_TAS ();
+      x.speed_compensation_INS 	= flight_observer.get_speed_compensation_INS ();
+      x.vario 	 		= flight_observer.get_vario_INS ();
+      x.wind  			= flight_observer.get_wind ();
+      x.euler 			= navigator.get_euler ();
 
-      x.nav_acceleration_gnss = GNSS_acceleration;
-      x.nav_acceleration_ins = ins.get_acc ();
+      x.nav_acceleration_gnss 	= GNSS_acceleration;
+      x.nav_acceleration_ins 	= navigator.get_ins_acc ();
 
-      x.q = ins.attitude;
+      x.q 			= navigator.get_attitude();
 
       acquire_privileges();
 //      duration = getTime_usec_privileged() - start_time;

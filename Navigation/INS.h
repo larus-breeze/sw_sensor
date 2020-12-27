@@ -35,11 +35,9 @@ public:
 		  }
 	void attitude_setup( const float3vector & acceleration, const float3vector & induction);
 	void update_compass( float3vector &gyro, float3vector &acc, float3vector &mag); //!< rotate quaternion taking angular rate readings
-	float3vector update_diff_GNSS( float3vector &gyro, float3vector &acc,
-			       float3vector &GNSS_velocity, float3vector &GNSS_acceleration,
-				   float GNSS_heading, float GNSS_speed); //!< rotate quaternion taking angular rate readings
-
-	float3vector gyro_correction;
+	void update_diff_GNSS( const float3vector &gyro, const float3vector &acc,
+			       const float3vector &GNSS_acceleration,
+			       float GNSS_heading); //!< rotate quaternion taking angular rate readings
 
 	inline void set_from_euler( float r, float n, float y)
 	{
@@ -88,6 +86,10 @@ public:
 	  retv[2] = get_down();
 	  return retv;
 	}
+	inline const float3vector &get_gyro_correction(void) const
+	{
+		return gyro_correction;
+	}
 #if 0
 	inline const float3vector &get_induction( void) const
 	{
@@ -102,6 +104,14 @@ public:
 	{
 	  return body2nav;
 	}
+	inline const float3vector &get_nav_correction(void)
+	{
+	  return nav_correction;
+	}
+	inline const float3vector &get_gyro_correction(void)
+	{
+	  return gyro_correction;
+	}
 	circle_state_t get_circling_state(void) const
 	{
 	  return circle_state;
@@ -112,6 +122,8 @@ private:
 	circle_state_t circle_state;
 	circle_state_t update_circling_state( const float3vector &gyro);
 	void update( const float3vector &acc, const float3vector &gyro);
+	float3vector nav_correction;
+	float3vector gyro_correction;
 	float3vector gyro_integrator;
 	float3vector acceleration_nav_frame;
 	float3matrix body2nav;

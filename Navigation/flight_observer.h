@@ -9,8 +9,8 @@
 #define SIN(x) sinf(x)
 #include "pt2.h"
 
-#define WINDSPEED_F_BY_FS ( 1.0f / 2.0f / 30.0f / 200.0f) // 30s
-#define VARIO_F_BY_FS ( 1.0f / 2.0f / 1.0f / 200.0f) // 1s
+#define WINDSPEED_F_BY_FS ( 1.0f / 2.0f / 30.0f / 100.0f) // 30s
+#define VARIO_F_BY_FS ( 1.0f / 2.0f / 1.0f / 100.0f) // 1s
 
 class flight_observer_t
 {
@@ -21,12 +21,12 @@ public:
   vario_averager_INS( VARIO_F_BY_FS),
   windspeed_averager_NORTH( WINDSPEED_F_BY_FS),
   windspeed_averager_EAST( WINDSPEED_F_BY_FS),
-  kinetic_energy_differentiator( 1.0f, 1.0f/200.0f)
+  kinetic_energy_differentiator( 1.0f, 1.0f / 100.0f)
   {
   };
 	void update
 	(
-	    float3vector       &gnss_velocity,
+	    const float3vector &gnss_velocity,
 	    const float3vector &gnss_acceleration,
 	    const float3vector &ahrs_acceleration,
 	    const float3vector &air_velocity,
