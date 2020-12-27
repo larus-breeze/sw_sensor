@@ -78,17 +78,23 @@ typedef struct
 typedef enum { FIX_none, FIX_dead, FIX_2d, FIX_3d} FIX_TYPE;
 typedef enum { GPS_HAVE_FIX, GPS_NO_FIX, GPS_ERROR} GPS_Result;
 
+#define OLD_FORMAT 1
+
 typedef struct
 {
   float3vector position;  	//!< NED / meters
   float3vector velocity;  	//!< NED / m/s
+#if OLD_FORMAT == 0
   float3vector acceleration;  	//!< NED / m/s^2 (from velocity delta)
+#endif
   float  heading_motion;	// degrees
   float  speed_motion;		// m/s
 #if USE_DIFF_GNSS
   float3vector relPosNED;	//
   float relPosHeading;
-//  float relPosLength; 	// not in use by now
+#if OLD_FORMAT == 1
+  float relPosLength; 	// not in use by now
+#endif
 #endif
   double latitude;		//!< degrees
   double longitude;		//!< degrees
@@ -100,7 +106,7 @@ typedef struct
   uint8_t hour;
   uint8_t minute;
   uint8_t second;
-  int32_t nano;		// nanoseconds from time stamp
+//  int32_t nano;		// nanoseconds from time stamp
   int16_t geo_sep_dm;		// (WGS ellipsoid height - elevation MSL) in 0.1m units
 } coordinates_t;
 

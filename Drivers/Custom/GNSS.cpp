@@ -83,14 +83,14 @@ GPS_Result GNSS_type::update(const uint8_t * data)
 	coordinates.hour   = p->hour;
 	coordinates.minute = p->minute;
 	coordinates.second = p->second;
-	coordinates.nano   = p->nano;
+//	coordinates.nano   = p->nano;
 
 	float velocity_north = p->velocity[NORTH] * SCALE_MM;
 	float velocity_east  = p->velocity[EAST] * SCALE_MM;
-
+#if OLD_FORMAT == 0
 	coordinates.acceleration[NORTH]= (velocity_north - coordinates.velocity[NORTH]) * sample_rate;
 	coordinates.acceleration[EAST] = (velocity_east  - coordinates.velocity[EAST])  * sample_rate;
-
+#endif
 	coordinates.velocity[NORTH] = velocity_north;
 	coordinates.velocity[EAST]  = velocity_east;
 	coordinates.velocity[DOWN]  = p->velocity[DOWN]  * SCALE_MM_NEG;
