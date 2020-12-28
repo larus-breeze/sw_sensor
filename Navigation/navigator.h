@@ -32,6 +32,10 @@ public:
   {
     return ins.attitude;
   }
+  float get_vario_integrator( void ) const
+  {
+	  return vario_integrator.get_value();
+  }
   /**
    * @brief update absolute pressure
    * called @ 100 Hz
@@ -64,8 +68,9 @@ public:
     return flight_observer;
     }
 
-private:
   INS_type 		ins;
+
+private:
   atmosphere_t 		atmosphere;
   float 		pitot_pressure;
   float 		TAS;

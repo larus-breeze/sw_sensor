@@ -22,8 +22,8 @@ private:
     N = 4,  //!< size of state vector x = { altitude, vario, vertical_acceleration }
     L = 2  //!< number of measurement channels = { altitude, vertical_acceleration_measurement }
   };
-  static constexpr float Ta = 0.005; 			//!< sampling rate
-  static constexpr float Ta_s_2 = Ta * Ta / 2.0; 	//!< sampling rate
+  static constexpr float Ta = 0.01f; 			//!< sampling rate
+  static constexpr float Ta_s_2 = Ta * Ta / 2.0f; 	//!< sampling rate
   static ROM float Gain[N][L];				//!< Pre-computed Kalman Gain
 
   // variables

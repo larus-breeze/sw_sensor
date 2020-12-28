@@ -1,17 +1,17 @@
 /** ***********************************************************************
- * @file		KalmanVario_t.cpp
+ * @file		KalmanVario.cpp
  * @brief		Kalman Filter for vertical navigation (i.e. altitude)
  * @author		Dr. Klaus Schaefer
  **************************************************************************/
 
 #include <KalmanVario.h>
 
-ROM float KalmanVario_t::Gain[N][L]= //!< Kalman Gain
+ROM float KalmanVario_t::Gain[N][L]= //!< Kalman Gain for 100Hz sampling rate
     {
-	   0.012844708434742,   0.000274837058856,
-	   0.016619649826607,   0.004663237320765,
-	   0.010104117478788,   0.067518328294903,
-	  -0.009829280419933,   0.001390893066503
+	   0.022706480781195,   0.000238300640696,
+	   0.026080120255934,   0.008557096024865,
+	   0.012200483136450,   0.282217429952530,
+	  -0.011857330213848,   0.000264240373951
     };
 
 KalmanVario_t::KalmanVario_t ( float _x, float v, float a)

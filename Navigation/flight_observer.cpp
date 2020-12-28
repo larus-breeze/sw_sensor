@@ -26,7 +26,7 @@ void flight_observer_t::update (
 
 //  speed_compensation_TAS = kinetic_energy_differentiator.respond( TAS * TAS * ONE_DIV_BY_GRAVITY_TIMES_2);
 
-  speed_compensation_TAS = // patch
+  speed_compensation_TAS = // patch misused to transport AHRS-based compensation
 		  (
 		      (gnss_velocity.e[NORTH] - windspeed.e[NORTH]) * ahrs_acceleration.e[NORTH] +
 		      (gnss_velocity.e[EAST]  - windspeed.e[EAST])  * ahrs_acceleration.e[EAST] +

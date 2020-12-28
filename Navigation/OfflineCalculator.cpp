@@ -113,16 +113,18 @@ void offline_runnable (void*)
       drop_privileges();
 
       float3vector speed_now = x.c.velocity;
-      if ((speed_now.e[NORTH] != GNSS_velocity_previous.e[NORTH])
-	  || (speed_now.e[EAST] != GNSS_velocity_previous.e[EAST]))
+      if (   (speed_now.e[NORTH] != GNSS_velocity_previous.e[NORTH])
+	  || (speed_now.e[EAST]  != GNSS_velocity_previous.e[EAST])
+	 )
 	{
 	  GNSS_acceleration = speed_now - GNSS_velocity_previous;
 	  GNSS_velocity_previous = speed_now;
 	  GNSS_acceleration *= 10.0f;
-	  navigator.update_GNSS (x.c, GNSS_acceleration);
+	  navigator.update_GNSS (x.c, GNSS_acceleration); // patch extra GNSS_acceleration
+	  x.gyro_correction = navigator.ins.get_gyro_correction();
 	}
 
-//      x.gyro_correction = navigator.get_gyro_correction();
+
       if( toggler_200_to_100Hz)
 	{
 	  navigator.update_pabs(x.m.static_pressure);
@@ -145,6 +147,7 @@ void offline_runnable (void*)
       x.speed_compensation_TAS 	= flight_observer.get_speed_compensation_TAS ();
       x.speed_compensation_INS 	= flight_observer.get_speed_compensation_INS ();
       x.vario 	 		= flight_observer.get_vario_INS ();
+      x.integrator_vario	= navigator.get_vario_integrator ();
       x.wind  			= flight_observer.get_wind ();
       x.euler 			= navigator.get_euler ();
 
