@@ -26,7 +26,7 @@ static void runnable (void*)
     {
       L3GD20_ReadData (gyro_xyz);
       for (int i = 0; i < 3; i++)
-	  observations.MEMS_gyro[i] = gyro_xyz[i] * SCALING;
+	 output_data.m.MEMS_gyro[i] = gyro_xyz[i] * SCALING;
     }
 }
 
@@ -39,7 +39,7 @@ static TaskParameters_t p =
     "CHIPSNS",
     STACKSIZE,
     0,
-    STANDARD_TASK_PRIORITY,
+    L3GD20_PRIORITY,
     stack_buffer,
 	{
 		{ COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },

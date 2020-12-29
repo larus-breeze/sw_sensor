@@ -17,9 +17,10 @@ extern SD_HandleTypeDef hsd;
 extern DMA_HandleTypeDef hdma_sdio_rx;
 extern DMA_HandleTypeDef hdma_sdio_tx;
 
-#define BUFSIZE 1024
+#define BUFSIZE 2048 // bytes
 #define RESERVE 256
 static uint8_t  __ALIGNED(BUFSIZE) buffer[BUFSIZE+RESERVE];
+
 
 void data_logger_runnable(void*)
 {
@@ -45,16 +46,22 @@ void data_logger_runnable(void*)
   fresult = f_mount (&fatfs, "", 0);
   if (FR_OK == fresult)
     {
-      fresult = f_open (&fp, "DATA.BIN", FA_CREATE_ALWAYS | FA_WRITE);
+      fresult = f_open (&fp, OUTFILE, FA_CREATE_ALWAYS | FA_WRITE);
       if (FR_OK == fresult)
 	{
 	  for ( synchronous_timer t(10); true; t.sync())
 	    {
-	      memcpy( buf_ptr, (uint8_t *)&observations, sizeof(observations) );
-	      buf_ptr += sizeof(observations);
+#if LOG_OBSERVATIONS
+	      memcpy( buf_ptr, (uint8_t *)&measurement_data, sizeof(measurement_data) );
+	      buf_ptr += sizeof(measurement_data);
+#endif
 #if LOG_COORDINATES
 	      memcpy( buf_ptr, (uint8_t *)&(GNSS.coordinates), sizeof(coordinates_t) );
 	      buf_ptr += sizeof(coordinates_t);
+#endif
+#if LOG_OUTPUT_DATA
+	      memcpy( buf_ptr, (uint8_t *)&( output_data ), sizeof(output_data) );
+	      buf_ptr += sizeof(output_data);
 #endif
 	      if( buf_ptr < buffer+BUFSIZE)
 		  continue; // buffer only filled partially
@@ -87,7 +94,7 @@ static TaskParameters_t p =
     "LOGGER",
     STACKSIZE,
     0,
-    STANDARD_TASK_PRIORITY + portPRIVILEGE_BIT,
+    LOGGER_PRIORITY + portPRIVILEGE_BIT,
     stack_buffer,
     {
       { COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },

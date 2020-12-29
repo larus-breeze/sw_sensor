@@ -33,11 +33,11 @@ static void runnable( void *)
       I2C_Read( &hi2c1, I2C_ADDRESS, data, 2);
       ASSERT(( data[0] & 0xC0)==0); 			// no error flags !
       uint16_t raw_data = (data[0] << 8) | data[1];
-      observations.pressure_pitot = (float)( raw_data - OFFSET) * SPAN;
+      output_data.m.pitot_pressure = (float)( raw_data - OFFSET) * SPAN;
     }
 }
 
-RestrictedTask pitot_reading ( runnable, "PITOT", 256, 0, STANDARD_TASK_PRIORITY | portPRIVILEGE_BIT);
+RestrictedTask pitot_reading ( runnable, "PITOT", 256, 0, PITOT_PRIORITY | portPRIVILEGE_BIT);
 
 #endif
 

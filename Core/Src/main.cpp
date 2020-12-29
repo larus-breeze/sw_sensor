@@ -30,8 +30,6 @@
 #include "my_assert.h"
 #include "common.h"
 
-COMMON observation_t observations;
-
 ADC_HandleTypeDef hadc1;
 
 CAN_HandleTypeDef hcan1;
@@ -66,8 +64,6 @@ static void MX_SPI2_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART6_UART_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_USART3_UART_Init(void);
-void StartDefaultTask(void * argument);
 
 /**
   * @brief  The application entry point.
