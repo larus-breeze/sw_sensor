@@ -3,20 +3,21 @@
 #include "math.h"
 #include "common.h"
 
-COMMON GNSS_type GNSS;
+COMMON bool GNSS_actualized;
+COMMON bool D_GNSS_actualized;
 
 #define SCALE_MM 0.001
 #define SCALE_MM_NEG -0.001
 #define DEG_2_METER 111111.111e-7 // (10000 / 90) m / degree on great circle
 #define ANGLE_SCALE 1e-7d
 
-GNSS_type::GNSS_type() :
+GNSS_type::GNSS_type( coordinates_t & coo) :
 		fix_type(FIX_none),
 		latitude_reference(0),
 		longitude_reference(0),
 		latitude_scale(	0.0f),
 		FAT_time(0),
-		coordinates( {0}),
+		coordinates( coo),
 		num_SV(0)
 	{}
 
@@ -42,7 +43,12 @@ GPS_Result GNSS_type::update(const uint8_t * data)
 
 	fix_type = (FIX_TYPE) (p->fix_type);
 	if ((p->fix_flags & 1) == 0)
-		return GPS_NO_FIX;
+	  {
+#if RUN_GNSS_UPDATE_WITHOUT_FIX
+	    GNSS_actualized = true;
+#endif
+	  return GPS_NO_FIX;
+	  }
 
 	num_SV=p->num_SV;
 
@@ -98,6 +104,8 @@ GPS_Result GNSS_type::update(const uint8_t * data)
 	coordinates.speed_motion    = p->gSpeed * SCALE_MM;
 	coordinates.heading_motion  = p->gTrack * 1e-5f;
 
+	GNSS_actualized = true;
+
 	return GPS_HAVE_FIX;
 }
 
@@ -120,5 +128,15 @@ GPS_Result GNSS_type::update_delta(const uint8_t * data)
 //	coordinates.relPosLength  = 0.01f*(p->relPoslength) + 0.0001f * p->relPosHP_len;
 
 //	return ( p->flags == 0b0100110111) ? GPS_HAVE_FIX : GPS_NO_FIX; // for two F9P receivers
-	return ( p->flags == 0b1100110111) ? GPS_HAVE_FIX : GPS_NO_FIX; // for F9P + F9H receiver
+
+	GPS_Result res = ( p->flags == 0b1100110111) ? GPS_HAVE_FIX : GPS_NO_FIX; // for F9P + F9H receiver
+
+#if RUN_GNSS_UPDATE_WITHOUT_FIX
+	  D_GNSS_actualized = true;
+#else
+	if( res == GPS_HAVE_FIX) // patch
+	  D_GNSS_actualized = true;
+#endif
+
+	return res;
 }

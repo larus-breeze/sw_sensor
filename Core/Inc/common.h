@@ -19,12 +19,12 @@ typedef struct
 }
 observation_t;
 
-extern observation_t observations;
-
 #ifdef __cplusplus
 
 #include "GNSS.h"
 extern GNSS_type GNSS;
+#include "data_structures.h"
+extern output_data_t output_data;
 
 #endif // __cplusplus
 

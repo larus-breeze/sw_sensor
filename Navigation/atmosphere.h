@@ -10,6 +10,8 @@
 
 #include "vsqrtf.h"
 
+#define RECIP_STD_DENSITY_TIMES_2 1.632f
+
 class atmosphere_t
 {
 public:
@@ -33,9 +35,13 @@ public:
     float tmp = 8.104381531e-4f * pressure;
     return - tmp * tmp  + 0.20867299170f * pressure - 14421.43945f;
   }
-  float get_velocity_from_dynamic_pressure( float dynamic_pressure) const
+  float get_TAS_from_dynamic_pressure( float dynamic_pressure) const
   {
     return dynamic_pressure < 0.0f ? 0.0f : VSQRTF( 2 * dynamic_pressure / get_density());
+  }
+  float get_IAS_from_dynamic_pressure( float dynamic_pressure) const
+  {
+    return dynamic_pressure < 0.0f ? 0.0f : VSQRTF( dynamic_pressure * RECIP_STD_DENSITY_TIMES_2);
   }
 private:
   float pressure;

@@ -52,7 +52,7 @@ public:
 	}
 	float get_vario_INS( void ) const
 	{
-		return (float)( vario_averager_INS.get_output());
+		return vario_averager_INS.get_output();
 	}
 	float3vector get_wind( void ) const
 	{
@@ -71,6 +71,7 @@ private:
 	float speed_compensation_TAS;
 	float speed_compensation_INS;
 	float vario_uncompensated;
+	float effective_vertical_acceleration;
 	KalmanVario_t KalmanVario;
 };
 

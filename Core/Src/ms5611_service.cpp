@@ -35,12 +35,12 @@ void getPressure (void*)
       t.sync();
       ms5611_static.update ();
 
-      observations.pressure_absolute = ms5611_static.get_pressure ();
+      output_data.m.static_pressure = ms5611_static.get_pressure ();
 
       t.sync();
     }
 }
 
-RestrictedTask ms5611_reading (getPressure, "P_ABS", 256, 0, STANDARD_TASK_PRIORITY | portPRIVILEGE_BIT);
+RestrictedTask ms5611_reading (getPressure, "P_ABS", 256, 0, MS5611_PRIORITY + portPRIVILEGE_BIT);
 
 #endif

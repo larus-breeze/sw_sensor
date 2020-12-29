@@ -36,6 +36,14 @@ public:
   {
 	  return vario_integrator.get_value();
   }
+  float get_TAS( void)
+  {
+      return TAS;
+  }
+  float get_IAS( void)
+  {
+      return IAS;
+  }
   /**
    * @brief update absolute pressure
    * called @ 100 Hz
@@ -51,7 +59,8 @@ public:
   void update_pitot( float pressure)
   {
     pitot_pressure=pressure;
-    TAS = atmosphere.get_velocity_from_dynamic_pressure ( pitot_pressure);
+    TAS = atmosphere.get_TAS_from_dynamic_pressure ( pitot_pressure);
+    IAS = atmosphere.get_IAS_from_dynamic_pressure ( pitot_pressure);
   }
   /**
    * @brief update AHRS from IMU
@@ -62,7 +71,7 @@ public:
    * @brief update navigation GNSS
    * called @ 10 Hz
    */
-  void update_GNSS( const coordinates_t &coordinates, const float3vector & _GNSS_acceleration);
+  void update_GNSS( const coordinates_t &coordinates /* , const float3vector & _GNSS_acceleration*/);
   flight_observer_t &get_flight_observer( void)
     {
     return flight_observer;
@@ -74,6 +83,7 @@ private:
   atmosphere_t 		atmosphere;
   float 		pitot_pressure;
   float 		TAS;
+  float 		IAS;
   float3vector 		GNSS_velocity;
   float			GNSS_speed;
   float3vector 		GNSS_acceleration;

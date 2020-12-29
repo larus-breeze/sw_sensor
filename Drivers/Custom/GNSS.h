@@ -13,6 +13,9 @@
 
 enum { NORTH, EAST, DOWN};
 
+extern bool GNSS_actualized;
+extern bool D_GNSS_actualized;
+
 typedef struct
 {
   uint32_t iTOW; // time of week
@@ -78,7 +81,7 @@ typedef struct
 typedef enum { FIX_none, FIX_dead, FIX_2d, FIX_3d} FIX_TYPE;
 typedef enum { GPS_HAVE_FIX, GPS_NO_FIX, GPS_ERROR} GPS_Result;
 
-#define OLD_FORMAT 1
+#define OLD_FORMAT 0
 
 typedef struct
 {
@@ -114,7 +117,7 @@ typedef struct
 class GNSS_type
 {
 public:
-  GNSS_type ();
+  GNSS_type (coordinates_t & coo);
   GPS_Result update( const uint8_t * data);
   GPS_Result update_delta( const uint8_t * data);
   void reset_reference( void)
@@ -125,7 +128,9 @@ public:
   int64_t FAT_time;
   FIX_TYPE fix_type;
   uint8_t num_SV;
-  coordinates_t coordinates;
+
+  coordinates_t &coordinates;
+
 private:
   inline bool checkSumCheck ( const uint8_t *buffer, uint8_t length)
   {

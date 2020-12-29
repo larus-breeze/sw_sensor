@@ -19,6 +19,8 @@
 
 COMMON Semaphore MTi_ready;
 
+void sync_communicator(void);
+
 extern RestrictedTask mti_driver;
 
 static inline void init_ports_and_reset_mti(void) // GPIO stuff
@@ -80,25 +82,25 @@ void readDataFrom_MTI( MtsspInterface* device, uint8_t * buf)
 		{
 			float_word x;
 			x.u = __REV( *(uint32_t*)(buf+0x07+0));
-			observations.acc[0]=x.f;
+			output_data.m.acc[0]=x.f;
 			x.u = __REV( *(uint32_t*)(buf+0x07+4));
-			observations.acc[1]=x.f;
+			output_data.m.acc[1]=x.f;
 			x.u = __REV( *(uint32_t*)(buf+0x07+8));
-			observations.acc[2]=x.f;
+			output_data.m.acc[2]=x.f;
 
 			x.u = __REV( *(uint32_t*)(buf+0x16+0));
-			observations.gyro[0]=x.f;
+			output_data.m.gyro[0]=x.f;
 			x.u = __REV( *(uint32_t*)(buf+0x16+4));
-			observations.gyro[1]=x.f;
+			output_data.m.gyro[1]=x.f;
 			x.u = __REV( *(uint32_t*)(buf+0x16+8));
-			observations.gyro[2]=x.f;
+			output_data.m.gyro[2]=x.f;
 
 			x.u = __REV( *(uint32_t*)(buf+0x25+0));
-			observations.mag[0]=x.f;
+			output_data.m.mag[0]=x.f;
 			x.u = __REV( *(uint32_t*)(buf+0x25+4));
-			observations.mag[1]=x.f;
+			output_data.m.mag[1]=x.f;
 			x.u = __REV( *(uint32_t*)(buf+0x25+8));
-			observations.mag[2]=x.f;
+			output_data.m.mag[2]=x.f;
 		}
 	}
 }
@@ -177,6 +179,8 @@ static void run( void *)
 	{
 		wait_until_MTi_reports_data_ready();
 		readDataFrom_MTI( &IMU_interface, buf);
+
+		sync_communicator(); // trigger computations
 	}
 }
 
@@ -190,7 +194,7 @@ static TaskParameters_t p =
 		"IMU",
 		STACKSIZE,
 		0,
-		STANDARD_TASK_PRIORITY+2,
+		MTI_PRIORITY+2,
 		stack_buffer,
 	{
 		{ COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },

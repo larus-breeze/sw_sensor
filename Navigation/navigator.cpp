@@ -25,10 +25,10 @@ void navigator_t::update_IMU (
 }
 
 // to be called at 10 Hz
-void navigator_t::update_GNSS (const coordinates_t &coordinates, const float3vector & _GNSS_acceleration)
+void navigator_t::update_GNSS (const coordinates_t &coordinates)
 {
   GNSS_velocity 	= coordinates.velocity;
-  GNSS_acceleration 	= _GNSS_acceleration; //coordinates.acceleration; todo fixme patch
+  GNSS_acceleration 	= coordinates.acceleration;
   GNSS_heading 		= coordinates.relPosHeading;
   GNSS_altitude 	= coordinates.position.e[DOWN]; // negative altitude
   GNSS_speed 		= coordinates.speed_motion;
