@@ -28,7 +28,7 @@ void navigator_t::update_IMU (
 void navigator_t::update_GNSS (const coordinates_t &coordinates)
 {
   GNSS_velocity 	= coordinates.velocity;
-  GNSS_acceleration 	= coordinates.acceleration;
+  GNSS_acceleration	= coordinates.acceleration;
   GNSS_heading 		= coordinates.relPosHeading;
   GNSS_altitude 	= coordinates.position.e[DOWN]; // negative altitude
   GNSS_speed 		= coordinates.speed_motion;

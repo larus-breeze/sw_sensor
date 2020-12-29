@@ -84,23 +84,23 @@ void readDataFrom_MTI( MtsspInterface* device, uint8_t * buf)
 			x.u = __REV( *(uint32_t*)(buf+0x07+0));
 			output_data.m.acc[0]=x.f;
 			x.u = __REV( *(uint32_t*)(buf+0x07+4));
-			output_data.m.acc[1]=x.f;
-			x.u = __REV( *(uint32_t*)(buf+0x07+8));
-			output_data.m.acc[2]=x.f;
+			output_data.m.acc[1]=x.f * -1.0f;		// negate y,z axes to get
+			x.u = __REV( *(uint32_t*)(buf+0x07+8)); // front right down coordinates
+			output_data.m.acc[2]=x.f * -1.0f;
 
 			x.u = __REV( *(uint32_t*)(buf+0x16+0));
 			output_data.m.gyro[0]=x.f;
 			x.u = __REV( *(uint32_t*)(buf+0x16+4));
-			output_data.m.gyro[1]=x.f;
+			output_data.m.gyro[1]=x.f * -1.0f;
 			x.u = __REV( *(uint32_t*)(buf+0x16+8));
-			output_data.m.gyro[2]=x.f;
+			output_data.m.gyro[2]=x.f * -1.0f;
 
 			x.u = __REV( *(uint32_t*)(buf+0x25+0));
 			output_data.m.mag[0]=x.f;
 			x.u = __REV( *(uint32_t*)(buf+0x25+4));
-			output_data.m.mag[1]=x.f;
+			output_data.m.mag[1]=x.f * -1.0f;
 			x.u = __REV( *(uint32_t*)(buf+0x25+8));
-			output_data.m.mag[2]=x.f;
+			output_data.m.mag[2]=x.f * -1.0f;
 		}
 	}
 }

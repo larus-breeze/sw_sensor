@@ -18,7 +18,7 @@ extern DMA_HandleTypeDef hdma_sdio_rx;
 extern DMA_HandleTypeDef hdma_sdio_tx;
 
 #define BUFSIZE 2048 // bytes
-#define RESERVE 256
+#define RESERVE 512
 static uint8_t  __ALIGNED(BUFSIZE) buffer[BUFSIZE+RESERVE];
 
 

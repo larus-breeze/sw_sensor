@@ -24,8 +24,6 @@ void flight_observer_t::update (
   // non TEC compensated vario, negative if *climbing* !
   vario_uncompensated = KalmanVario.update ( altitude, ahrs_acceleration.e[DOWN]);
 
-  effective_vertical_acceleration = KalmanVario_t::ACCELERATION_OBSERVED;
-
   //  speed_compensation_TAS = kinetic_energy_differentiator.respond( TAS * TAS * ONE_DIV_BY_GRAVITY_TIMES_2);
 
   speed_compensation_TAS = // patch misused to transport AHRS-based compensation

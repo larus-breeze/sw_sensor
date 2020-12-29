@@ -16,6 +16,7 @@ COMMON GNSS_type GNSS( output_data.c);
 void communicator_runnable( void *)
 {
   navigator_t navigator;
+  flight_observer_t & f_obs = navigator.get_flight_observer();
 
 #if RUN_CAN_OUTPUT == 1
   uint8_t count_10Hz=1; // de-synchronize CAN output by 1 cycle
@@ -36,6 +37,22 @@ void communicator_runnable( void *)
 	  navigator.update_GNSS(  GNSS.coordinates);
 	}
       navigator.update_IMU( output_data.m.acc, output_data.m.mag, output_data.m.gyro);
+
+      output_data.euler				= navigator.ins.get_euler();
+      output_data.q					= navigator.ins.attitude;
+
+      output_data.vario				= f_obs.get_vario_INS();
+      output_data.integrator_vario	= navigator.get_vario_integrator();
+      output_data.vario_uncompensated = f_obs.get_vario_uncompensated();
+
+      output_data.wind				= f_obs.get_wind();
+
+      output_data.speed_compensation_TAS = f_obs.get_speed_compensation_TAS();
+      output_data.speed_compensation_INS = f_obs.get_speed_compensation_INS();
+      output_data.effective_vertical_acceleration = f_obs.get_eff_vert_acc();
+
+      output_data.circle_mode = navigator.ins.get_circling_state();
+
 #if RUN_CAN_OUTPUT == 1
       if( ++count_10Hz >= 10)
 	{

@@ -37,7 +37,7 @@ static void runnable( void *)
     }
 }
 
-RestrictedTask pitot_reading ( runnable, "PITOT", 256, 0, PITOT_PRIORITY | portPRIVILEGE_BIT);
+RestrictedTask pitot_reading ( runnable, "PITOT", 256, 0, PITOT_PRIORITY + portPRIVILEGE_BIT);
 
 #endif
 

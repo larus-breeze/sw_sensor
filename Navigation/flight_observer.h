@@ -62,6 +62,10 @@ public:
 		retv[DOWN]  = 0.0f;
 		return retv;
 	}
+	float get_eff_vert_acc( void) const
+	{
+		return KalmanVario.get_x( KalmanVario_t::ACCELERATION_OBSERVED);
+	}
 private:
 	pt2<float,float> vario_averager_TAS;
 	pt2<float,float> vario_averager_INS;
@@ -71,7 +75,6 @@ private:
 	float speed_compensation_TAS;
 	float speed_compensation_INS;
 	float vario_uncompensated;
-	float effective_vertical_acceleration;
 	KalmanVario_t KalmanVario;
 };
 

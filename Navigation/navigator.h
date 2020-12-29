@@ -72,6 +72,10 @@ public:
    * called @ 10 Hz
    */
   void update_GNSS( const coordinates_t &coordinates /* , const float3vector & _GNSS_acceleration*/);
+
+  /**
+   * @brief return aggregate flight observer
+   */
   flight_observer_t &get_flight_observer( void)
     {
     return flight_observer;
