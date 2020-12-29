@@ -27,8 +27,11 @@
 
 #define RUN_OFFLINE_CALCULATION 0
 #define RUN_COMMUNICATOR	1
+<<<<<<< HEAD
 
 #define RUN_CAN_OUTPUT		0
+=======
+>>>>>>> branch 'sensor_prototype' of https://github.com/MaxBaex/the_soar_instrument.git
 
 #define RUN_SPI_TESTER		0
 #define RUN_SDIO_TEST		0
@@ -39,9 +42,13 @@
 #define L3GD20_PRIORITY		STANDARD_TASK_PRIORITY + 1
 #define PITOT_PRIORITY		STANDARD_TASK_PRIORITY + 1
 
+<<<<<<< HEAD
 #define COMMUNICATOR_PRIORITY	STANDARD_TASK_PRIORITY + 1
 
 #define LOGGER_PRIORITY		STANDARD_TASK_PRIORITY + 3
 #define CAN_PRIORITY		STANDARD_TASK_PRIORITY
+=======
+#define LOGGER_PRIORITY		STANDARD_TASK_PRIORITY
+>>>>>>> branch 'sensor_prototype' of https://github.com/MaxBaex/the_soar_instrument.git
 
 #endif /* SRC_SYSTEM_CONFIGURATION_H_ */
