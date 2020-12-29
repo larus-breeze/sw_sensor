@@ -80,10 +80,12 @@ void RunFATFSTestTask(void *)
 	uint32_t start = 0, duration = 0;
 	GPIO_PinState led_state = GPIO_PIN_RESET;
 
-	osDelay(2000); //give micro sd card some time to...Not sure if required
-
+	osDelay(100); 
+	
 	fresult = f_mount(&fatfs, "", 0);
 
+	osDelay(100); 
+	
 	start = HAL_GetTick();
 	uint32_t writtenBytes = 0;
 	if (FR_OK == fresult) {

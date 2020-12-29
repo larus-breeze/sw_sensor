@@ -28,12 +28,12 @@ void data_logger_runnable(void*)
 
   FRESULT fresult;
   FIL fp;
-  uint8_t sd_card_detect = 0;
-  sd_card_detect = BSP_PlatformIsDetected ();
 
+/*
   // wait until sd card is detected
-  while( sd_card_detect != 1)
+  while( ! BSP_PlatformIsDetected ())
     delay(1000);
+*/
 
   delay(500); // wait until card is plugged correctly
 
@@ -45,7 +45,7 @@ void data_logger_runnable(void*)
   fresult = f_mount (&fatfs, "", 0);
   if (FR_OK == fresult)
     {
-      fresult = f_open (&fp, "data.bin", FA_CREATE_ALWAYS | FA_WRITE);
+      fresult = f_open (&fp, "DATA.BIN", FA_CREATE_ALWAYS | FA_WRITE);
       if (FR_OK == fresult)
 	{
 	  for ( synchronous_timer t(10); true; t.sync())

@@ -52,6 +52,7 @@ typedef struct
 } output_data_t;
 
 FATFS fatfs;
+extern SD_HandleTypeDef hsd;
 
 output_data_t __ALIGNED(1024) x =  { 0 };
 
@@ -74,8 +75,13 @@ void offline_runnable (void*)
 
   acquire_privileges(); // sd-writing works only in privileged mode
 
-  if (f_open (&InFile, "116_sim.FLG", FA_READ) != FR_OK)
-    asm("bkpt 0");
+  while(f_open (&InFile, "116_sim.FLG", FA_READ) != FR_OK)
+    {
+      HAL_SD_DeInit (&hsd);
+      delay (100);
+      fresult = f_mount (&fatfs, "", 0);
+      delay (100);
+    }
 
   out_file output_file ( (char *)"116_gac.FSM", true);
   if (!output_file.healthy ())
