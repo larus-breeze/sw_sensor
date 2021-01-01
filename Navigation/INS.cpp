@@ -11,7 +11,7 @@
 #define P_GAIN 0.03
 #define I_GAIN 0.00006
 #define H_GAIN 38.0
-#define ALTI_DIFF 0.136 // antenna height difference D-KCOM
+#define ALTI_DIFF 0.0f // 0.136 // antenna height difference D-KCOM
 
 #if 1
 void INS_type::attitude_setup( const float3vector & acceleration, const float3vector & induction)
@@ -150,43 +150,74 @@ void INS_type::update_compass( float3vector &gyro, float3vector &acc, float3vect
 }
 #endif
 
+void INS_type::update_compass(
+		const float3vector &gyro,
+		const float3vector &acc,
+		const float3vector &mag,
+	    const float3vector &GNSS_acceleration
+		)
+{
+	  float3vector nav_acceleration = body2nav * acc;
+	  float3vector nav_induction    = body2nav * mag;
+
+	  nav_correction[NORTH] = - nav_acceleration.e[EAST]  + GNSS_acceleration.e[EAST];
+	  nav_correction[EAST]  = + nav_acceleration.e[NORTH] - GNSS_acceleration.e[NORTH];
+	  nav_correction[DOWN]  =   nav_induction[RIGHT] * H_GAIN;
+
+	  gyro_correction = nav2body * nav_correction;
+	  gyro_correction *= P_GAIN;
+
+	  if (update_circling_state (gyro) == STRAIGHT_FLIGHT)
+	    {
+	      gyro_integrator += gyro_correction; // update integrator
+	      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+	      update (acc, gyro + gyro_correction);
+	    }
+	  else
+	    {
+	      // don't update integrator but use it
+	      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+	      update (acc, gyro + gyro_correction);
+	    }
+
+}
 void INS_type::update_diff_GNSS( //!< rotate quaternion taking angular rate readings
     const float3vector &gyro, const float3vector &acc,
     const float3vector &GNSS_acceleration,
-    float GNSS_heading)
+	float GNSS_heading)
 {
-  float3vector nav_acceleration = body2nav * acc;
+	  float3vector nav_acceleration = body2nav * acc;
 
-  float heading_gnss_work = GNSS_heading + ALTI_DIFF * sinf (euler.r); // todo correct this patch
-  heading_gnss_work = heading_gnss_work - euler.y;
+	  float heading_gnss_work = GNSS_heading + ALTI_DIFF * sinf (euler.r); // todo correct this patch
+	  heading_gnss_work = heading_gnss_work - euler.y;
 
-  if( heading_gnss_work > M_PI) // map into { -PI PI}
-	heading_gnss_work -= 2*M_PI;
-  if( heading_gnss_work < -M_PI)
-    heading_gnss_work += 2*M_PI;
+	  if( heading_gnss_work > M_PI) // map into { -PI PI}
+		heading_gnss_work -= 2*M_PI;
+	  if( heading_gnss_work < -M_PI)
+	    heading_gnss_work += 2*M_PI;
 
-  if( heading_gnss_work > 1.0) // limit to +/- 1.0
-	heading_gnss_work = 1.0;
-  else if ( heading_gnss_work < -1.0)
-	heading_gnss_work = -1.0;
+	  if( heading_gnss_work > 1.0) // limit to +/- 1.0
+		heading_gnss_work = 1.0;
+	  else if ( heading_gnss_work < -1.0)
+		heading_gnss_work = -1.0;
 
-  nav_correction[NORTH] = - nav_acceleration.e[EAST]  + GNSS_acceleration.e[EAST];
-  nav_correction[EAST]  = + nav_acceleration.e[NORTH] - GNSS_acceleration.e[NORTH];
-  nav_correction[DOWN]  =   heading_gnss_work * H_GAIN;
+	  nav_correction[NORTH] = - nav_acceleration.e[EAST]  + GNSS_acceleration.e[EAST];
+	  nav_correction[EAST]  = + nav_acceleration.e[NORTH] - GNSS_acceleration.e[NORTH];
+	  nav_correction[DOWN]  =   heading_gnss_work * H_GAIN;
 
-  gyro_correction = nav2body * nav_correction;
-  gyro_correction *= P_GAIN;
+	  gyro_correction = nav2body * nav_correction;
+	  gyro_correction *= P_GAIN;
 
-  if (update_circling_state (gyro) == STRAIGHT_FLIGHT)
-    {
-      gyro_integrator += gyro_correction; // update integrator
-      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
-      update (acc, gyro + gyro_correction);
-    }
-  else
-    {
-      // don't update integrator but use it
-      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
-      update (acc, gyro + gyro_correction);
-    }
+	  if (update_circling_state (gyro) == STRAIGHT_FLIGHT)
+	    {
+	      gyro_integrator += gyro_correction; // update integrator
+	      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+	      update (acc, gyro + gyro_correction);
+	    }
+	  else
+	    {
+	      // don't update integrator but use it
+	      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+	      update (acc, gyro + gyro_correction);
+	    }
 }

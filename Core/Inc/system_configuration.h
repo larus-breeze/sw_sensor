@@ -8,9 +8,9 @@
 
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
-#define RUN_CHIPSENS_MODULE 	1
+#define RUN_CHIPSENS_MODULE 0
 #define RUN_PITOT_MODULE 	1
-#define RUN_CAN_TESTER		0
+#define RUN_CAN_TESTER		1
 #define ACTIVATE_USB		0
 
 #define USE_DIFF_GNSS		1
@@ -23,7 +23,7 @@
 #define LOG_OBSERVATIONS	0 // log only IMU + pressures
 #define LOG_COORDINATES		0 // log also GNSS data
 #define LOG_OUTPUT_DATA		1 // logging all inclusive
-#define OUTFILE "LOG.F38"
+#define OUTFILE "LOG.F74"
 
 #define RUN_OFFLINE_CALCULATION 0
 #define RUN_COMMUNICATOR	1

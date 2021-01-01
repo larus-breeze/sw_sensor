@@ -41,6 +41,9 @@ void communicator_runnable( void *)
       output_data.euler				= navigator.ins.get_euler();
       output_data.q					= navigator.ins.attitude;
 
+      output_data.euler_magnetic	= navigator.ins_magnetic.get_euler();
+      output_data.q_magnetic		= navigator.ins_magnetic.attitude;
+
       output_data.vario				= f_obs.get_vario_INS();
       output_data.integrator_vario	= navigator.get_vario_integrator();
       output_data.vario_uncompensated = f_obs.get_vario_uncompensated();

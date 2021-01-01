@@ -51,6 +51,8 @@ typedef struct
   float3vector gyro_correction;
   float effective_vertical_acceleration;
   uint32_t circle_mode;
+  eulerangle<float> euler_magnetic;
+  quaternion<float> q_magnetic;
 } output_data_t;
 
 #pragma pack(pop)

@@ -34,9 +34,13 @@ public:
 		  {
 		  }
 	void attitude_setup( const float3vector & acceleration, const float3vector & induction);
-	void update_compass( float3vector &gyro, float3vector &acc, float3vector &mag); //!< rotate quaternion taking angular rate readings
+
+	void update_compass(
+			const float3vector &gyro, const float3vector &acc, const float3vector &mag,
+			const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
+
 	void update_diff_GNSS( const float3vector &gyro, const float3vector &acc,
-			       const float3vector &GNSS_acceleration,
+			const float3vector &GNSS_acceleration,
 			       float GNSS_heading); //!< rotate quaternion taking angular rate readings
 
 	inline void set_from_euler( float r, float n, float y)

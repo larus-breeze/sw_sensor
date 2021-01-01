@@ -7,9 +7,13 @@ void navigator_t::update_IMU (
     const float3vector &gyro)
 {
   ins.update_diff_GNSS (
-      gyro, acc,
-      GNSS_acceleration,
-      GNSS_heading);
+	  gyro, acc,
+	  GNSS_acceleration,
+	  GNSS_heading);
+
+  ins_magnetic.update_compass(
+	  gyro, acc, mag,
+	  GNSS_acceleration);
 
   true_airspeed[NORTH] = ins.get_north () * TAS;
   true_airspeed[EAST]  = ins.get_east ()  * TAS;

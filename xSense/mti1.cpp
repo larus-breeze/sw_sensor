@@ -11,6 +11,14 @@
 
 #if RUN_MTi_1_MODULE
 
+#define M_OFF_X 0.0708f
+#define M_OFF_Y 0.0474f
+#define M_OFF_Z -0.1364f
+
+#define M_GAIN_X -1.087f
+#define M_GAIN_Y +1.0132f
+#define M_GAIN_Z +1.0152f
+
 #define IMU_PSEL0  GPIO_PIN_10
 #define IMU_PSEL1  GPIO_PIN_11
 #define IMU_DRDY   GPIO_PIN_12
@@ -96,11 +104,11 @@ void readDataFrom_MTI( MtsspInterface* device, uint8_t * buf)
 			output_data.m.gyro[2]=x.f * -1.0f;
 
 			x.u = __REV( *(uint32_t*)(buf+0x25+0));
-			output_data.m.mag[0]=x.f;
+			output_data.m.mag[0]=(x.f - M_OFF_X) * M_GAIN_X;
 			x.u = __REV( *(uint32_t*)(buf+0x25+4));
-			output_data.m.mag[1]=x.f * -1.0f;
+			output_data.m.mag[1]=(x.f - M_OFF_Y) * M_GAIN_Y;
 			x.u = __REV( *(uint32_t*)(buf+0x25+8));
-			output_data.m.mag[2]=x.f * -1.0f;
+			output_data.m.mag[2]=(x.f - M_OFF_Z) * M_GAIN_Z;
 		}
 	}
 }

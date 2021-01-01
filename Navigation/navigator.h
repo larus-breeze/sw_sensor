@@ -12,7 +12,8 @@ class navigator_t
 {
 public:
   navigator_t ()
-    :ins (0.01),
+	:ins (0.01),
+	 ins_magnetic (0.01),
      atmosphere (101325.0f)
   {};
 
@@ -82,18 +83,19 @@ public:
     }
 
   INS_type 		ins;
+  INS_type 		ins_magnetic;
 
 private:
-  atmosphere_t 		atmosphere;
+  atmosphere_t 	atmosphere;
   float 		pitot_pressure;
   float 		TAS;
   float 		IAS;
-  float3vector 		GNSS_velocity;
+  float3vector 	GNSS_velocity;
   float			GNSS_speed;
-  float3vector 		GNSS_acceleration;
+  float3vector 	GNSS_acceleration;
   float 		GNSS_heading;
   float 		GNSS_altitude;
-  float3vector 		true_airspeed;
+  float3vector 			true_airspeed;
   flight_observer_t 	flight_observer;
   vario_integrator_t 	vario_integrator;
 };
