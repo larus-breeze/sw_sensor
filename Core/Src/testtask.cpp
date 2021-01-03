@@ -42,11 +42,11 @@ void getPressure(void*) {
 
 		for (int i = 0; i < size; i++)
 		{
-			ITM_SendChar(printbuf[i]);
+			//ITM_SendChar(printbuf[i]);
 		}
 
 	}
 }
 
-RestrictedTask ms5611_reading(getPressure, "Pressure", 256);
+//RestrictedTask ms5611_reading(getPressure, "Pressure", 256);
 
