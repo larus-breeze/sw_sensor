@@ -11,25 +11,17 @@ void bluetooth_hm_11(void*)
 	HAL_GPIO_WritePin(BL_RESETB_GPIO_Port, BL_RESETB_Pin, GPIO_PIN_SET);
 	delay(200);
 
-	char wakeupquery[] = "#WAKEMEUP#";
-	uint8_t lenwakeup = strlen(wakeupquery);
-	for(int i = 0; i<10; i++)
-	{
-		UART6_Transmit((uint8_t *)wakeupquery, lenwakeup);
-	}
-	delay(50);
-
-	char query[] = "AT+ADDR?";
-	uint8_t len = strlen(query);
-	UART6_Transmit((uint8_t *)query, len);
-
-	uint8_t rxData;
+	char altitude[] = "$PGRMZ,246,f,3*1B\r\n";
+	uint8_t len  = strlen(altitude);
 	for(;;)
 	{
-		if(UART6_Receive(&rxData, 1) == true)
-		{
-			ITM_SendChar(rxData);
-		}
+		UART6_Transmit((uint8_t *)altitude, len);
+		delay(1000);
+
+		//if(UART6_Receive(&rxData, 1) == true)
+		//{
+		//	ITM_SendChar(rxData);
+		//}
 	}
 }
 
