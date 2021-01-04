@@ -6,11 +6,11 @@
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
-#define RUN_MTi_1_MODULE 	1
-#define RUN_MS5611_MODULE 	1
-#define RUN_CHIPSENS_MODULE 0
-#define RUN_PITOT_MODULE 	1
-#define RUN_CAN_TESTER		1
+#define RUN_MTi_1_MODULE 	0
+#define RUN_MS5611_MODULE 	0
+#define RUN_CHIPSENS_MODULE 	0
+#define RUN_PITOT_MODULE 	0
+#define RUN_CAN_TESTER		0
 #define ACTIVATE_USB		0
 
 #define USE_DIFF_GNSS		1
@@ -19,15 +19,16 @@
 #define uSD_LED_STATUS		1
 #define RUN_GNSS_UPDATE_WITHOUT_FIX 1
 
-#define RUN_DATA_LOGGER		1
+#define RUN_OFFLINE_CALCULATION 1
+#define RUN_COMMUNICATOR	0
+#define RUN_CAN_OUTPUT		0
+
+#define RUN_DATA_LOGGER		0
 #define LOG_OBSERVATIONS	0 // log only IMU + pressures
 #define LOG_COORDINATES		0 // log also GNSS data
 #define LOG_OUTPUT_DATA		1 // logging all inclusive
-#define OUTFILE "LOG.F74"
-
-#define RUN_OFFLINE_CALCULATION 0
-#define RUN_COMMUNICATOR	1
-#define RUN_CAN_OUTPUT		1
+#define OUTFILE "LOG.F7x"
+#define OLD_FORMAT 		1 // for year 2020 old data
 
 #define RUN_SPI_TESTER		0
 #define RUN_SDIO_TEST		0

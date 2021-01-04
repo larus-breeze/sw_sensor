@@ -62,7 +62,7 @@ public:
 		retv[DOWN]  = 0.0f;
 		return retv;
 	}
-	float get_eff_vert_acc( void) const
+	float get_effective_vertical_acceleration( void) const
 	{
 		return KalmanVario.get_x( KalmanVario_t::ACCELERATION_OBSERVED);
 	}

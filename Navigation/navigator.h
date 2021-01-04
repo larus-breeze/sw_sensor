@@ -7,43 +7,22 @@
 #include "variointegrator.h"
 #include "atmosphere.h"
 #include "flight_observer.h"
+#include "data_structures.h"
 
 class navigator_t
 {
 public:
-  navigator_t ()
+  navigator_t (void)
 	:ins (0.01),
 	 ins_magnetic (0.01),
      atmosphere (101325.0f)
   {};
 
+  void report_data( output_data_t &d);
+
   void set_from_euler ( float r, float n, float y)
   {
     ins.set_from_euler(r, n, y);
-  }
-  eulerangle<float> get_euler( void)
-  {
-    return ins.get_euler();
-  }
-  const float3vector &get_ins_acc( void)
-  {
-    return ins.get_acc();
-  }
-  const quaternion<float> &get_attitude( void)
-  {
-    return ins.attitude;
-  }
-  float get_vario_integrator( void ) const
-  {
-	  return vario_integrator.get_value();
-  }
-  float get_TAS( void)
-  {
-      return TAS;
-  }
-  float get_IAS( void)
-  {
-      return IAS;
   }
   /**
    * @brief update absolute pressure
@@ -72,7 +51,9 @@ public:
    * @brief update navigation GNSS
    * called @ 10 Hz
    */
+
   void update_GNSS( const coordinates_t &coordinates /* , const float3vector & _GNSS_acceleration*/);
+  void update_GNSS_old( const coordinates_t &coordinates , float3vector acceleration);
 
   /**
    * @brief return aggregate flight observer
@@ -86,16 +67,16 @@ public:
   INS_type 		ins_magnetic;
 
 private:
-  atmosphere_t 	atmosphere;
+  atmosphere_t 		atmosphere;
   float 		pitot_pressure;
   float 		TAS;
   float 		IAS;
-  float3vector 	GNSS_velocity;
+  float3vector 		GNSS_velocity;
   float			GNSS_speed;
-  float3vector 	GNSS_acceleration;
+  float3vector 		GNSS_acceleration;
   float 		GNSS_heading;
   float 		GNSS_altitude;
-  float3vector 			true_airspeed;
+  float3vector 		true_airspeed;
   flight_observer_t 	flight_observer;
   vario_integrator_t 	vario_integrator;
 };

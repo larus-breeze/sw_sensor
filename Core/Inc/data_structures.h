@@ -8,6 +8,7 @@
 #ifndef DATA_STRUCTURES_H_
 #define DATA_STRUCTURES_H_
 
+#include "system_configuration.h"
 #include "float3vector.h"
 #include "euler.h"
 #include "quaternion.h"
@@ -20,7 +21,9 @@ typedef struct // legacy data type
   float3vector acc;
   float3vector gyro;
   float3vector mag;
+#if OLD_FORMAT == 0
   float3vector MEMS_gyro;
+#endif
   float pitot_pressure;
   float static_pressure;
 } measurement_data_t;
@@ -43,14 +46,17 @@ typedef struct
   float speed_compensation_INS;
   float integrator_vario;
   float3vector wind;
-  eulerangle<float> euler;
-  float3vector nav_acceleration_ins;
+  uint32_t circle_mode;
   float3vector nav_acceleration_gnss;
-  quaternion<float> q;
+  float3vector nav_induction_gnss;
   float3vector nav_correction;
   float3vector gyro_correction;
+  quaternion<float> q;
+  eulerangle<float> euler;
   float effective_vertical_acceleration;
-  uint32_t circle_mode;
+
+  float3vector nav_acceleration_mag;
+  float3vector nav_induction_mag;
   eulerangle<float> euler_magnetic;
   quaternion<float> q_magnetic;
 } output_data_t;

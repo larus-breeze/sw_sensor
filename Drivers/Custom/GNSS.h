@@ -13,8 +13,8 @@
 
 enum { NORTH, EAST, DOWN};
 
-extern bool GNSS_actualized;
-extern bool D_GNSS_actualized;
+extern bool GNSS_new_data_ready;
+extern bool D_GNSS_new_data_ready;
 
 typedef struct
 {
@@ -80,8 +80,6 @@ typedef struct
 
 typedef enum { FIX_none, FIX_dead, FIX_2d, FIX_3d} FIX_TYPE;
 typedef enum { GPS_HAVE_FIX, GPS_NO_FIX, GPS_ERROR} GPS_Result;
-
-#define OLD_FORMAT 0
 
 typedef struct
 {

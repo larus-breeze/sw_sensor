@@ -3,8 +3,8 @@
 #include "math.h"
 #include "common.h"
 
-COMMON bool GNSS_actualized;
-COMMON bool D_GNSS_actualized;
+COMMON bool GNSS_new_data_ready;
+COMMON bool D_GNSS_new_data_ready;
 
 #define SCALE_MM 0.001
 #define SCALE_MM_NEG -0.001
@@ -45,7 +45,7 @@ GPS_Result GNSS_type::update(const uint8_t * data)
 	if ((p->fix_flags & 1) == 0)
 	  {
 #if RUN_GNSS_UPDATE_WITHOUT_FIX
-	    GNSS_actualized = true;
+	    GNSS_new_data_ready = true;
 #endif
 	  return GPS_NO_FIX;
 	  }
@@ -104,7 +104,7 @@ GPS_Result GNSS_type::update(const uint8_t * data)
 	coordinates.speed_motion    = p->gSpeed * SCALE_MM;
 	coordinates.heading_motion  = p->gTrack * 1e-5f;
 
-	GNSS_actualized = true;
+	GNSS_new_data_ready = true;
 
 	return GPS_HAVE_FIX;
 }
@@ -132,10 +132,10 @@ GPS_Result GNSS_type::update_delta(const uint8_t * data)
 	GPS_Result res = ( p->flags == 0b1100110111) ? GPS_HAVE_FIX : GPS_NO_FIX; // for F9P + F9H receiver
 
 #if RUN_GNSS_UPDATE_WITHOUT_FIX
-	  D_GNSS_actualized = true;
+	  D_GNSS_new_data_ready = true;
 #else
 	if( res == GPS_HAVE_FIX) // patch
-	  D_GNSS_actualized = true;
+	  D_GNSS_new_data_ready = true;
 #endif
 
 	return res;
