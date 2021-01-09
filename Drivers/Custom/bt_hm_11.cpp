@@ -18,16 +18,17 @@ void bluetooth_hm_11(void*)
 	delay(200);
 
 	uint8_t len  = strlen(altitude);
+	uint8_t rxData = 0;
 	for(;;)
 	{
 		UART6_Transmit((uint8_t *)altitude, len);
 
 		delay(1000);
 
-		//if(UART6_Receive(&rxData, 1) == true)
-		//{
-		//	ITM_SendChar(rxData);
-		//}
+		while(UART6_Receive(&rxData) == true)
+		{
+			ITM_SendChar(rxData);
+		}
 	}
 }
 
