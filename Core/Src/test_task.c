@@ -146,7 +146,7 @@ void RunL3GD20TestTask(void) {
 }
 
 void RunFXOS8700TestTask(void) {
-	I2C_Init();
+	I2C_Init(&hi2c1);
 	float xyz_acc[] = { 0, 0, 0 };
 	float xyz_mag[] = { 0, 0, 0 };
 #define BUFFERSIZE 100

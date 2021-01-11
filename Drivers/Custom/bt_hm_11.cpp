@@ -27,7 +27,7 @@ void bluetooth_hm_11(void*)
 
 		while(UART6_Receive(&rxData) == true)
 		{
-			ITM_SendChar(rxData);
+			//ITM_SendChar(rxData);
 		}
 	}
 }

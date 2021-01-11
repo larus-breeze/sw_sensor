@@ -2,6 +2,7 @@
 #define MS5611_DRIVER_H
 
 #include <i2c.h>
+#define MS5611_I2C &hi2c2
 
 class MS5611
 {

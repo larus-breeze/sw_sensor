@@ -12,7 +12,7 @@
 
 void getPressure(void*) {
 	acquire_privileges(); /*I2C HAL functions cause MPU exception.*/
-	I2C_Init();
+	I2C_Init(MS5611_I2C);
 #define BUFFERSIZE 100
 	char printbuf[BUFFERSIZE];
 	uint8_t size = 0;
@@ -48,5 +48,5 @@ void getPressure(void*) {
 	}
 }
 
-//RestrictedTask ms5611_reading(getPressure, "Pressure", 256);
+RestrictedTask ms5611_reading(getPressure, "Pressure", 256);
 

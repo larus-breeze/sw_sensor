@@ -7,7 +7,6 @@
 
 /* Address of ms5611 device- LSB can be set to 1 / 0 - thus two of these devices can be used */
 // 0xEC means CSB (bit0) of the adress is connected to vcc   0xEE if connected to gnd //
-#define MS5611_I2C &hi2c2
 
 /* Ms5611 register locations */
 #define CMD_RESET               0x1E // ADC reset command
