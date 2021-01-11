@@ -2,7 +2,7 @@
  * i2c.h
  *
  *  Created on: 03.12.2020
- *      Author: mbetz
+ *      Author: Maximilian Betz
  */
 
 #ifndef I2C_H_
@@ -18,6 +18,7 @@
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
 
+//Note: Definition not used in stm32f4xx_hal_msp.c as this file is part of the generation process.
 #define I2C1_SCL_GPIOX GPIOB
 #define I2C1_SCL_GPIOPIN GPIO_PIN_8
 

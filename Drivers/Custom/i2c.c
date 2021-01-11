@@ -1,3 +1,10 @@
+/*
+ * i2c.c
+ *
+ *  Created on: 11.01.2021
+ *      Author: Maximilian Betz
+ */
+
 #include "i2c.h"
 #include "main.h"
 #include "my_assert.h"
