@@ -27,7 +27,7 @@ void navigator_t::update_IMU (
       GNSS_altitude,
       TAS);
 }
-#if 0
+#if 1
 // to be called at 10 Hz
 void navigator_t::update_GNSS (const coordinates_t &coordinates)
 {
@@ -41,7 +41,7 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
 			   ins.get_euler ().y,
 			   ins.get_circling_state ());
 }
-#endif
+#else
 // to be called at 10 Hz
 void navigator_t::update_GNSS_old (const coordinates_t &coordinates, float3vector acceleration)
 {
@@ -55,6 +55,7 @@ void navigator_t::update_GNSS_old (const coordinates_t &coordinates, float3vecto
 			   ins.get_euler ().y,
 			   ins.get_circling_state ());
 }
+#endif
 
 void navigator_t::report_data(output_data_t &d)
 {

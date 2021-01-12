@@ -523,6 +523,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
+  HAL_GPIO_WritePin(GPIOD, GPS_RESETN_Pin, GPIO_PIN_SET);
+
   /*Configure GPIO pin : MTi_1IMU_DRDY_Pin */
   GPIO_InitStruct.Pin = MTi_1IMU_DRDY_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;

@@ -32,7 +32,7 @@ communicator_runnable (void*)
       if (GNSS_new_data_ready) // triggered at 10 Hz
 	{
 	  GNSS_new_data_ready = false;
-	  navigator.update_GNSS (GNSS.coordinates);
+	  navigator.update_GNSS( GNSS.coordinates);
 	}
 
       navigator.update_IMU (output_data.m.acc, output_data.m.mag, output_data.m.gyro);
