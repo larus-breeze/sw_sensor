@@ -1,3 +1,10 @@
+#ifndef __FXOS8700_H
+#define __FXOS8700_H
+
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 #include "i2c.h"
 
 /*
@@ -72,4 +79,8 @@ typedef struct {
 void FXOS8700_Initialize(fxos8700AccelRange_t range);
 void FXOS8700_get(float* xyz_acc, float* xyz_mag);
 
+#ifdef __cplusplus
+}
+#endif
 
+#endif /* __FXOS8700_H */

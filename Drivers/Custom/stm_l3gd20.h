@@ -31,6 +31,10 @@
 #ifndef __STM_L3GD20_H
 #define __STM_L3GD20_H
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 #include "main.h"
 #include "spi.h"
 
@@ -434,6 +438,10 @@ void L3GD20_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead);
    Typically the user implementation of this callback should reset MEMS peripheral
    and re-initialize communication or in worst case reset all the application. */
 uint32_t L3GD20_TIMEOUT_UserCallback(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __STM_L3GD20_H */
 /**
