@@ -1,23 +1,17 @@
 /*
  * testtask.cpp
  *
- *  Created on: Dec 9, 2020
- *      Author: mbetz
+ *  Created on: 12.01.2021
+ *      Author: Maximilian Betz
  */
 #include "main.h"
 #include "FreeRTOS_wrapper.h"
-#include "i2c.h"
-#include "ms5611.h"
-#include "stdio.h"
 #include "my_assert.h"
-#include "fatfs.h"
-#include "string.h"
-#include "usbd_cdc_if.h"
-#include "stm_l3gd20.h"
-#include "stdio.h"
-#include "fxos8700cq.h"
-#include "bsp_driver_sd.h"
+#include "stdio.h" //sprintf
 
+#include "ms5611.h"
+#include "stm_l3gd20.h"
+#include "fxos8700cq.h"
 
 void getPressure(void*)
 {
@@ -45,7 +39,6 @@ void getPressure(void*)
 		temperature_static = ms5611_static.get_temperature();
 		temperature_pitot = ms5611_pitot.get_temperature();
 
-
 		size = sprintf(printbuf, "Static, %ld, %ld, Pitot, %ld, %ld\r\n",(int32_t)(pressure_static * 1000),
 				(int32_t)(temperature_static * 100), (int32_t)(pressure_pitot * 1000), (int32_t)(temperature_pitot * 100));
 		ASSERT(BUFFERSIZE >= size);
@@ -54,18 +47,15 @@ void getPressure(void*)
 		{
 			//ITM_SendChar(printbuf[i]);
 		}
-
 	}
 }
 
-void RunL3GD20TestTask(void*)
+void getRotation(void*)
 {
 	SPI_Init(&hspi2);
-
-	acquire_privileges(); //TODO: check why?
 	L3GD20_Initialize();
 
-	osDelay(100); //Let sensor gather some data in FIFO.
+	delay(100); //Let sensor gather some data in FIFO.
 #define BUFFERSIZE 100
 #define NUMBER_OF_CALIBRATIONRUNS 500
 	char printbuf[BUFFERSIZE];
@@ -80,7 +70,7 @@ void RunL3GD20TestTask(void*)
 		for (int n = 0; n < 3; n++) {
 			gyro_xyz_calib[n] = gyro_xyz_calib[n] + gyro_xyz[n];
 		}
-		osDelay(10);
+		delay(10);
 	}
 	for (int i = 0; i < 3; i++) {
 		gyro_xyz_calib[i] = gyro_xyz_calib[i]
@@ -94,20 +84,22 @@ void RunL3GD20TestTask(void*)
 			gyro_xyz[i] = gyro_xyz[i] - gyro_xyz_calib[i];
 			gyro_xyzint[i] = (int16_t) (gyro_xyz[i]);
 		}
+		acquire_privileges();
 		size = sprintf(printbuf, "Raw Gyro XYZ: %6d   %6d   %6d \r\n",
 				gyro_xyzint[0], gyro_xyzint[1], gyro_xyzint[2]);
+		drop_privileges();
 		ASSERT(BUFFERSIZE >= size);
 
 		for (int i = 0; i < size; i++) {
 			ITM_SendChar(printbuf[i]);
 		}
-		osDelay(10);
+		delay(10);
 	}
 }
 
-void RunFXOS8700TestTask(void*)
+void getAccMag(void*)
 {
-	acquire_privileges(); //TODO: check why?
+	acquire_privileges();  /*I2C HAL functions cause MPU exception.*/
 	I2C_Init(&hi2c1);
 	float xyz_acc[] = { 0, 0, 0 };
 	float xyz_mag[] = { 0, 0, 0 };
@@ -141,11 +133,10 @@ void RunFXOS8700TestTask(void*)
 	}
 }
 
-
 //Run all Test Tasks parallel
 RestrictedTask ms5611_reading(getPressure, "Pressure", 256);
-RestrictedTask l3gd20_reading(RunL3GD20TestTask, "Gyro", 512);
-RestrictedTask fxos8700_reading(RunFXOS8700TestTask, "AccMag", 512);
+RestrictedTask l3gd20_reading(getRotation, "Gyro", 512);
+RestrictedTask fxos8700_reading(getAccMag, "AccMag", 512);
 
 
 
