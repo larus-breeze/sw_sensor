@@ -37,6 +37,11 @@ void SPI_Transceive(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData,
 {
 	HAL_StatusTypeDef status = HAL_OK;
 	BaseType_t queue_status = pdFALSE;
+	//status = HAL_SPI_TransmitReceive(hspi, pTxData, pRxData, Size, 100 );
+	//ASSERT(HAL_OK == status);
+	//return;
+
+
 	status = HAL_SPI_TransmitReceive_DMA(hspi, pTxData, pRxData, Size );
 	ASSERT(HAL_OK == status);
 	if (hspi->Instance == SPI1)
@@ -60,6 +65,10 @@ void SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint16_t Size)
 {
 	HAL_StatusTypeDef status = HAL_OK;
 	BaseType_t queue_status = pdFALSE;
+	//status = HAL_SPI_Transmit(hspi, pTxData, Size, 100); //Test
+	//ASSERT(HAL_OK == status);
+	//return;
+
 	status = HAL_SPI_Transmit_DMA(hspi, pTxData, Size);
 	ASSERT(HAL_OK == status);
 	if (hspi->Instance == SPI1)
@@ -82,6 +91,10 @@ void SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size)
 {
 	HAL_StatusTypeDef status = HAL_OK;
 	BaseType_t queue_status = pdFALSE;
+	//status = HAL_SPI_Receive(hspi, pRxData, Size, 100);
+	//ASSERT(HAL_OK == status);
+	//return;
+
 	status = HAL_SPI_Receive_DMA(hspi, pRxData, Size);
 	ASSERT(HAL_OK == status);
 	if (hspi->Instance == SPI1)

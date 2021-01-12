@@ -6,6 +6,21 @@
 
 static void L3GD20_LowLevel_Init(void);
 
+static uint8_t __ALIGNED(4) L3GD20_tmpreg;
+
+void L3GD20_Write( uint8_t datum, uint8_t WriteAddr)
+{
+	static uint8_t __ALIGNED(4) buf[2];
+	buf[0] = WriteAddr;
+	buf[1] = datum;
+    L3GD20_CS_LOW();
+
+    SPI_Transmit(&hspi2, buf, sizeof(buf));
+
+    L3GD20_CS_HIGH();
+}
+
+
 /**
  * @brief  Set L3GD20 Initialization.
  * @param  L3GD20_InitStruct: pointer to a L3GD20_InitTypeDef structure
@@ -37,16 +52,14 @@ void L3GD20_Init(L3GD20_InitTypeDef *L3GD20_InitStruct)
  */
 void L3GD20_RebootCmd(void)
 {
-	uint8_t tmpreg;
-
 	/* Read CTRL_REG5 register */
-	L3GD20_Read(&tmpreg, L3GD20_CTRL_REG5_ADDR, 1);
+	L3GD20_Read(&L3GD20_tmpreg, L3GD20_CTRL_REG5_ADDR, 1);
 
 	/* Enable or Disable the reboot memory */
-	tmpreg |= L3GD20_BOOT_REBOOTMEMORY;
+	L3GD20_tmpreg |= L3GD20_BOOT_REBOOTMEMORY;
 
 	/* Write value to MEMS CTRL_REG5 register */
-	L3GD20_Write( tmpreg, L3GD20_CTRL_REG5_ADDR);
+	L3GD20_Write( L3GD20_tmpreg, L3GD20_CTRL_REG5_ADDR);
 }
 
 /**
@@ -90,16 +103,14 @@ void L3GD20_INT1InterruptConfig(L3GD20_InterruptConfigTypeDef *L3GD20_IntConfigS
  */
 void L3GD20_INT1InterruptCmd(uint8_t InterruptState)
 {  
-	uint8_t tmpreg;
-
 	/* Read CTRL_REG3 register */
-	L3GD20_Read(&tmpreg, L3GD20_CTRL_REG3_ADDR, 1);
+	L3GD20_Read(&L3GD20_tmpreg, L3GD20_CTRL_REG3_ADDR, 1);
 
-	tmpreg &= 0x7F;
-	tmpreg |= InterruptState;
+	L3GD20_tmpreg &= 0x7F;
+	L3GD20_tmpreg |= InterruptState;
 
 	/* Write value to MEMS CTRL_REG3 regsister */
-	L3GD20_Write( tmpreg, L3GD20_CTRL_REG3_ADDR);
+	L3GD20_Write( L3GD20_tmpreg, L3GD20_CTRL_REG3_ADDR);
 }
 
 /**
@@ -111,16 +122,14 @@ void L3GD20_INT1InterruptCmd(uint8_t InterruptState)
  */
 void L3GD20_INT2InterruptCmd(uint8_t InterruptState)
 {  
-	uint8_t tmpreg;
-
 	/* Read CTRL_REG3 register */
-	L3GD20_Read(&tmpreg, L3GD20_CTRL_REG3_ADDR, 1);
+	L3GD20_Read(&L3GD20_tmpreg, L3GD20_CTRL_REG3_ADDR, 1);
 
-	tmpreg &= 0xF7;
-	tmpreg |= InterruptState;
+	L3GD20_tmpreg &= 0xF7;
+	L3GD20_tmpreg |= InterruptState;
 
 	/* Write value to MEMS CTRL_REG3 regsister */
-	L3GD20_Write( tmpreg, L3GD20_CTRL_REG3_ADDR);
+	L3GD20_Write( L3GD20_tmpreg, L3GD20_CTRL_REG3_ADDR);
 }
 
 /**
@@ -130,19 +139,17 @@ void L3GD20_INT2InterruptCmd(uint8_t InterruptState)
  */
 void L3GD20_FilterConfig(L3GD20_FilterConfigTypeDef *L3GD20_FilterStruct) 
 {
-	uint8_t tmpreg;
-
 	/* Read CTRL_REG2 register */
-	L3GD20_Read(&tmpreg, L3GD20_CTRL_REG2_ADDR, 1);
+	L3GD20_Read(&L3GD20_tmpreg, L3GD20_CTRL_REG2_ADDR, 1);
 
-	tmpreg &= 0xC0;
+	L3GD20_tmpreg &= 0xC0;
 
 	/* Configure MEMS: mode and cutoff frquency */
-	tmpreg |= (uint8_t) (L3GD20_FilterStruct->HighPassFilter_Mode_Selection |\
+	L3GD20_tmpreg |= (uint8_t) (L3GD20_FilterStruct->HighPassFilter_Mode_Selection |\
 			L3GD20_FilterStruct->HighPassFilter_CutOff_Frequency);
 
 	/* Write value to MEMS CTRL_REG2 regsister */
-	L3GD20_Write( tmpreg, L3GD20_CTRL_REG2_ADDR);
+	L3GD20_Write( L3GD20_tmpreg, L3GD20_CTRL_REG2_ADDR);
 }
 
 /**
@@ -154,17 +161,15 @@ void L3GD20_FilterConfig(L3GD20_FilterConfigTypeDef *L3GD20_FilterStruct)
  */
 void L3GD20_FilterCmd(uint8_t HighPassFilterState)
 {
-	uint8_t tmpreg;
-
 	/* Read CTRL_REG5 register */
-	L3GD20_Read(&tmpreg, L3GD20_CTRL_REG5_ADDR, 1);
+	L3GD20_Read(&L3GD20_tmpreg, L3GD20_CTRL_REG5_ADDR, 1);
 
-	tmpreg &= 0xEF;
+	L3GD20_tmpreg &= 0xEF;
 
-	tmpreg |= HighPassFilterState;
+	L3GD20_tmpreg |= HighPassFilterState;
 
 	/* Write value to MEMS CTRL_REG5 regsister */
-	L3GD20_Write( tmpreg, L3GD20_CTRL_REG5_ADDR);
+	L3GD20_Write( L3GD20_tmpreg, L3GD20_CTRL_REG5_ADDR);
 }
 
 /**
@@ -174,12 +179,10 @@ void L3GD20_FilterCmd(uint8_t HighPassFilterState)
  */
 uint8_t L3GD20_GetDataStatus(void)
 {
-	uint8_t tmpreg;
-
 	/* Read STATUS_REG register */
-	L3GD20_Read(&tmpreg, L3GD20_STATUS_REG_ADDR, 1);
+	L3GD20_Read(&L3GD20_tmpreg, L3GD20_STATUS_REG_ADDR, 1);
 
-	return tmpreg;
+	return L3GD20_tmpreg;
 }
 
 /**
@@ -190,6 +193,8 @@ uint8_t L3GD20_GetDataStatus(void)
  */
 void L3GD20_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead)
 {  
+	static uint8_t __ALIGNED(4) buf;   //For SPI DMA Usage
+
 	if(NumByteToRead > 0x01)
 	{
 		ReadAddr |= (uint8_t)(READWRITE_CMD | MULTIPLEBYTE_CMD);
@@ -202,7 +207,8 @@ void L3GD20_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead)
 	L3GD20_CS_LOW();
 
 	/* Send the Address of the indexed register */
-	(void)L3GD20_SendByte(ReadAddr);
+	buf = ReadAddr; // Aligned for SPI via DMA!
+	(void)L3GD20_SendByte(buf);
 
 	/* read data */
 	SPI_Receive(&hspi2, pBuffer, NumByteToRead);
@@ -218,46 +224,6 @@ void L3GD20_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead)
 static void L3GD20_LowLevel_Init(void)
 {
 
-	// All done via Cube Code Generator
-
-	//GPIO_InitTypeDef GPIO_InitStructure;
-
-	/* Enable CS  GPIO clock */
-	//RCC_AHBPeriphClockCmd(L3GD20_SPI_CS_GPIO_CLK, ENABLE);
-
-	/* Enable INT1 GPIO clock */
-	//RCC_AHBPeriphClockCmd(L3GD20_SPI_INT1_GPIO_CLK, ENABLE);
-
-	/* Enable INT2 GPIO clock */
-	//RCC_AHBPeriphClockCmd(L3GD20_SPI_INT2_GPIO_CLK, ENABLE);
-
-	//GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-	//GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	//GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;//GPIO_PuPd_DOWN;
-	//GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-
-	/* Configure GPIO PIN for Lis Chip select */
-	//GPIO_InitStructure.GPIO_Pin = L3GD20_SPI_CS_PIN;
-	//GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-	//GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	//GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	//GPIO_Init(L3GD20_SPI_CS_GPIO_PORT, &GPIO_InitStructure);
-
-	/* Deselect : Chip Select high */
-	//GPIO_SetBits(L3GD20_SPI_CS_GPIO_PORT, L3GD20_SPI_CS_PIN);
-
-	/* Configure GPIO PINs to detect Interrupts */
-	//GPIO_InitStructure.GPIO_Pin = L3GD20_SPI_INT1_PIN;
-	//GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-	//GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	//GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	//GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
-	//GPIO_Init(L3GD20_SPI_INT1_GPIO_PORT, &GPIO_InitStructure);
-
-	//GPIO_InitStructure.GPIO_Pin = L3GD20_SPI_INT2_PIN;
-	//GPIO_Init(L3GD20_SPI_INT2_GPIO_PORT, &GPIO_InitStructure);
-
-	//SPI_Initialize(SPI1, SPI_BaudRatePrescaler_8);
 }  
 
 #ifdef USE_DEFAULT_TIMEOUT_CALLBACK
@@ -312,11 +278,12 @@ void L3GD20_ReadData( float data[3])
 	volatile uint8_t axis, fifoEntry, fifoStatus, fifoFilled;
 	int32_t value;
 	int32_t all_values;
-	uint8_t sensordata[ 3 * sizeof( int16_t) * L3GD20_MAX_FIFO_ENTRIES]; // buffer for measurement data
-
+	static uint8_t  __ALIGNED(4) sensordata[ 3 * sizeof( int16_t) * L3GD20_MAX_FIFO_ENTRIES]; // buffer for measurement data
 	for(;;)
 	  {
-	    L3GD20_Read( (uint8_t *)&fifoStatus,L3GD20_FIFO_SRC_REG_ADDR, 1);
+
+	    L3GD20_Read( (uint8_t *)&L3GD20_tmpreg,L3GD20_FIFO_SRC_REG_ADDR, 1);
+	    fifoStatus = L3GD20_tmpreg;
 
 #if PARANOID_SPI_CHECK == 1
 	    ASSERT( (fifoStatus & L3GD20_FIFO_EMPTY) ==0);

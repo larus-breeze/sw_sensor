@@ -421,15 +421,6 @@ void L3GD20_FilterCmd(uint8_t HighPassFilterState);
  * @param  pBuffer : pointer to the buffer  containing the data to be written to the L3GD20.
  * @param  WriteAddr : L3GD20's internal address to write to.
  */
-static inline void L3GD20_Write( uint8_t datum, uint8_t WriteAddr)
-{
-    uint8_t buf[] = { WriteAddr, datum};
-    L3GD20_CS_LOW();
-
-    SPI_Transmit(&hspi2, buf, sizeof(buf));
-
-    L3GD20_CS_HIGH();
-}
 
 void L3GD20_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead);
 
