@@ -163,19 +163,29 @@ static void run( void *)
 	MtsspDriverSpi SPI_driver;
 	MtsspInterface IMU_interface( & SPI_driver);
 
+	delay(100);
+
 	wait_until_MTi_reports_data_ready();
 	readDataFrom_MTI( &IMU_interface, buf);
+
+	delay(100);
 
 	XbusMessage go_cnf( XMID_GotoConfig);
 	IMU_interface.sendXbusMessage(&go_cnf);
 
+	delay(100);
+
 	wait_until_MTi_reports_data_ready();
 	readDataFrom_MTI( &IMU_interface, buf);
+
+	delay(100);
 
 	XbusMessage msg(XMID_SetOutputConfig);
 	msg.m_length = sizeof(config_data);
 	msg.m_data = (uint8_t *)config_data;
 	IMU_interface.sendXbusMessage(&msg);
+
+	delay(100);
 
 	wait_until_MTi_reports_data_ready();
 	readDataFrom_MTI( &IMU_interface, buf);

@@ -108,6 +108,7 @@ GPS_Result GNSS_type::update(const uint8_t * data)
 
 	return GPS_HAVE_FIX;
 }
+#if USE_DIFF_GNSS == 1
 
 GPS_Result GNSS_type::update_delta(const uint8_t * data)
 {
@@ -140,3 +141,5 @@ GPS_Result GNSS_type::update_delta(const uint8_t * data)
 
 	return res;
 }
+
+#endif

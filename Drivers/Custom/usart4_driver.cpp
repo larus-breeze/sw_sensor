@@ -9,6 +9,8 @@
 #include "stm32f4xx_hal.h"
 #include "GNSS.h"
 
+#if USE_DIFF_GNSS == 1
+
 COMMON UART_HandleTypeDef huart4;
 COMMON DMA_HandleTypeDef hdma_uart4_rx;
 COMMON  static TaskHandle_t USART4_task_Id = NULL;
@@ -137,3 +139,5 @@ static void D_GNSS_runnable (void*)
 }
 
 Task usart4_task (D_GNSS_runnable, "D-GNSS", 256, 0, STANDARD_TASK_PRIORITY+1);
+
+#endif
