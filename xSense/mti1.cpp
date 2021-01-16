@@ -11,6 +11,7 @@
 
 #if RUN_MTi_1_MODULE
 
+#if VERSION_ALFA
 #define M_OFF_X 0.0708f
 #define M_OFF_Y 0.0474f
 #define M_OFF_Z -0.1364f
@@ -18,6 +19,15 @@
 #define M_GAIN_X -1.087f
 #define M_GAIN_Y +1.0132f
 #define M_GAIN_Z +1.0152f
+#else
+#define M_OFF_X 0.0f
+#define M_OFF_Y 0.0f
+#define M_OFF_Z 0.0f
+
+#define M_GAIN_X 1.0f
+#define M_GAIN_Y 1.0f
+#define M_GAIN_Z 1.0f
+#endif
 
 #define IMU_PSEL0  GPIO_PIN_10
 #define IMU_PSEL1  GPIO_PIN_11
@@ -26,14 +36,23 @@
 #define IMU_PORT   GPIOD
 
 COMMON Semaphore MTi_ready;
+COMMON traceString chn;
 
 void sync_communicator(void);
 
 extern RestrictedTask mti_driver;
 
+#if TRACE_ISR == 1
+COMMON traceHandle EXTI15_10_Handle;
+#endif
+
 static inline void init_ports_and_reset_mti(void) // GPIO stuff
 {
-	GPIO_InitTypeDef GPIO_InitStruct = {0};
+#if TRACE_ISR == 1
+  EXTI15_10_Handle = xTraceSetISRProperties("EXTI15_10", 15);
+#endif
+
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
 	__HAL_RCC_GPIOD_CLK_ENABLE();
 
@@ -118,7 +137,15 @@ void readDataFrom_MTI( MtsspInterface* device, uint8_t * buf)
   */
 extern "C" void EXTI15_10_IRQHandler(void)
 {
+#if TRACE_ISR == 1
+  vTraceStoreISRBegin(EXTI15_10_Handle);
+#endif
+
   HAL_GPIO_EXTI_IRQHandler(IMU_DRDY);
+
+#if TRACE_ISR == 1
+  vTraceStoreISREnd(EXTI15_10_Handle);
+#endif
 }
 
 /**
@@ -129,8 +156,11 @@ extern "C" void EXTI15_10_IRQHandler(void)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == IMU_DRDY)
-//	  mti_driver.notify_from_ISR( 1, eSetBits);
-	  MTi_ready.signal_from_ISR();
+    {
+//      vTracePrint(chn, "Hello World!");
+      MTi_ready.signal_from_ISR();
+      //	  mti_driver.notify_from_ISR( 1, eSetBits);
+    }
 }
 
 /*!	\brief Returns the value of the DataReady line
@@ -142,6 +172,8 @@ static bool checkDataReadyLine(void)
 
 static ROM uint8_t config_data[] = // config: ACC GYRO MAG STATUS
   {0x40,0x20,0x00,0x64,0x80,0x20,0x00,0x64,0xC0,0x20,0x00,0x64,0xE0,0x20,0x00,0x00};
+// "wrong" config:
+//{0x80,0x30,0x00,0x00,0x40,0x20,0x00,0x64,0x80,0x20,0x00,0x64,0xC0,0x20,0x00,0x64,0xE0,0x20,0x00,0x00};
 
 inline void wait_until_MTi_reports_data_ready(void)
 {
@@ -149,13 +181,18 @@ inline void wait_until_MTi_reports_data_ready(void)
 //	notify_take(1, 10);
 //	for( bool ready=checkDataReadyLine(); ! ready; ready=checkDataReadyLine())
 //		delay(2);
-	if( ! checkDataReadyLine())
-		MTi_ready.wait(10);
+    if( ! checkDataReadyLine())
+	    MTi_ready.wait(20);
 }
 
 static void run( void *)
 {
 	acquire_privileges();
+
+#if TRACE_ISR == 1
+	chn = xTraceRegisterString("MTi-ISR");
+#endif
+
 	init_ports_and_reset_mti();
 	drop_privileges();
 
@@ -195,10 +232,10 @@ static void run( void *)
 
 	while( true)
 	{
-		wait_until_MTi_reports_data_ready();
-		readDataFrom_MTI( &IMU_interface, buf);
+	    wait_until_MTi_reports_data_ready();
+	    readDataFrom_MTI( &IMU_interface, buf);
 
-		sync_communicator(); // trigger computations
+	    sync_communicator(); // trigger computations
 	}
 }
 

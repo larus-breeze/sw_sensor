@@ -61,28 +61,29 @@ void navigator_t::update_GNSS_old (const coordinates_t &coordinates, float3vecto
 
 void navigator_t::report_data(output_data_t &d)
 {
-    d.TAS 		= TAS;
-    d.IAS 		= IAS;
-    d.euler		= ins.get_euler();
-    d.q					= ins.attitude;
+    d.TAS 			= TAS;
+    d.IAS 			= IAS;
 
-    d.euler_magnetic	= ins_magnetic.get_euler();
-    d.q_magnetic	= ins_magnetic.attitude;
+    d.euler			= ins.get_euler();
+    d.q				= ins.attitude;
 
-    d.vario		= flight_observer.get_vario_INS();
-    d.integrator_vario	= vario_integrator.get_value();
-    d.vario_uncompensated = flight_observer.get_vario_uncompensated();
+    d.euler_magnetic		= ins_magnetic.get_euler();
+    d.q_magnetic		= ins_magnetic.attitude;
 
-    d.wind		= flight_observer.get_wind();
+    d.vario			= flight_observer.get_vario_INS();
+    d.integrator_vario		= vario_integrator.get_value();
+    d.vario_uncompensated 	= flight_observer.get_vario_uncompensated();
 
-    d.speed_compensation_TAS = flight_observer.get_speed_compensation_TAS();
-    d.speed_compensation_INS = flight_observer.get_speed_compensation_INS();
+    d.wind			= flight_observer.get_wind();
+
+    d.speed_compensation_TAS 	= flight_observer.get_speed_compensation_TAS();
+    d.speed_compensation_INS 	= flight_observer.get_speed_compensation_INS();
     d.effective_vertical_acceleration = flight_observer.get_effective_vertical_acceleration();
 
-    d.circle_mode = ins.get_circling_state();
-    d.gyro_correction	= ins.get_gyro_correction();
-    d.nav_acceleration_gnss = ins.get_nav_acceleration();
-    d.nav_acceleration_mag = ins.get_nav_acceleration();
-    d.nav_induction_gnss = ins.get_nav_induction();
-    d.nav_induction_mag = ins.get_nav_induction();
+    d.circle_mode 		= ins.get_circling_state();
+    d.gyro_correction		= ins.get_gyro_correction();
+    d.nav_acceleration_gnss 	= ins.get_nav_acceleration();
+    d.nav_acceleration_mag 	= ins.get_nav_acceleration();
+    d.nav_induction_gnss 	= ins.get_nav_induction();
+    d.nav_induction_mag 	= ins.get_nav_induction();
 }
