@@ -39,7 +39,8 @@ MEMORY
 {
   CCMRAM    (rw)     : ORIGIN = 0x10000000,   LENGTH = 64K
   RAM    	(rw)	 : ORIGIN = 0x20000000,   LENGTH = 128K
-  FLASH     (rx)     : ORIGIN = 0x8000000,    LENGTH = 1024K
+  FLASH     (rx)     : ORIGIN = 0x8000000,    LENGTH = 992K
+  EEPROM (xrw)	: ORIGIN = 0x080F8000, 	LENGTH = 32K
 }
 
 __FLASH_segment_start__ = ORIGIN( FLASH );

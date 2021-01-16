@@ -12,6 +12,7 @@
 #include "ms5611.h"
 #include "stm_l3gd20.h"
 #include "fxos8700cq.h"
+#include "eeprom.h"
 
 void getPressure(void*)
 {
@@ -133,7 +134,48 @@ void getAccMag(void*)
 	}
 }
 
+
+#if 1
+/* Virtual address defined by the user: 0xFFFF value is prohibited */
+uint16_t VirtAddVarTab[NB_OF_VAR] = {0x5555, 0x6666, 0x7777};
+void testEEPRMOEmulation(void*)
+{
+	acquire_privileges();
+
+
+	/* Unlock the Flash Program Erase controller */
+	HAL_FLASH_Unlock();
+
+	taskENTER_CRITICAL();
+
+
+
+	if( EE_Init() != EE_OK)
+	{
+		Error_Handler();
+	}
+
+	if(EE_WriteVariable(VirtAddVarTab[0], 12345)  != EE_OK )
+	{
+		Error_Handler();
+	}
+
+	taskEXIT_CRITICAL();
+	uint16_t temp = 0;
+	TickType_t tickCount = xTaskGetTickCount();
+	for (;;) {
+		vTaskDelayUntil(&tickCount, 100);
+		if(EE_ReadVariable(VirtAddVarTab[0], &temp)  != EE_OK )
+		{
+			Error_Handler();
+		}
+	}
+}
+
+
 //Run all Test Tasks parallel
+RestrictedTask eeprom_test(testEEPRMOEmulation, "Eeprom", 256);
+#endif
 RestrictedTask ms5611_reading(getPressure, "Pressure", 256);
 RestrictedTask l3gd20_reading(getRotation, "Gyro", 512);
 RestrictedTask fxos8700_reading(getAccMag, "AccMag", 512);

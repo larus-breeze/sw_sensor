@@ -7,7 +7,6 @@
 #include "stdio.h"
 #include "i2c.h"
 #include "fxos8700cq.h"
-#include "eeprom.h"
 
 FATFS fatfs;
 extern SD_HandleTypeDef hsd;
@@ -103,34 +102,14 @@ void RunFATFSTestTask(void) {
 }
 
 
-/* Virtual address defined by the user: 0xFFFF value is prohibited */
-uint16_t VirtAddVarTab[NB_OF_VAR] = {0x5555, 0x6666, 0x7777};
-
 void StartTestTask(void const *argument) {
 	//osDelay(5000); //Let USB Connect First.
 
 	//RunFATFSTestTask();
 
-	/* Unlock the Flash Program Erase controller */
-	HAL_FLASH_Unlock();
-
-	if( EE_Init() != EE_OK)
-	{
-		Error_Handler();
-	}
-
-	if(EE_WriteVariable(VirtAddVarTab[0], 12345)  != EE_OK )
-	{
-		Error_Handler();
-	}
-	uint16_t temp = 0;
 	TickType_t tickCount = xTaskGetTickCount();
 	for (;;) {
 		vTaskDelayUntil(&tickCount, 10);
-		if(EE_ReadVariable(VirtAddVarTab[0], &temp)  != EE_OK )
-		{
-			Error_Handler();
-		}
 	}
 	/* USER CODE END 5 */
 }
