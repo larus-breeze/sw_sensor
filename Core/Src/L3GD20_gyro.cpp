@@ -10,7 +10,7 @@
 #include "stm_l3gd20.h"
 #include "common.h"
 
-#if RUN_CHIPSENS_MODULE
+#if RUN_L3GD20
 
 #define SCALING 1.527e-4f
 

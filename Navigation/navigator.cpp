@@ -25,6 +25,7 @@ void navigator_t::update_IMU (
       ins.get_nav_acceleration (),
       true_airspeed,
       GNSS_altitude,
+      atmosphere.get_altitude(),
       TAS);
 }
 #if 1
@@ -39,7 +40,7 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
   GNSS_altitude 	= coordinates.position.e[DOWN]; // negative altitude
   GNSS_speed 		= coordinates.speed_motion;
 
-  vario_integrator.update (flight_observer.get_vario_INS(),
+  vario_integrator.update (flight_observer.get_vario_GNSS(),
 			   ins.get_euler ().y,
 			   ins.get_circling_state ());
 }
@@ -53,7 +54,7 @@ void navigator_t::update_GNSS_old (const coordinates_t &coordinates, float3vecto
   GNSS_altitude 	= coordinates.position.e[DOWN]; // negative altitude
   GNSS_speed 		= coordinates.speed_motion;
 
-  vario_integrator.update (flight_observer.get_vario_INS(),
+  vario_integrator.update (flight_observer.get_vario_GNSS(),
 			   ins.get_euler ().y,
 			   ins.get_circling_state ());
 }
@@ -70,9 +71,10 @@ void navigator_t::report_data(output_data_t &d)
     d.euler_magnetic		= ins_magnetic.get_euler();
     d.q_magnetic		= ins_magnetic.attitude;
 
-    d.vario			= flight_observer.get_vario_INS();
+    d.vario			= flight_observer.get_vario_GNSS();
+    d.vario_pressure		= flight_observer.get_vario_pressure();
     d.integrator_vario		= vario_integrator.get_value();
-    d.vario_uncompensated 	= flight_observer.get_vario_uncompensated();
+    d.vario_uncompensated 	= flight_observer.get_vario_uncompensated_GNSS();
 
     d.wind			= flight_observer.get_wind();
 

@@ -160,7 +160,9 @@ void RunL3GD20TestTask(void) {
 	}
 }
 
-void RunFXOS8700TestTask(void) {
+#if RUN_FXOS8700
+
+void RunFXOS8700TestTask(void *) {
 	I2C_Init();
 	float xyz_acc[] = { 0, 0, 0 };
 	float xyz_mag[] = { 0, 0, 0 };
@@ -193,3 +195,7 @@ void RunFXOS8700TestTask(void) {
 		vTaskDelayUntil(&tickCount, 10);
 	}
 }
+
+Task x( RunFXOS8700TestTask);
+
+#endif

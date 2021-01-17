@@ -17,8 +17,8 @@ class flight_observer_t
 public:
   flight_observer_t( void)
   :
-  vario_averager_TAS( VARIO_F_BY_FS),
-  vario_averager_INS( VARIO_F_BY_FS),
+  vario_averager_pressure( VARIO_F_BY_FS),
+  vario_averager_GNSS( VARIO_F_BY_FS),
   windspeed_averager_NORTH( WINDSPEED_F_BY_FS),
   windspeed_averager_EAST( WINDSPEED_F_BY_FS),
   kinetic_energy_differentiator( 1.0f, 1.0f / 100.0f)
@@ -30,7 +30,8 @@ public:
 	    const float3vector &gnss_acceleration,
 	    const float3vector &ahrs_acceleration,
 	    const float3vector &air_velocity,
-	    float altitude,
+	    float GNSS_altitude,
+	    float pressure_altitude,
 	    float TAS
 	);
 	float get_pressure_altitude( void) const;
@@ -42,17 +43,17 @@ public:
 	{
 		return speed_compensation_INS;
 	}
-	float get_vario_uncompensated( void ) const
+	float get_vario_uncompensated_GNSS( void ) const
 	{
-		return vario_uncompensated;
+		return vario_uncompensated_GNSS;
 	}
-	float get_vario_TAS( void ) const
+	float get_vario_pressure( void ) const
 	{
-		return (float)( vario_averager_TAS.get_output());
+		return (float)( vario_averager_pressure.get_output());
 	}
-	float get_vario_INS( void ) const
+	float get_vario_GNSS( void ) const
 	{
-		return vario_averager_INS.get_output();
+		return vario_averager_GNSS.get_output();
 	}
 	float3vector get_wind( void ) const
 	{
@@ -64,18 +65,20 @@ public:
 	}
 	float get_effective_vertical_acceleration( void) const
 	{
-		return KalmanVario.get_x( KalmanVario_t::ACCELERATION_OBSERVED);
+		return KalmanVario_GNSS.get_x( KalmanVario_t::ACCELERATION_OBSERVED);
 	}
 private:
-	pt2<float,float> vario_averager_TAS;
-	pt2<float,float> vario_averager_INS;
+	pt2<float,float> vario_averager_pressure;
+	pt2<float,float> vario_averager_GNSS;
 	pt2<float,float> windspeed_averager_NORTH;
 	pt2<float,float> windspeed_averager_EAST;
 	differentiator<float,float>kinetic_energy_differentiator;
 	float speed_compensation_TAS;
 	float speed_compensation_INS;
-	float vario_uncompensated;
-	KalmanVario_t KalmanVario;
+	float vario_uncompensated_GNSS;
+	float vario_uncompensated_pressure;
+	KalmanVario_t KalmanVario_GNSS;
+	KalmanVario_t KalmanVario_pressure;
 };
 
 #endif /* FLIGHT_OBSERVER_H_ */

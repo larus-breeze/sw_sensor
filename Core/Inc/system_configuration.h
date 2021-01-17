@@ -8,7 +8,8 @@
 
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
-#define RUN_CHIPSENS_MODULE 	0
+#define RUN_L3GD20 		0
+#define RUN_FXOS8700		0
 #define RUN_PITOT_MODULE 	1
 #define RUN_CAN_TESTER		0
 #define ACTIVATE_USB		0
@@ -27,7 +28,7 @@
 #define LOG_OBSERVATIONS	0 // log IMU + pressure data
 #define LOG_COORDINATES		0 // log GNSS data
 #define LOG_OUTPUT_DATA		1 // logging all inclusive
-#define OUTFILE "sensor.f76"	// "LOG.F7x"
+#define OUTFILE "sensor.f77"	// "LOG.F7x"
 #define OLD_FORMAT 		0 // for year 2020 old data
 
 #define RUN_SPI_TESTER		0

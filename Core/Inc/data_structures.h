@@ -42,6 +42,7 @@ typedef struct
   float TAS;
   float vario_uncompensated;
   float vario;
+  float vario_pressure;
   float speed_compensation_TAS;
   float speed_compensation_INS;
   float integrator_vario;
