@@ -53,6 +53,7 @@ void getPressure(void*)
 
 void getRotation(void*)
 {
+	acquire_privileges(); /*HAL functions cause MPU exception.*/
 	SPI_Init(&hspi2);
 	L3GD20_Initialize();
 
@@ -75,7 +76,7 @@ void getRotation(void*)
 	}
 	for (int i = 0; i < 3; i++) {
 		gyro_xyz_calib[i] = gyro_xyz_calib[i]
-				/ (float) NUMBER_OF_CALIBRATIONRUNS;
+										   / (float) NUMBER_OF_CALIBRATIONRUNS;
 	}
 	HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
 
@@ -85,10 +86,8 @@ void getRotation(void*)
 			gyro_xyz[i] = gyro_xyz[i] - gyro_xyz_calib[i];
 			gyro_xyzint[i] = (int16_t) (gyro_xyz[i]);
 		}
-		acquire_privileges();
 		size = sprintf(printbuf, "Raw Gyro XYZ: %6d   %6d   %6d \r\n",
 				gyro_xyzint[0], gyro_xyzint[1], gyro_xyzint[2]);
-		drop_privileges();
 		ASSERT(BUFFERSIZE >= size);
 
 		for (int i = 0; i < size; i++) {
@@ -135,20 +134,18 @@ void getAccMag(void*)
 }
 
 
-#if 1
-/* Virtual address defined by the user: 0xFFFF value is prohibited */
-uint16_t VirtAddVarTab[NB_OF_VAR] = {0x5555, 0x6666, 0x7777};
-void testEEPRMOEmulation(void*)
-{
-	acquire_privileges();
 
+/* Virtual address defined by the user: 0xFFFF value is prohibited */
+COMMON uint16_t VirtAddVarTab[NB_OF_VAR] = {0x5555, 0x6666, 0x7777};
+void flashTest(void*)
+{
+	synchronous_timer myTimer(100);
+
+	//Patch required for running without acquire priviledges: COMMON __IO uint32_t uwTick; in stm32f4xx_hal.c and COMMON FLASH_ProcessTypeDef pFlash;
+	acquire_privileges();
 
 	/* Unlock the Flash Program Erase controller */
 	HAL_FLASH_Unlock();
-
-	taskENTER_CRITICAL();
-
-
 
 	if( EE_Init() != EE_OK)
 	{
@@ -160,11 +157,9 @@ void testEEPRMOEmulation(void*)
 		Error_Handler();
 	}
 
-	taskEXIT_CRITICAL();
 	uint16_t temp = 0;
-	TickType_t tickCount = xTaskGetTickCount();
 	for (;;) {
-		vTaskDelayUntil(&tickCount, 100);
+		myTimer.sync();
 		if(EE_ReadVariable(VirtAddVarTab[0], &temp)  != EE_OK )
 		{
 			Error_Handler();
@@ -172,10 +167,22 @@ void testEEPRMOEmulation(void*)
 	}
 }
 
+COMMON static TaskParameters_t params =
+{
+		flashTest, // task code
+		"FLASH",
+		256, // words
+		0,  //No parameters
+		STANDARD_TASK_PRIORITY,
+		(StackType_t*)0,  //No stack provided let FreeRTOS allocate it.
+		{
+				{ COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
+				{ (void *)0x080F8000, 0x8000, portMPU_REGION_READ_WRITE},  //Allow write access to the last 32KByte of Flash.
+				{ 0, 0, 0 }
+		}
+};
+COMMON RestrictedTask FLASH_task( params);
 
-//Run all Test Tasks parallel
-RestrictedTask eeprom_test(testEEPRMOEmulation, "Eeprom", 256);
-#endif
 RestrictedTask ms5611_reading(getPressure, "Pressure", 256);
 RestrictedTask l3gd20_reading(getRotation, "Gyro", 512);
 RestrictedTask fxos8700_reading(getAccMag, "AccMag", 512);
