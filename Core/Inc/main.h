@@ -51,7 +51,9 @@ extern "C" {
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
+
 void Error_Handler(void);
+void heartbeat(void);
 
 /* USER CODE BEGIN EFP */
 

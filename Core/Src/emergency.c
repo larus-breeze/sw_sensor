@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include "my_assert.h"
+#include "stm32f407xx.h"
 
 // "core dump" memory
 volatile unsigned int stacked_r0;
@@ -167,6 +168,13 @@ void DebugMon_Handler(void)
 {
 }
 
+#if 0
+void Default_Handler( void)
+{
+  uint32_t active_vector = *(NVIC->IABR);
+  asm("bkpt 0");
+}
+#endif
 /**
  * @brief  This function handles FreeRTOS's Stack Overflow exception.
  */
