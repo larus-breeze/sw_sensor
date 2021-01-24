@@ -24,7 +24,7 @@ static void runnable( void *)
 {
   uint8_t data[4];
 
-  I2C_Init();
+  I2C_Init( &hi2c1);
 
   drop_privileges();
 

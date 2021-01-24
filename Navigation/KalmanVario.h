@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include "arm_math.h"
 #include "system_configuration.h"
+#include "common.h"
 
 class KalmanVario_t
 {
