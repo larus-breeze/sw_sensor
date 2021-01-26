@@ -7,7 +7,7 @@
 #ifndef APPLICATION_KALMANVARIO_H_
 #define APPLICATION_KALMANVARIO_H_
 
-#include "memory.h"
+#include "embedded_memory.h"
 #include <stdint.h>
 #include "arm_math.h"
 #include "system_configuration.h"

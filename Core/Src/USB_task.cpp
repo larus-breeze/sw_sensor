@@ -7,7 +7,7 @@
 #include "system_configuration.h"
 #include "main.h"
 #include "FreeRTOS_wrapper.h"
-#include "memory.h"
+#include "embedded_memory.h"
 #include "usb_device.h"
 #include "usbd_cdc.h"
 

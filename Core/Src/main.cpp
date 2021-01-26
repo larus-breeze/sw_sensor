@@ -19,7 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "memory.h"
+#include "embedded_memory.h"
 //#include "cmsis_os.h"
 #include "fatfs.h"
 #include "usb_device.h"

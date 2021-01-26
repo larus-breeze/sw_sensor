@@ -48,7 +48,7 @@
 #include "stream_buffer.h"
 #include "message_buffer.h"
 #include "my_assert.h"
-#include "memory.h"
+#include "embedded_memory.h"
 #include "string.h"
 
 #define STANDARD_TASK_PRIORITY (3 + tskIDLE_PRIORITY)
