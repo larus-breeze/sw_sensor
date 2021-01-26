@@ -14,7 +14,7 @@
 
 void getPressure (void*)
 {
-  I2C_Init ();
+  I2C_Init (MS5611_I2C);
   drop_privileges();
 
   MS5611 ms5611_static (0xEE);

@@ -4,7 +4,7 @@
  * @author		Dr. Klaus Schaefer
  **************************************************************************/
 
-#include "memory.h"
+#include "embedded_memory.h"
 #include "ascii_support.h"
 
 float string2float(char *input)

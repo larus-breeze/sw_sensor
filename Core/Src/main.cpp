@@ -30,17 +30,18 @@
 #include "my_assert.h"
 #include "common.h"
 
-ADC_HandleTypeDef hadc1;
+COMMON ADC_HandleTypeDef hadc1;
 
-CAN_HandleTypeDef hcan1;
-CAN_HandleTypeDef hcan2;
+COMMON CAN_HandleTypeDef hcan1;
+COMMON CAN_HandleTypeDef hcan2;
 
 COMMON I2C_HandleTypeDef hi2c1;
 COMMON I2C_HandleTypeDef hi2c2;
 
-SD_HandleTypeDef hsd;
-DMA_HandleTypeDef hdma_sdio_rx;
-DMA_HandleTypeDef hdma_sdio_tx;
+COMMON SD_HandleTypeDef hsd;
+COMMON DMA_HandleTypeDef hdma_sdio_rx;
+COMMON DMA_HandleTypeDef hdma_sdio_tx;
+COMMON DMA_HandleTypeDef hdma_usart6_tx;
 
 COMMON SPI_HandleTypeDef hspi1;
 COMMON SPI_HandleTypeDef hspi2;
@@ -50,7 +51,7 @@ COMMON DMA_HandleTypeDef hdma_spi2_rx;
 COMMON DMA_HandleTypeDef hdma_spi2_tx;
 
 COMMON UART_HandleTypeDef huart2;
-UART_HandleTypeDef huart6;
+COMMON UART_HandleTypeDef huart6;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
