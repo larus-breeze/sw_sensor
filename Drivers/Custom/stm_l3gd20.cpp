@@ -3,14 +3,15 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "my_assert.h"
+#include "common.h"
 
 static void L3GD20_LowLevel_Init(void);
 
-static uint8_t __ALIGNED(4) L3GD20_tmpreg;
+COMMON static uint8_t __ALIGNED(4) L3GD20_tmpreg;
 
 void L3GD20_Write( uint8_t datum, uint8_t WriteAddr)
 {
-	static uint8_t __ALIGNED(4) buf[2];
+	COMMON static uint8_t __ALIGNED(4) buf[2];
 	buf[0] = WriteAddr;
 	buf[1] = datum;
     L3GD20_CS_LOW();
@@ -193,7 +194,7 @@ uint8_t L3GD20_GetDataStatus(void)
  */
 void L3GD20_Read(uint8_t* pBuffer, uint8_t ReadAddr, uint16_t NumByteToRead)
 {  
-	static uint8_t __ALIGNED(4) buf;   //For SPI DMA Usage
+	COMMON static uint8_t __ALIGNED(4) buf;   //For SPI DMA Usage
 
 	if(NumByteToRead > 0x01)
 	{
@@ -278,7 +279,7 @@ void L3GD20_ReadData( float data[3])
 	volatile uint8_t axis, fifoEntry, fifoStatus, fifoFilled;
 	int32_t value;
 	int32_t all_values;
-	static uint8_t  __ALIGNED(4) sensordata[ 3 * sizeof( int16_t) * L3GD20_MAX_FIFO_ENTRIES]; // buffer for measurement data
+	COMMON static uint8_t  __ALIGNED(4) sensordata[ 3 * sizeof( int16_t) * L3GD20_MAX_FIFO_ENTRIES]; // buffer for measurement data
 	for(;;)
 	  {
 

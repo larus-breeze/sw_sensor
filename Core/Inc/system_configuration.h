@@ -6,9 +6,9 @@
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
-#define RUN_MTi_1_MODULE 	1
+#define RUN_MTi_1_MODULE 	0
 #define RUN_MS5611_MODULE 	1
-#define RUN_L3GD20 		0
+#define RUN_L3GD20			1
 #define RUN_FXOS8700		0
 #define RUN_PITOT_MODULE 	1
 #define RUN_CAN_TESTER		0
