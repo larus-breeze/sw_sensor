@@ -26,7 +26,7 @@ static void runnable (void*)
     {
       L3GD20_ReadData (gyro_xyz);
       for (int i = 0; i < 3; i++)
-	 output_data.m.MEMS_gyro[i] = gyro_xyz[i] * SCALING;
+	 output_data.m.lowcost_gyro[i] = gyro_xyz[i] * SCALING;
     }
 }
 
