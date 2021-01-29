@@ -17,6 +17,8 @@
   */
 
 #include "fatfs.h"
+#include "data_structures.h"
+extern GNSS_type GNSS;
 
 uint8_t retSD;    /* Return value for SD */
 char SDPath[4];   /* SD logical drive path */
@@ -45,7 +47,7 @@ void MX_FATFS_Init(void)
 DWORD get_fattime(void)
 {
   /* USER CODE BEGIN get_fattime */
-  return 0;
+  return GNSS.FAT_time;
   /* USER CODE END get_fattime */
 }
 
