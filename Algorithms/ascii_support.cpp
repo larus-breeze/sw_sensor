@@ -4,7 +4,7 @@
  * @author		Dr. Klaus Schaefer
  **************************************************************************/
 
-#include "memory.h"
+#include "embedded_memory.h"
 #include "ascii_support.h"
 
 float string2float(char *input)
@@ -67,7 +67,7 @@ void utox(uint32_t value, char* result, uint8_t nibbles)
 	}
 	*result=0;
 }
-void lutox(uint32_t value, char* result)
+void lutox(uint64_t value, char* result)
 {
   utox( value>>32, result, 8);
   utox( value & 0xffffffff, result+8, 8);
