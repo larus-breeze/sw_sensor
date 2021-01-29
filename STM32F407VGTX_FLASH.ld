@@ -51,7 +51,7 @@ __SRAM_segment_end__ = __SRAM_segment_start__ + LENGTH( RAM );
 
 _Privileged_Functions_Region_Size = 0x4000;
 _Privileged_Data_Region_Size = 256;
-_Common_Data_Region_Size = 16384; /* cross-check with common.h ! */
+_Common_Data_Region_Size = 8192; /* cross-check with common.h ! */
 
 /* Sections */
 SECTIONS
@@ -201,17 +201,7 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
-  /* MEMORY_bank1 section, code must be located here explicitly            */
-  /* Example: extern int foo(void) __attribute__ ((section (".mb1text"))); */
-  .memory_b1_text :
-  {
-    *(.mb1text)        /* .mb1text sections (code) */
-    *(.mb1text*)       /* .mb1text* sections (code)  */
-    *(.mb1rodata)      /* read-only data (constants) */
-    *(.mb1rodata*)
-  } >MEMORY_B1
-
-    /* Core Coupled Memory CCM section */
+  /* Core Coupled Memory CCM section */
   .system_ram(NOLOAD) :
   {
   	. = . + Stack_Size;

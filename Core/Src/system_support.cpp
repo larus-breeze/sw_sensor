@@ -33,6 +33,7 @@ extern "C" void vApplicationIdleHook( void)
 {
 //	*(uint32_t *)0x40022018=0x020000;
 	++idle_counter;
+	__WFI();
 }
 
 extern "C" __weak void Systick_Callback( uint64_t ticks)

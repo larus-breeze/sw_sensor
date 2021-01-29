@@ -48,7 +48,7 @@
 #include "stream_buffer.h"
 #include "message_buffer.h"
 #include "my_assert.h"
-#include "memory.h"
+#include "embedded_memory.h"
 #include "string.h"
 
 #define STANDARD_TASK_PRIORITY (3 + tskIDLE_PRIORITY)
@@ -648,6 +648,10 @@ public:
 	inline void reset(void)
 	{
 		PreviousWakeTime = xTaskGetTickCount();
+	}
+	inline void re_synchronize(TickType_t time)
+	{
+		PreviousWakeTime = time;
 	}
 	//! synchronous delay using DelayUntil(...)
 	inline void delay(TickType_t duration)

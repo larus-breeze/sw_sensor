@@ -80,13 +80,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	{
 		/*Get Byte and enable interrupt again*/
 		queue_status = xQueueSendFromISR(UART6_Rx_Queue, &uart6_rx_byte, &xHigherPriorityTaskWokenByPost);
+		ASSERT(pdTRUE == queue_status);
 		HAL_UART_Receive_IT(&huart6, &uart6_rx_byte, 1);
 	}
 	else
 	{
-		ASSERT(0);
+		//ASSERT(0);   //Skip as might be used by other DMA controlled drivers
 	}
-	ASSERT(pdTRUE == queue_status);
 	portYIELD_FROM_ISR(xHigherPriorityTaskWokenByPost);
 }
 
