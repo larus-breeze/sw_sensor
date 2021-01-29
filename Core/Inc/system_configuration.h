@@ -6,7 +6,7 @@
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
-#define RUN_MTi_1_MODULE 	0
+#define RUN_MTi_1_MODULE 	0   //@MaB deactivated because blocks system if MTi1 is not mounted.
 #define RUN_MS5611_MODULE 	1
 #define RUN_L3GD20			1
 #define RUN_FXOS8700		1
