@@ -22,19 +22,21 @@
 
 static void runnable( void *)
 {
-  uint8_t data[4];
+	uint8_t data[4];
 
-  I2C_Init( &hi2c1);
+	I2C_Init( &hi2c1);
 
-  drop_privileges();
+	drop_privileges();
 
-  for( synchronous_timer t(10); true; t.sync())
-    {
-      I2C_Read( &hi2c1, I2C_ADDRESS, data, 2);
-      ASSERT(( data[0] & 0xC0)==0); 			// no error flags !
-      uint16_t raw_data = (data[0] << 8) | data[1];
-      output_data.m.pitot_pressure = (float)( raw_data - OFFSET) * SPAN;
-    }
+	for( synchronous_timer t(10); true; t.sync())
+	{
+		if(I2C_OK == I2C_Read( &hi2c1, I2C_ADDRESS, data, 2))
+		{
+			ASSERT(( data[0] & 0xC0)==0); 			// no error flags !
+			uint16_t raw_data = (data[0] << 8) | data[1];
+			output_data.m.pitot_pressure = (float)( raw_data - OFFSET) * SPAN;
+		}
+	}
 }
 
 RestrictedTask pitot_reading ( runnable, "PITOT", 256, 0, PITOT_PRIORITY + portPRIVILEGE_BIT);
