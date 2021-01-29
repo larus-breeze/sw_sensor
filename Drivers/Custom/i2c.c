@@ -160,6 +160,7 @@ I2C_StatusTypeDef I2C_Init(I2C_HandleTypeDef *hi2c)
 				status = I2C_ERROR;
 			}
 		}
+		else
 		{
 			status = I2C_OK; //Already initialized
 		}

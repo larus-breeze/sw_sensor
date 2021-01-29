@@ -49,13 +49,13 @@ void acc_mag_runnable(void *) {
 
 }
 
-/*
+
 #define STACKSIZE 128
 static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 
 static TaskParameters_t p =
 {
-		runnable,
+		acc_mag_runnable,
 		"ACCMAG",
 		STACKSIZE,
 		0,
@@ -67,10 +67,8 @@ static TaskParameters_t p =
 				{ 0, 0, 0 }
 		}
 };
-*/
-//RestrictedTask acc_mag_chip_sensor_task( p);
-//RestrictedTask acc_mag_chip_sensor_task (acc_mag_runnable, "ACCMAG", 256, 0, FXOS8700_PRIORITY);
 
+//RestrictedTask acc_mag_chip_sensor_task( p);    //TODO: pitot_sensor and this task concurrently used the i2c1 without mutex!
 
 #endif
 
