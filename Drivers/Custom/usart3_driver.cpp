@@ -34,7 +34,7 @@ static inline void MX_USART3_UART_Init (void)
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
     hdma_usart3_rx.Instance = DMA1_Stream1;
-    hdma_usart3_rx.Init.Channel = DMA_CHANNEL_1;
+    hdma_usart3_rx.Init.Channel = DMA_CHANNEL_4;
     hdma_usart3_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
     hdma_usart3_rx.Init.PeriphInc = DMA_PINC_DISABLE;
     hdma_usart3_rx.Init.MemInc = DMA_MINC_ENABLE;
