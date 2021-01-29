@@ -76,7 +76,7 @@ typedef struct {
 } fxos8700RawData_t;
 
 
-void FXOS8700_Initialize(fxos8700AccelRange_t range);
+bool FXOS8700_Initialize(fxos8700AccelRange_t range);
 void FXOS8700_get(float* xyz_acc, float* xyz_mag);
 
 #ifdef __cplusplus

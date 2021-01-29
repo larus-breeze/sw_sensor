@@ -116,6 +116,7 @@ Task SD_tester( RunFATFSTestTask, "SD_IO", 256);
 
 #endif
 
+#if 0
 void RunL3GD20TestTask(void) {
 	SPI_Init(&hspi2);
 	L3GD20_Initialize();
@@ -159,8 +160,9 @@ void RunL3GD20TestTask(void) {
 		osDelay(10);
 	}
 }
+#endif
 
-#if RUN_FXOS8700
+#if RUN_FXOS8700123
 
 void RunFXOS8700TestTask(void *) {
 	I2C_Init();

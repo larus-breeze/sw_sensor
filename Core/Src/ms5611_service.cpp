@@ -23,8 +23,8 @@ void getPressure (void*)
 	bool static_ms5611_available = false;
 	bool pitot_ms5611_available = false;
 
-	static_ms5611_available = ms5611_static.initialize ();
-	pitot_ms5611_available = ms5611_pitot.initialize ();
+	static_ms5611_available = ms5611_static.initialize();
+	pitot_ms5611_available = ms5611_pitot.initialize();
 
 	synchronous_timer t(10);
 	while( true)
@@ -43,11 +43,17 @@ void getPressure (void*)
 		if (true == pitot_ms5611_available)
 			ms5611_pitot.update();
 
-		output_data.m.static_pressure = ms5611_static.get_pressure();
-		output_data.m.static_sensor_temperature = ms5611_static.get_temperature();
+		if (true == static_ms5611_available)
+		{
+			output_data.m.static_pressure = ms5611_static.get_pressure();
+			output_data.m.static_sensor_temperature = ms5611_static.get_temperature();
+		}
 
-		output_data.m.absolute_pressure = ms5611_pitot.get_pressure();
-		output_data.m.absolute_sensor_temperature = ms5611_pitot.get_temperature();
+		if (true == pitot_ms5611_available)
+		{
+			output_data.m.absolute_pressure = ms5611_pitot.get_pressure();
+			output_data.m.absolute_sensor_temperature = ms5611_pitot.get_temperature();
+		}
 		t.sync();
 	}
 }

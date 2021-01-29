@@ -48,6 +48,6 @@ static TaskParameters_t p =
 	}
 };
 
-RestrictedTask chip_sensor_task( p);
+RestrictedTask gyro_chip_sensor_task( p);
 
 #endif
