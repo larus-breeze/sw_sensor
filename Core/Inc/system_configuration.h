@@ -28,8 +28,7 @@
 #define LOG_OBSERVATIONS	0 // log IMU + pressure data
 #define LOG_COORDINATES		0 // log GNSS data
 #define LOG_OUTPUT_DATA		1 // logging all inclusive
-#define OUTFILE ".f77"	// "LOG.F7x"
-#define OLD_FORMAT 		0 // for year 2020 old data
+#define OLD_FORMAT 			0 // for year 2020 old data
 
 #define RUN_SPI_TESTER		0
 #define RUN_SDIO_TEST		0

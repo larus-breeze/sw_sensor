@@ -1,6 +1,6 @@
 /** *****************************************************************************
  * @file    data_logger.cpp
- * @author  Klaus Schaefer
+ * @author  Klaus Schaefer,  some adaptions by Maximilian Betz
  * @brief   data logging to uSD
  ******************************************************************************/
 
@@ -21,7 +21,7 @@ extern DMA_HandleTypeDef hdma_sdio_tx;
 #define BUFSIZE 2048 // bytes
 #define RESERVE 512
 static uint8_t  __ALIGNED(BUFSIZE) buffer[BUFSIZE+RESERVE];
-COMMON static char filename[40];
+COMMON static char filename[25];
 
 void data_logger_runnable(void*)
 {
@@ -44,7 +44,7 @@ void data_logger_runnable(void*)
 		delay(100);  /**/
 	}
 
-	// generate a filename with timestamp
+	// generate filename based on timestamp
 	int idx = 0;
 	itoa(2000 + output_data.c.year, filename, 10);
 	while(filename[idx] != 0)
