@@ -38,7 +38,7 @@
 /** @addtogroup STM32F4xx_HAL_Driver
   * @{
   */
-
+#include "common.h"
 /** @defgroup HAL HAL
   * @brief HAL module driver.
   * @{
@@ -91,7 +91,7 @@
 /** @addtogroup HAL_Private_Variables
   * @{
   */
-__IO uint32_t uwTick;
+COMMON __IO uint32_t uwTick;
 uint32_t uwTickPrio   = (1UL << __NVIC_PRIO_BITS); /* Invalid PRIO */
 HAL_TickFreqTypeDef uwTickFreq = HAL_TICK_FREQ_DEFAULT;  /* 1KHz */
 /**

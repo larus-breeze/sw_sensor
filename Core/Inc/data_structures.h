@@ -31,6 +31,7 @@ typedef struct // legacy data type
   float absolute_pressure;  //this is the second ms5611 on the PCB.
   float static_sensor_temperature;  //log temperature to monitor temperature in enclosure
   float absolute_sensor_temperature;
+  float supply_voltage;  //Measuring the supply voltage. Might be related to sensor noise.
 } measurement_data_t;
 
 typedef struct
