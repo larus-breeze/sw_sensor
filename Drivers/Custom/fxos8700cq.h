@@ -77,7 +77,7 @@ typedef struct {
 
 
 bool FXOS8700_Initialize(fxos8700AccelRange_t range);
-void FXOS8700_get(float* xyz_acc, float* xyz_mag);
+bool FXOS8700_get(float* xyz_acc, float* xyz_mag);
 
 #ifdef __cplusplus
 }

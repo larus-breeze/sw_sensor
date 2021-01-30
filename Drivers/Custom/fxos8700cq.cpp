@@ -44,15 +44,8 @@ COMMON static uint8_t FXOS8700_range = 0;   /* instance variable*/
 bool FXOS8700_Initialize(fxos8700AccelRange_t range)
 {
 	uint8_t id = 0;
-	uint32_t retrycounter = 50;
-	while(false == FXOS8700_read(FXOS8700_REGISTER_WHO_AM_I, &id, 1))
-	{
-		retrycounter--;
-		delay(10);
-
-		if(retrycounter == 0)
-			return false;
-	}
+	if(false == FXOS8700_read(FXOS8700_REGISTER_WHO_AM_I, &id, 1))
+		return false;
 	ASSERT(FXOS8700_ID == id);
 
 	FXOS8700_range = range;
@@ -61,63 +54,70 @@ bool FXOS8700_Initialize(fxos8700AccelRange_t range)
 
 	/* Set to standby mode (required to make changes to this register) */
 	reg_data = 0;
-	FXOS8700_write(FXOS8700_REGISTER_CTRL_REG1, &reg_data, 1);
+	if(false == FXOS8700_write(FXOS8700_REGISTER_CTRL_REG1, &reg_data, 1))
+		return false;
 
 	reg_data = (uint8_t) range;
 	ASSERT((reg_data <= ACCEL_RANGE_8G) && (reg_data >= ACCEL_RANGE_2G));
-	FXOS8700_write(FXOS8700_REGISTER_XYZ_DATA_CFG, &reg_data, 1);
+	if(false == FXOS8700_write(FXOS8700_REGISTER_XYZ_DATA_CFG, &reg_data, 1))
+		return false;
 
 	/* High resolution */
 	reg_data = 0x02;
-	FXOS8700_write(FXOS8700_REGISTER_CTRL_REG2, &reg_data, 1);
+	if(false == FXOS8700_write(FXOS8700_REGISTER_CTRL_REG2, &reg_data, 1))
+		return false;
 
 	/* Active, Normal Mode, Low Noise, 100Hz in Hybrid Mode */
 	reg_data = 0x15;
-	FXOS8700_write(FXOS8700_REGISTER_CTRL_REG1, &reg_data, 1);
+	if(false == FXOS8700_write(FXOS8700_REGISTER_CTRL_REG1, &reg_data, 1))
+		return false;
 	/* Configure the magnetometer */
 	/* Hybrid Mode, Over Sampling Rate = 16 */
 	reg_data = 0x1F;
-	FXOS8700_write(FXOS8700_REGISTER_MCTRL_REG1, &reg_data, 1);
+	if(false == FXOS8700_write(FXOS8700_REGISTER_MCTRL_REG1, &reg_data, 1))
+		return false;
 
 	/* Jump to reg 0x33 after reading 0x06, to get acc and mag data in one read */
 	reg_data = 0x20;
-	FXOS8700_write(FXOS8700_REGISTER_MCTRL_REG2, &reg_data, 1);
+	if(false == FXOS8700_write(FXOS8700_REGISTER_MCTRL_REG2, &reg_data, 1))
+		return false;
 
 	return true;
-
-
 }
 
-
-void FXOS8700_get(float* xyz_acc, float* xyz_mag)
-{
 #define RX_DATA_SIZE 13
-	uint8_t rx_data[RX_DATA_SIZE];
+COMMON static uint8_t rx_data[RX_DATA_SIZE];
+bool FXOS8700_get(float* xyz_acc, float* xyz_mag)
+{
 
-	FXOS8700_read(FXOS8700_REGISTER_STATUS, rx_data, RX_DATA_SIZE);
-	/*TODO: Evaluate rx_data[0] status values might activate interrupts for new conversion done trigger*/
+	if(true == FXOS8700_read(FXOS8700_REGISTER_STATUS, rx_data, RX_DATA_SIZE))
+	{
+		/*TODO: Evaluate rx_data[0] status values might activate interrupts for new conversion done trigger*/
 
-	float acceleration_conversion_factor = 0;
-	if (ACCEL_RANGE_2G == FXOS8700_range)
-	{
-		acceleration_conversion_factor = ACCEL_MG_LSB_2G * ACCEL_GRAVITY_MS2;
-	}
-	else if (ACCEL_RANGE_4G == FXOS8700_range)
-	{
-		acceleration_conversion_factor = ACCEL_MG_LSB_4G * ACCEL_GRAVITY_MS2;
-	}
-	else if (ACCEL_RANGE_8G == FXOS8700_range)
-	{
-		acceleration_conversion_factor = ACCEL_MG_LSB_8G * ACCEL_GRAVITY_MS2;
-	}
-	else
-	{
-		ASSERT(0);
-	}
+		float acceleration_conversion_factor = 0;
+		if (ACCEL_RANGE_2G == FXOS8700_range)
+		{
+			acceleration_conversion_factor = ACCEL_MG_LSB_2G * ACCEL_GRAVITY_MS2;
+		}
+		else if (ACCEL_RANGE_4G == FXOS8700_range)
+		{
+			acceleration_conversion_factor = ACCEL_MG_LSB_4G * ACCEL_GRAVITY_MS2;
+		}
+		else if (ACCEL_RANGE_8G == FXOS8700_range)
+		{
+			acceleration_conversion_factor = ACCEL_MG_LSB_8G * ACCEL_GRAVITY_MS2;
+		}
+		else
+		{
+			ASSERT(0);
+		}
 
-	for(int i = 0; i<3; i++)
-	{
-		xyz_acc[i] = (float)((int16_t)((rx_data[(i*2)+1] << 8)  | (rx_data[(i*2)+2])) >> 2) * acceleration_conversion_factor ;
-		xyz_mag[i] = ((float)(int16_t)((rx_data[(i*2)+7] << 8)  | rx_data[(i*2)+8])) * MAG_UT_LSB;
+		for(int i = 0; i<3; i++)
+		{
+			xyz_acc[i] = (float)((int16_t)((rx_data[(i*2)+1] << 8)  | (rx_data[(i*2)+2])) >> 2) * acceleration_conversion_factor ;
+			xyz_mag[i] = ((float)(int16_t)((rx_data[(i*2)+7] << 8)  | rx_data[(i*2)+8])) * MAG_UT_LSB;
+		}
+		return true;
 	}
+	return false;
 }
