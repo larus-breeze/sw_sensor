@@ -46,7 +46,7 @@ void data_logger_runnable(void*)
 
 	// generate a filename with timestamp
 	int idx = 0;
-	itoa(output_data.c.year, filename, 10);
+	itoa(2000 + output_data.c.year, filename, 10);
 	while(filename[idx] != 0)
 		idx++;
 	if (output_data.c.month < 10)
@@ -85,9 +85,20 @@ void data_logger_runnable(void*)
 	while(filename[idx] != 0)
 		idx++;
 
+	if (output_data.c.second < 10)
+	{
+		filename[idx] = '0';
+		idx++;
+	}
+	itoa(output_data.c.second, &filename[idx], 10);
+	while(filename[idx] != 0)
+		idx++;
+
 	filename[idx] = '.';
-	filename[idx+1] = 'b';
-	filename[idx+2] = 0;
+	filename[idx+1] = 'f';
+	filename[idx+2] = '7';
+	filename[idx+3] = '7';
+	filename[idx+4] = 0;
 
 	GPIO_PinState led_state = GPIO_PIN_RESET;
 
