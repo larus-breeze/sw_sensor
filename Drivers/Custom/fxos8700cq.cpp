@@ -1,7 +1,7 @@
 #include "fxos8700cq.h"
 #include "my_assert.h"
 #include "FreeRTOS.h"
-
+#include "FreeRTOS_wrapper.h"
 /*
  * Definitions taken from https://github.com/adafruit/Adafruit_FXOS8700/blob/master/Adafruit_FXOS8700.cpp
  */
@@ -21,22 +21,38 @@
 #define FXOS8700_I2C  &hi2c1
 #define FXOS8700_I2C_ADDR 0x3C
 
-void FXOS8700_write(uint8_t reg, uint8_t *tx_data, uint8_t length)
+bool FXOS8700_write(uint8_t reg, uint8_t *tx_data, uint8_t length)
 {
-	I2C_WriteRegister(FXOS8700_I2C, FXOS8700_I2C_ADDR, reg, 1, tx_data, length);
+	if(I2C_OK == I2C_WriteRegister(FXOS8700_I2C, FXOS8700_I2C_ADDR, reg, 1, tx_data, length))
+	{
+		return true;
+	}
+	return false;
 }
 
-void FXOS8700_read(uint8_t reg, uint8_t *rx_data, uint8_t length)
+bool FXOS8700_read(uint8_t reg, uint8_t *rx_data, uint8_t length)
 {
-	I2C_ReadRegister(FXOS8700_I2C, FXOS8700_I2C_ADDR, reg, 1, rx_data, length);
+	if(I2C_OK == I2C_ReadRegister(FXOS8700_I2C, FXOS8700_I2C_ADDR, reg, 1, rx_data, length))
+	{
+		return true;
+	}
+	return false;
 }
 
-static uint8_t FXOS8700_range = 0;   /* instance variable*/
+COMMON static uint8_t FXOS8700_range = 0;   /* instance variable*/
 
-void FXOS8700_Initialize(fxos8700AccelRange_t range)
+bool FXOS8700_Initialize(fxos8700AccelRange_t range)
 {
 	uint8_t id = 0;
-	FXOS8700_read(FXOS8700_REGISTER_WHO_AM_I, &id, 1);
+	uint32_t retrycounter = 50;
+	while(false == FXOS8700_read(FXOS8700_REGISTER_WHO_AM_I, &id, 1))
+	{
+		retrycounter--;
+		delay(10);
+
+		if(retrycounter == 0)
+			return false;
+	}
 	ASSERT(FXOS8700_ID == id);
 
 	FXOS8700_range = range;
@@ -66,6 +82,10 @@ void FXOS8700_Initialize(fxos8700AccelRange_t range)
 	/* Jump to reg 0x33 after reading 0x06, to get acc and mag data in one read */
 	reg_data = 0x20;
 	FXOS8700_write(FXOS8700_REGISTER_MCTRL_REG2, &reg_data, 1);
+
+	return true;
+
+
 }
 
 

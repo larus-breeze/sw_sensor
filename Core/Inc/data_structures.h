@@ -18,14 +18,19 @@
 
 typedef struct // legacy data type
 {
-  float3vector acc;
-  float3vector gyro;
-  float3vector mag;
+  float3vector acc;   //XSENSE MTi1 IMU
+  float3vector gyro;  //XSENSE MTi1 IMU
+  float3vector mag;   //XSENSE MTi1 IMU
 #if OLD_FORMAT == 0
-  float3vector MEMS_gyro;
+  float3vector lowcost_acc;
+  float3vector lowcost_gyro;
+  float3vector lowcost_mag;
 #endif
   float pitot_pressure;
   float static_pressure;
+  float absolute_pressure;  //this is the second ms5611 on the PCB.
+  float static_sensor_temperature;  //log temperature to monitor temperature in enclosure
+  float absolute_sensor_temperature;
 } measurement_data_t;
 
 typedef struct

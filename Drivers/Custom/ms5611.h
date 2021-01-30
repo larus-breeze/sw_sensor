@@ -11,7 +11,7 @@ public:
   {
 	  I2C_address = i2c_address;
   }
-  void initialize(void);
+  bool initialize(void);
   void update( void);
   inline float get_pressure( void) const //!< getter function
   {
@@ -25,8 +25,8 @@ public:
   {
 	  return temperature_celsius * 0.01f;
   }
-  void start_pressure_conversion( void);   //TODO: shall this be private functions instead?
-  void start_temperature_conversion( void);
+  bool start_pressure_conversion( void);   //TODO: shall this be private functions instead?
+  bool start_temperature_conversion( void);
 
 private:
   inline uint16_t read_coef (uint8_t coef_num);

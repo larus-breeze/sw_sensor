@@ -14,31 +14,48 @@
 
 void getPressure (void*)
 {
-  I2C_Init (MS5611_I2C);
-  drop_privileges();
+	I2C_Init (MS5611_I2C);
+	drop_privileges();
 
-  MS5611 ms5611_static (0xEE);
-//  MS5611 ms5611_pitot (0xEC);
+	MS5611 ms5611_static (0xEE);
+	MS5611 ms5611_pitot (0xEC);  // Second ms5611 sensor on PCB.
 
-//  ms5611_static.initialize ();
-  ms5611_static.initialize ();
+	bool static_ms5611_available = false;
+	bool pitot_ms5611_available = false;
 
-//  volatile float pressure_static = 0.0f;
-//  volatile float temperature_static = 0.0f;
-  synchronous_timer t(10);
-  while( true)
-    {
-//    ms5611_static.update ();
-//    pressure_static = ms5611_static.get_pressure ();
-//    temperature_static = ms5611_static.get_temperature ();
-      ms5611_static.update ();
-      t.sync();
-      ms5611_static.update ();
+	static_ms5611_available = ms5611_static.initialize();
+	pitot_ms5611_available = ms5611_pitot.initialize();
 
-      output_data.m.static_pressure = ms5611_static.get_pressure ();
+	synchronous_timer t(10);
+	while( true)
+	{
+		if (true == static_ms5611_available)
+			ms5611_static.update();
 
-      t.sync();
-    }
+		if (true == pitot_ms5611_available)
+			ms5611_pitot.update();
+
+		t.sync();
+
+		if (true == static_ms5611_available)
+			ms5611_static.update ();
+
+		if (true == pitot_ms5611_available)
+			ms5611_pitot.update();
+
+		if (true == static_ms5611_available)
+		{
+			output_data.m.static_pressure = ms5611_static.get_pressure();
+			output_data.m.static_sensor_temperature = ms5611_static.get_temperature();
+		}
+
+		if (true == pitot_ms5611_available)
+		{
+			output_data.m.absolute_pressure = ms5611_pitot.get_pressure();
+			output_data.m.absolute_sensor_temperature = ms5611_pitot.get_temperature();
+		}
+		t.sync();
+	}
 }
 
 RestrictedTask ms5611_reading (getPressure, "P_ABS", 256, 0, MS5611_PRIORITY + portPRIVILEGE_BIT);
