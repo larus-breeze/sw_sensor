@@ -1,16 +1,12 @@
 #include "uart6.h"
 #include "my_assert.h"
-#include "FreeRTOS.h"
-#include "queue.h"
+#include "FreeRTOS_wrapper.h"
 
 #define UART6_DEFAULT_TIMEOUT 100
 #define UART6_RX_QUEUE_SIZE 256
 
-extern UART_HandleTypeDef huart6;
-static QueueHandle_t UART6_CPL_Message_Id = NULL;
-static QueueHandle_t UART6_Rx_Queue = NULL;
-
-
+static COMMON QueueHandle_t UART6_CPL_Message_Id = NULL;
+static COMMON QueueHandle_t UART6_Rx_Queue = NULL;
 
 static uint8_t uart6_rx_byte = 0; //
 void UART6_Init(void)
@@ -81,12 +77,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		/*Get Byte and enable interrupt again*/
 		queue_status = xQueueSendFromISR(UART6_Rx_Queue, &uart6_rx_byte, &xHigherPriorityTaskWokenByPost);
 		HAL_UART_Receive_IT(&huart6, &uart6_rx_byte, 1);
+		ASSERT(pdTRUE == queue_status);
 	}
 	else
 	{
-		ASSERT(0);
+//		ASSERT(0);
 	}
-	ASSERT(pdTRUE == queue_status);
 	portYIELD_FROM_ISR(xHigherPriorityTaskWokenByPost);
 }
 
