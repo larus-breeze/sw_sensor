@@ -53,7 +53,8 @@ static void runnable( void *)
 		}
 		else
 		{
-			//TODO: log Sensor read error.
+			//TODO: log Sensor read error. Shall we set Pitot pressure here to 0 to ensure
+			// faulty reading does not cause a wrong air speed?
 		}
 
 #if RUN_FXOS8700
