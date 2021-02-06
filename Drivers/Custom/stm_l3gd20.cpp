@@ -273,7 +273,15 @@ bool L3GD20_Initialize(void)
 
 	L3GD20_Write( L3GD20_FIFO_MODE_STREAM, L3GD20_FIFO_CTRL_REG_ADDR);
 
-	return true; // patch check needed !
+	L3GD20_Read(&L3GD20_tmpreg, L3GD20_WHO_AM_I_ADDR, 1);
+	if(L3GD20_tmpreg == I_AM_L3GD20)
+	{
+		return true;  // L3GD20 Sensor recognized
+	}
+	else
+	{
+		return false;
+	}
 }
 
 void L3GD20_ReadData( float data[3])
