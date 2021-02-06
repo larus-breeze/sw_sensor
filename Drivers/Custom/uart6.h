@@ -17,6 +17,7 @@
 void UART6_Init(void);
 void UART6_Transmit(uint8_t *pData, uint16_t Size);
 bool UART6_Receive(uint8_t *pRxByte);
+extern UART_HandleTypeDef huart6;
 
 #ifdef __cplusplus
 }

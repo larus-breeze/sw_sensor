@@ -1,8 +1,10 @@
+#include "system_configuration.h"
 #include "FreeRTOS_wrapper.h"
 #include "main.h"
 #include "uart6.h"
 #include "stdio.h"
 
+#if ACTIVATE_BLUETOOTH
 
 static char altitude[]  = "$PGRMZ,246,f,3*1B\r\n";
 
@@ -32,10 +34,6 @@ void bluetooth_hm_11(void*)
 	}
 }
 
-
-
-
-
-
-
 RestrictedTask bluetooth_handling(bluetooth_hm_11, "BT_HM_11", 256);
+
+#endif

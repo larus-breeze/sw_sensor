@@ -8,15 +8,12 @@
 #include "i2c.h"
 #include "main.h"
 #include "my_assert.h"
-#include "FreeRTOS.h"
+#include "FreeRTOS_wrapper.h"
 #include "queue.h"
-#include "common.h"
-
 #define I2C_DEFAULT_TIMEOUT_MS  100
 
-COMMON static QueueHandle_t I2C1_CPL_Message_Id = NULL;
-COMMON static QueueHandle_t I2C2_CPL_Message_Id = NULL;
-
+static COMMON QueueHandle_t I2C1_CPL_Message_Id = NULL;
+static COMMON QueueHandle_t I2C2_CPL_Message_Id = NULL;
 
 /**
  * @brief I2C1 Initialization Function
