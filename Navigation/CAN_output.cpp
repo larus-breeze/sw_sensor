@@ -12,18 +12,18 @@
 
 enum CAN_ID_SENSOR
 {
-  c_CAN_Id_EulerAngles	= 0x101,        //!< int16_t roll nick yaw / 1/1000 rad
-  c_CAN_Id_Airspeed     = 0x102,        //!< uint16_t TAS, IAS / km/h
-  c_CAN_Id_Vario	= 0x103,        //!< int16_t vario, vario-integrator / mm/s
-  c_CAN_Id_GPS_Date_Time= 0x104,        //!< uint8_t year-2000, month, day, hour, mins, secs
-  c_CAN_Id_GPS_LatLon	= 0x105,        //!< int32_t lat, lon / 10^-7 degrees
-  c_CAN_Id_GPS_Alt	= 0x106,	//!< int64_t MSL altitude / mm
-  c_CAN_Id_GPS_Trk_Spd	= 0x107,        //!< int16_t ground vector / 1/1000 rad, uint16_t groundspeed / km/h
-  c_CAN_Id_Wind		= 0x108,        //!< int16_t 1/1000 rad , uint16_t km/h
+  c_CAN_Id_EulerAngles	= 0x101,    //!< int16_t roll nick yaw / 1/1000 rad
+  c_CAN_Id_Airspeed     = 0x102,    //!< uint16_t TAS, IAS / km/h
+  c_CAN_Id_Vario		= 0x103,    //!< int16_t vario, vario-integrator / mm/s
+  c_CAN_Id_GPS_Date_Time= 0x104,    //!< uint8_t year-2000, month, day, hour, mins, secs
+  c_CAN_Id_GPS_LatLon	= 0x105,    //!< int32_t lat, lon / 10^-7 degrees
+  c_CAN_Id_GPS_Alt		= 0x106,	//!< int64_t MSL altitude / mm
+  c_CAN_Id_GPS_Trk_Spd	= 0x107,    //!< int16_t ground vector / 1/1000 rad, uint16_t groundspeed / km/h
+  c_CAN_Id_Wind			= 0x108,    //!< int16_t 1/1000 rad , uint16_t km/h
   c_CAN_Id_Atmosphere	= 0x109,	//!< uint16_t pressure / Pa uint16_t density / g/m^3
-  c_CAN_Id_GPS_Sats	= 0x10a,        //!< uin8_t No of Sats, Fix-Type NO=0 2D=1 3D=2 RTK=3
-  c_CAN_Id_Acceleration = 0x10b		//!< int16_t G-force mm / s^2 // fixme: changed to int16_t  HMR 17.11.20
-
+  c_CAN_Id_GPS_Sats		= 0x10a,    //!< uin8_t No of Sats, Fix-Type NO=0 2D=1 3D=2 RTK=3
+  c_CAN_Id_Acceleration = 0x10b,	//!< int16_t G-force mm / s^2 // fixme: changed to int16_t  HMR 17.11.20
+  c_CAN_Id_TurnCoord	= 0x10c		//!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s
 };
 
 static inline float sqr(float x)
@@ -108,6 +108,12 @@ void CAN_output ( const output_data_t &x)
   p.data_sh[1] = x.effective_vertical_acceleration * -1000.0f; // mm/s^2
   p.data_sh[2] = x.vario_uncompensated * 1000.0f; // mm/s
   p.data_sb[6] = x.circle_mode;
+  CAN_driver.send(p, 1);
+
+  p.id=c_CAN_Id_TurnCoord;				// 0x10c
+  p.dlc=4;
+  p.data_sh[0] = x.slip_angle * 1000.0f;	// mm/s^2
+  p.data_sh[1] = x.turn_rate * 1000.0f; 	// mm/s^2
   CAN_driver.send(p, 1);
 }
 

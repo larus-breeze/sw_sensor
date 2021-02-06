@@ -82,10 +82,12 @@ void navigator_t::report_data(output_data_t &d)
     d.speed_compensation_INS 	= flight_observer.get_speed_compensation_INS();
     d.effective_vertical_acceleration = flight_observer.get_effective_vertical_acceleration();
 
-    d.circle_mode 		= ins.get_circling_state();
+    d.circle_mode 			= ins.get_circling_state();
     d.gyro_correction		= ins.get_gyro_correction();
-    d.nav_acceleration_gnss 	= ins.get_nav_acceleration();
+    d.nav_acceleration_gnss = ins.get_nav_acceleration();
     d.nav_acceleration_mag 	= ins.get_nav_acceleration();
     d.nav_induction_gnss 	= ins.get_nav_induction();
     d.nav_induction_mag 	= ins.get_nav_induction();
+	d.turn_rate				= ins.turn_rate;
+	d.slip_angle			= ins.slip_angle;
 }

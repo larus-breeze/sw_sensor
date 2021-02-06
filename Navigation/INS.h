@@ -126,6 +126,8 @@ public:
 	}
 
 	quaternion<ftype>attitude;
+	float turn_rate;
+	float slip_angle;
 private:
 	circle_state_t circle_state;
 	circle_state_t update_circling_state( const float3vector &gyro);

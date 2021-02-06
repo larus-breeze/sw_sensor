@@ -105,6 +105,12 @@ void INS_type::update( const float3vector &acc, const float3vector &gyro, const 
 	acceleration_nav_frame 	= body2nav * acc;
 	induction_nav_frame 	= body2nav * mag;
 	euler=attitude;
+
+	float3vector nav_rotation;
+	nav_rotation = body2nav * gyro;
+	turn_rate = nav_rotation[DOWN];
+
+	slip_angle = my_atan2f( -acc.e[RIGHT], -acc.e[DOWN]);
 }
 
 /**
