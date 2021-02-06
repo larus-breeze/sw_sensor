@@ -97,7 +97,7 @@ void data_logger_runnable(void*)
 	filename[idx] = '.';
 	filename[idx+1] = 'f';
 	filename[idx+2] = '7';
-	filename[idx+3] = '7';
+	filename[idx+3] = '9';
 	filename[idx+4] = 0;
 
 	GPIO_PinState led_state = GPIO_PIN_RESET;

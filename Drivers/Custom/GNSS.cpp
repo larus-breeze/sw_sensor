@@ -21,14 +21,14 @@ GNSS_type::GNSS_type( coordinates_t & coo) :
 		num_SV(0)
 	{}
 
-GPS_Result GNSS_type::update(const uint8_t * data)
+GNSS_Result GNSS_type::update(const uint8_t * data)
 {
 	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01)
 			|| (data[3] != 0x07))
-		return GPS_ERROR;
+		return GNSS_ERROR;
 
 	if (!checkSumCheck(data + 2, sizeof(uBlox_pvt)))
-		return GPS_ERROR;
+		return GNSS_ERROR;
 
 	const uBlox_pvt * p = (uBlox_pvt *) (data + 6);
 #if 0
@@ -47,7 +47,7 @@ GPS_Result GNSS_type::update(const uint8_t * data)
 #if RUN_GNSS_UPDATE_WITHOUT_FIX
 	    GNSS_new_data_ready = true;
 #endif
-	  return GPS_NO_FIX;
+	  return GNSS_NO_FIX;
 	  }
 
 	num_SV=p->num_SV;
@@ -106,18 +106,18 @@ GPS_Result GNSS_type::update(const uint8_t * data)
 
 	GNSS_new_data_ready = true;
 
-	return GPS_HAVE_FIX;
+	return GNSS_HAVE_FIX;
 }
 #if USE_DIFF_GNSS == 1
 
-GPS_Result GNSS_type::update_delta(const uint8_t * data)
+GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 {
 	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01)
 			|| (data[3] != 0x3c))
-		return GPS_ERROR;
+		return GNSS_ERROR;
 
 	if (!checkSumCheck(data + 2, sizeof(uBlox_relpos_NED)))
-		return GPS_ERROR;
+		return GNSS_ERROR;
 
 	const uBlox_relpos_NED * p = (uBlox_relpos_NED *) (data + 6);
 
@@ -130,12 +130,12 @@ GPS_Result GNSS_type::update_delta(const uint8_t * data)
 
 //	return ( p->flags == 0b0100110111) ? GPS_HAVE_FIX : GPS_NO_FIX; // for two F9P receivers
 
-	GPS_Result res = ( p->flags == 0b1100110111) ? GPS_HAVE_FIX : GPS_NO_FIX; // for F9P + F9H receiver
+	GNSS_Result res = ( p->flags == 0b1100110111) ? GNSS_HAVE_FIX : GNSS_NO_FIX; // for F9P + F9H receiver
 
 #if RUN_GNSS_UPDATE_WITHOUT_FIX
 	  D_GNSS_new_data_ready = true;
 #else
-	if( res == GPS_HAVE_FIX) // patch
+	if( res == GNSS_HAVE_FIX) // patch
 	  D_GNSS_new_data_ready = true;
 #endif
 

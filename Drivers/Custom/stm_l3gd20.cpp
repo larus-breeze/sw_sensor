@@ -247,7 +247,7 @@ uint32_t L3GD20_TIMEOUT_UserCallback(void)
  * @param  None
  * @retval None
  */
-void L3GD20_Initialize(void)
+bool L3GD20_Initialize(void)
 {
 	L3GD20_InitTypeDef L3GD20_InitStructure;
 	L3GD20_FilterConfigTypeDef L3GD20_FilterStructure;
@@ -272,6 +272,8 @@ void L3GD20_Initialize(void)
 	L3GD20_Write( L3GD20_FIFO_ENABLE, L3GD20_CTRL_REG5_ADDR);
 
 	L3GD20_Write( L3GD20_FIFO_MODE_STREAM, L3GD20_FIFO_CTRL_REG_ADDR);
+
+	return true; // patch check needed !
 }
 
 void L3GD20_ReadData( float data[3])

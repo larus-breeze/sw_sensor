@@ -18,9 +18,9 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include "system_configuration.h"
 #include "main.h"
 #include "embedded_memory.h"
-//#include "cmsis_os.h"
 #include "fatfs.h"
 #include "usb_device.h"
 
@@ -29,6 +29,8 @@
 #include "FreeRTOS_wrapper.h"
 #include "my_assert.h"
 #include "common.h"
+
+COMMON unsigned sensor_system_state;
 
 COMMON ADC_HandleTypeDef hadc1;
 

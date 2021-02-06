@@ -120,8 +120,9 @@ static void D_GNSS_runnable (void*)
 	  continue;
 	}
       HAL_UART_Abort (&huart4);
+      GNSS_Result result = GNSS.update_delta(buffer);
 //      if ((buffer[0] != 0xb5) || (buffer[1] != 'b'))
-      if( GNSS.update_delta(buffer) == GPS_ERROR)
+      if(  result == GNSS_ERROR)
 	{
 #if UART4_LED_STATUS
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
@@ -130,6 +131,9 @@ static void D_GNSS_runnable (void*)
 	  delay( 150); // uBlox sends every 200ms for 3ms
 	  continue;
 	}
+      if(  result == GNSS_HAVE_FIX)
+    	  sensor_system_state |= D_GNSS_AVAILABLE;
+
 #if UART4_LED_STATUS
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_SET);

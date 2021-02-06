@@ -107,6 +107,8 @@ void readDataFrom_MTI( MtsspInterface* device, uint8_t * buf)
 		device->readFromPipe(&buf[2], measurementMessageSize, XBUS_MEASUREMENT_PIPE);
 		if(buf[4]==0x40 && buf[0x13]==0x80 && buf[0x22]==0xC0)
 		{
+			sensor_system_state |= MTI_SENSOR_AVAILABE;
+
 			float_word x;
 			x.u = __REV( *(uint32_t*)(buf+0x07+0));
 			output_data.m.acc[0]=x.f;

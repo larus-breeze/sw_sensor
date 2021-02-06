@@ -404,7 +404,7 @@ typedef struct
 #define L3GD20_SendByte( byte) SPI_Transmit(&hspi2, &byte, 1)
 
 /* User added Functions*/
-void L3GD20_Initialize(void);
+bool L3GD20_Initialize(void);
 void L3GD20_ReadData(float * xyzdata);
 
 /* Sensor Configuration Functions */ 

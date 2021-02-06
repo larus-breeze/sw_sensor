@@ -79,7 +79,7 @@ typedef struct
 #endif
 
 typedef enum { FIX_none, FIX_dead, FIX_2d, FIX_3d} FIX_TYPE;
-typedef enum { GPS_HAVE_FIX, GPS_NO_FIX, GPS_ERROR} GPS_Result;
+typedef enum { GNSS_HAVE_FIX, GNSS_NO_FIX, GNSS_ERROR} GNSS_Result;
 
 typedef struct
 {
@@ -116,8 +116,8 @@ class GNSS_type
 {
 public:
   GNSS_type (coordinates_t & coo);
-  GPS_Result update( const uint8_t * data);
-  GPS_Result update_delta( const uint8_t * data);
+  GNSS_Result update( const uint8_t * data);
+  GNSS_Result update_delta( const uint8_t * data);
   void reset_reference( void)
   {
     fix_type = FIX_none;
