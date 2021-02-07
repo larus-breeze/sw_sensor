@@ -71,6 +71,7 @@ uint32_t readUint32(const uint8_t* data, int& index)
 	return result;
 }
 
+#if 0
 
 /*!	\brief Helper function for reading a float
 */
@@ -148,6 +149,6 @@ const char* xbusToString(const uint8_t* xbusData)
 	return g_textBuffer;
 }
 
-
+#endif
 
 

@@ -10,8 +10,8 @@
 
 #include "GNSS.h"
 
-char *format_RMC (const GNSS_type &gnss, char *p);
-char *format_GGA (const GNSS_type &gnss, char *p);
+char *format_RMC (const GNSS_type &gps, char *p);
+char *format_GGA (const GNSS_type &gps, char *p);
 char *format_MWV ( float wind_north, float wind_east, char *p);
 char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, char *p);
 

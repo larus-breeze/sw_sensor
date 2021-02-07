@@ -11,7 +11,7 @@
 #include "usb_device.h"
 #include "usbd_cdc.h"
 
-#if ACTIVATE_USB
+#if ACTIVATE_USB_TEST
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
