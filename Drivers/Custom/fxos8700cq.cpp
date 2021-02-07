@@ -47,7 +47,7 @@ bool FXOS8700_Initialize(fxos8700AccelRange_t range)
 	if(false == FXOS8700_read(FXOS8700_REGISTER_WHO_AM_I, &id, 1))
 		return false;
 	ASSERT(FXOS8700_ID == id);
-	system_state |= FXOS_SENSOR_AVAILABLE;
+	update_system_state_set( FXOS_SENSOR_AVAILABLE);
 
 	FXOS8700_range = range;
 

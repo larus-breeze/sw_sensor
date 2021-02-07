@@ -65,4 +65,9 @@ enum
 
 extern volatile unsigned system_state;
 
+inline void update_system_state_set( unsigned value)
+{
+	__atomic_or_fetch ( &system_state, value, __ATOMIC_ACQUIRE);
+}
+
 #endif /* SRC_SYSTEM_CONFIGURATION_H_ */
