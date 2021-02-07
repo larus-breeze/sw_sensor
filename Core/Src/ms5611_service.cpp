@@ -24,7 +24,12 @@ void getPressure (void*)
 	bool pitot_ms5611_available = false;
 
 	static_ms5611_available = ms5611_static.initialize();
+	if( static_ms5611_available)
+		sensor_system_state |= MS5611_STATIC_AVAILABLE;
+
 	pitot_ms5611_available = ms5611_pitot.initialize();
+	if( pitot_ms5611_available)
+		sensor_system_state |= MS5611_PITOT_AVAILABLE;
 
 	synchronous_timer t(10);
 	while( true)

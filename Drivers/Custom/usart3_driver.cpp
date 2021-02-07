@@ -123,7 +123,8 @@ static void GNSS_runnable (void*)
       HAL_UART_Abort (&huart3);
 
 //      if ((buffer[0] != 0xb5) || (buffer[1] != 'b'))
-      if( GNSS.update(buffer) == GNSS_ERROR)
+      GNSS_Result result = GNSS.update(buffer);
+      if( result == GNSS_ERROR)
       {
 #if UART3_LED_STATUS
 	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
@@ -133,6 +134,9 @@ static void GNSS_runnable (void*)
 	  delay (50);
 	  continue;
 	}
+      if(  result == GNSS_HAVE_FIX)
+    	  sensor_system_state |= GNSS_AVAILABLE;
+
 #if UART3_LED_STATUS
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_SET);
