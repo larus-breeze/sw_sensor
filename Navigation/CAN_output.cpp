@@ -23,7 +23,8 @@ enum CAN_ID_SENSOR
   c_CAN_Id_Atmosphere	= 0x109,	//!< uint16_t pressure / Pa uint16_t density / g/m^3
   c_CAN_Id_GPS_Sats		= 0x10a,    //!< uin8_t No of Sats, Fix-Type NO=0 2D=1 3D=2 RTK=3
   c_CAN_Id_Acceleration = 0x10b,	//!< int16_t G-force mm / s^2 // fixme: changed to int16_t  HMR 17.11.20
-  c_CAN_Id_TurnCoord	= 0x10c		//!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s
+  c_CAN_Id_TurnCoord	= 0x10c,		//!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s
+  c_CAN_Id_SystemState	= 0x10d		//!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s
 };
 
 static inline float sqr(float x)
@@ -114,6 +115,12 @@ void CAN_output ( const output_data_t &x)
   p.dlc=4;
   p.data_sh[0] = x.slip_angle * 1000.0f;	// mm/s^2
   p.data_sh[1] = x.turn_rate * 1000.0f; 	// mm/s^2
+  if( CAN_driver.send(p, 1)) // check CAN for timeout this time
+	system_state |= CAN_OUTPUT_ACTIVE;
+
+  p.id=c_CAN_Id_SystemState;				// 0x10d
+  p.dlc=4;
+  p.data_w[0] = system_state;
   CAN_driver.send(p, 1);
 }
 

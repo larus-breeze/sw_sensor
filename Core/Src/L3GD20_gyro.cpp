@@ -17,7 +17,7 @@
 static void runnable (void*)
 {
   if( L3GD20_Initialize ())
-	  sensor_system_state |= L3GD20_SENSOR_AVAILABLE;
+	  system_state |= L3GD20_SENSOR_AVAILABLE;
   else
 	  suspend(); // discontinue task
 

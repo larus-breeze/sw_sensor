@@ -60,8 +60,9 @@ enum
 
 	USART_OUTPUT_ACTIVE		= 0x1000,
 	BLUEZ_OUTPUT_ACTIVE		= 0x2000,
+	CAN_OUTPUT_ACTIVE		= 0x4000,
 };
 
-extern volatile unsigned sensor_system_state;
+extern volatile unsigned system_state;
 
 #endif /* SRC_SYSTEM_CONFIGURATION_H_ */

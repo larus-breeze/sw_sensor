@@ -135,7 +135,7 @@ static void GNSS_runnable (void*)
 	  continue;
 	}
       if(  result == GNSS_HAVE_FIX)
-    	  sensor_system_state |= GNSS_AVAILABLE;
+    	  system_state |= GNSS_AVAILABLE;
 
 #if UART3_LED_STATUS
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);

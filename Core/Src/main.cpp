@@ -30,7 +30,7 @@
 #include "my_assert.h"
 #include "common.h"
 
-COMMON volatile unsigned sensor_system_state;
+COMMON volatile unsigned system_state;
 
 COMMON ADC_HandleTypeDef hadc1;
 
