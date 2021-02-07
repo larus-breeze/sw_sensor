@@ -12,9 +12,12 @@
 #define RUN_FXOS8700		1
 #define RUN_PITOT_MODULE 	1
 #define RUN_CAN_TESTER		0
-#define ACTIVATE_USB_TEST	0
+
 #define ACTIVATE_USB_NMEA	1
-#define ACTIVATE_BLUETOOTH	0
+#define ACTIVATE_BLUETOOTH_NMEA	1
+
+#define ACTIVATE_USB_TEST	0
+#define ACTIVATE_BLUETOOTH_TEST	0
 
 #define USE_DIFF_GNSS		1
 #define UART3_LED_STATUS	0
@@ -27,10 +30,9 @@
 #define RUN_CAN_OUTPUT		1
 
 #define RUN_DATA_LOGGER		1
-#define LOG_OBSERVATIONS	0 // log IMU + pressure data
-#define LOG_COORDINATES		0 // log GNSS data
-#define LOG_OUTPUT_DATA		1 // logging all inclusive
-#define OUTFILE "sensor.f77"	// "LOG.F7x"
+#define LOG_OBSERVATIONS	1 // log IMU + pressure data
+#define LOG_COORDINATES		1 // log GNSS data
+#define LOG_OUTPUT_DATA		0 // logging all inclusive
 #define OLD_FORMAT 		0 // for year 2020 old data
 
 #define RUN_SPI_TESTER		0
@@ -61,7 +63,7 @@ enum
 	MS5611_STATIC_AVAILABLE = 0x80,
 	MS5611_PITOT_AVAILABLE  = 0x100,
 
-	USART_OUTPUT_ACTIVE		= 0x1000,
+	USB_OUTPUT_ACTIVE		= 0x1000,
 	BLUEZ_OUTPUT_ACTIVE		= 0x2000,
 	CAN_OUTPUT_ACTIVE		= 0x4000,
 };

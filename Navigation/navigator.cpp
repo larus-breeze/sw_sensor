@@ -71,7 +71,8 @@ void navigator_t::report_data(output_data_t &d)
     d.euler_magnetic		= ins_magnetic.get_euler();
     d.q_magnetic		= ins_magnetic.attitude;
 
-    d.vario			= flight_observer.get_vario_GNSS();
+    d.vario			= flight_observer.get_vario_GNSS(); // todo pick one vario
+//  d.vario			= flight_observer.get_vario_pressure();
     d.vario_pressure		= flight_observer.get_vario_pressure();
     d.integrator_vario		= vario_integrator.get_value();
     d.vario_uncompensated 	= flight_observer.get_vario_uncompensated_GNSS();
@@ -80,14 +81,16 @@ void navigator_t::report_data(output_data_t &d)
 
     d.speed_compensation_TAS 	= flight_observer.get_speed_compensation_TAS();
     d.speed_compensation_INS 	= flight_observer.get_speed_compensation_INS();
-    d.effective_vertical_acceleration = flight_observer.get_effective_vertical_acceleration();
+    d.effective_vertical_acceleration
+				= flight_observer.get_effective_vertical_acceleration();
 
-    d.circle_mode 			= ins.get_circling_state();
+    d.circle_mode 		= ins.get_circling_state();
     d.gyro_correction		= ins.get_gyro_correction();
-    d.nav_acceleration_gnss = ins.get_nav_acceleration();
+    d.nav_acceleration_gnss 	= ins.get_nav_acceleration();
     d.nav_acceleration_mag 	= ins.get_nav_acceleration();
     d.nav_induction_gnss 	= ins.get_nav_induction();
     d.nav_induction_mag 	= ins.get_nav_induction();
-	d.turn_rate				= ins.turn_rate;
-	d.slip_angle			= ins.slip_angle;
+
+    d.turn_rate			= ins.turn_rate;
+    d.slip_angle		= ins.slip_angle;
 }

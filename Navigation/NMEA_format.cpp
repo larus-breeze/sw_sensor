@@ -8,7 +8,14 @@
 #define RAD_TO_DEGREE_10 572.958
 #define METER_TO_FEET 3.2808
 
-//#pragma GCC optimize ("O1") // todo patch funny BUG workaround
+inline float clip( float x, float min, float max )
+{
+  if( x < min)
+    x = min;
+  else if (x > max)
+    x = max;
+  return x;
+}
 
 char *
 angle_format ( double angle, char * p, char posc, char negc)
@@ -254,6 +261,9 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
 
 char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, char *p)
 {
+  vario=clip(vario, -10.0f, 10.0f);
+  avg_vario=clip(avg_vario, -10.0f, 10.0f);
+
   uint16_t i_vario = vario * MPS_TO_NMPH * 10 + 200.5;
   uint16_t i_avg_vario = avg_vario * MPS_TO_NMPH * 10 + 200.5;
   uint16_t i_altitude = altitude * METER_TO_FEET + 2000.5;

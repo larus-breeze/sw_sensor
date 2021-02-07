@@ -3,17 +3,28 @@
 #include "common.h"
 #include "NMEA_Output.h"
 #include "NMEA_format.h"
+#include "uart6.h"
 #include "usb_device.h"
 #include "usbd_cdc.h"
-
-#if ACTIVATE_USB_NMEA
 
 COMMON NMEA_buffer_t NMEA_buf;
 extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c
 
 static void runnable (void*)
 {
+#if ACTIVATE_USB_NMEA
   MX_USB_DEVICE_Init();
+  update_system_state_set( USB_OUTPUT_ACTIVE);
+#endif
+
+#if ACTIVATE_BLUETOOTH_NMEA
+  UART6_Init();
+  HAL_GPIO_WritePin(BL_RESETB_GPIO_Port, BL_RESETB_Pin, GPIO_PIN_RESET);
+  delay(100);
+  HAL_GPIO_WritePin(BL_RESETB_GPIO_Port, BL_RESETB_Pin, GPIO_PIN_SET);
+  delay(200);
+  update_system_state_set( BLUEZ_OUTPUT_ACTIVE);
+#endif
 
   for (synchronous_timer t (NMEA_REPORTING_PERIOD); true; t.sync ())
     {
@@ -37,12 +48,15 @@ static void runnable (void*)
 
       NMEA_buf.length = next - (const char*) (NMEA_buf.string);
 
+#if ACTIVATE_USB_NMEA
       USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);
       USBD_CDC_TransmitPacket(&hUsbDeviceFS);
-
+#endif
+#if ACTIVATE_BLUETOOTH_NMEA
+      UART6_Transmit( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
+#endif
     }
 }
 
 RestrictedTask NMEA_task( runnable, "NMEA", 256, 0, STANDARD_TASK_PRIORITY | portPRIVILEGE_BIT);
 
-#endif

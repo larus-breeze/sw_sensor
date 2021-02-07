@@ -4,7 +4,7 @@
 #include "uart6.h"
 #include "stdio.h"
 
-#if ACTIVATE_BLUETOOTH
+#if ACTIVATE_BLUETOOTH_TEST
 
 static char altitude[]  = "$PGRMZ,246,f,3*1B\r\n";
 

@@ -96,8 +96,8 @@ void data_logger_runnable(void*)
 
 	filename[idx] = '.';
 	filename[idx+1] = 'f';
-	filename[idx+2] = '9';
-	filename[idx+3] = '3';
+	filename[idx+2] = '4'; // 93 for all values
+	filename[idx+3] = '5'; // 45 measurement + coordinates
 	filename[idx+4] = 0;
 
 	GPIO_PinState led_state = GPIO_PIN_RESET;
@@ -114,11 +114,11 @@ void data_logger_runnable(void*)
 			for ( synchronous_timer t(10); true; t.sync())
 			{
 #if LOG_OBSERVATIONS
-				memcpy( buf_ptr, (uint8_t *)&measurement_data, sizeof(measurement_data) );
-				buf_ptr += sizeof(measurement_data);
+				memcpy( buf_ptr, (uint8_t *)&output_data.m, sizeof(measurement_data_t) );
+				buf_ptr += sizeof(measurement_data_t);
 #endif
 #if LOG_COORDINATES
-				memcpy( buf_ptr, (uint8_t *)&(GNSS.coordinates), sizeof(coordinates_t) );
+				memcpy( buf_ptr, (uint8_t *)&(output_data.c), sizeof(coordinates_t) );
 				buf_ptr += sizeof(coordinates_t);
 #endif
 #if LOG_OUTPUT_DATA

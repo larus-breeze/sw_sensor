@@ -2,8 +2,8 @@
 #include "my_assert.h"
 #include "FreeRTOS_wrapper.h"
 
-#define UART6_DEFAULT_TIMEOUT 100
-#define UART6_RX_QUEUE_SIZE 256
+#define UART6_DEFAULT_TIMEOUT 220
+#define UART6_RX_QUEUE_SIZE 64
 
 static COMMON QueueHandle_t UART6_CPL_Message_Id = NULL;
 static COMMON QueueHandle_t UART6_Rx_Queue = NULL;
@@ -20,7 +20,7 @@ void UART6_Init(void)
 		UART6_Rx_Queue =  xQueueCreate(UART6_RX_QUEUE_SIZE, sizeof(uint8_t));
 	}
 
-	HAL_UART_Receive_IT(&huart6, &uart6_rx_byte, 1);
+	HAL_UART_Receive_IT(&huart6, &uart6_rx_byte, 1); // todo: wozu ist das ?
 }
 
 void UART6_Transmit(uint8_t *pData, uint16_t Size)
@@ -30,6 +30,7 @@ void UART6_Transmit(uint8_t *pData, uint16_t Size)
 
 	status = HAL_UART_Transmit_DMA(&huart6, pData, Size);
 	ASSERT(HAL_OK == status);
+
 	queue_status = xQueueReceive(UART6_CPL_Message_Id, 0, UART6_DEFAULT_TIMEOUT);
 	ASSERT(pdTRUE == queue_status);
 }
