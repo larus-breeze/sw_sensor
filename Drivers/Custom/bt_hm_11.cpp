@@ -139,7 +139,7 @@ bool Bluetooth_Init(void)
   UART6_ChangeBaudRate(9600);
   Bluetooth_SendCmd(disableConnecting);
 
-  Bluetooth_SendCmd(setName);
+  Bluetooth_SendCmd(setName);  /* Not working */
 
   delay(500);
   Bluetooth_FlushRx();
@@ -155,9 +155,6 @@ bool Bluetooth_Init(void)
   /*Hope that HM-11 understood change command or already talks at 115200 baud */
    delay(1000);  /* Give the Bluetooth module some time to process changing the Baudrate*/
 
-
-
-
    return true;
 }
 
@@ -168,6 +165,15 @@ void Bluetooth_Transmit(uint8_t *pData, uint16_t Size)
    Bluetooth_FlushRx();
    UART6_Transmit(pData, Size);     /*TODO: seems to block startup / paring if to much data is transmitted
 					 or if not synchronized with connection status. Can we check a DIO pin? */
+
+#if ITM_TRACE_ENABLE
+for(int i = 0; i < Size; i++)
+  {
+    ITM_SendChar(pData[i]);
+  }
+  ITM_SendChar('\r');
+  ITM_SendChar('\n');
+#endif
 }
 
 bool Bluetooth_Receive(uint8_t *pRxByte)
