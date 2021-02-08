@@ -20,7 +20,14 @@ void UART6_Init(void)
 		UART6_Rx_Queue =  xQueueCreate(UART6_RX_QUEUE_SIZE, sizeof(uint8_t));
 	}
 
-	HAL_UART_Receive_IT(&huart6, &uart6_rx_byte, 1); // todo: wozu ist das ?
+	HAL_UART_Receive_IT(&huart6, &uart6_rx_byte, 1); // Activate interrupt for rx data
+}
+
+void UART6_ChangeBaudRate(uint32_t rate)
+{
+  HAL_UART_DeInit(&huart6);
+  huart6.Init.BaudRate = rate;
+  HAL_UART_Init(&huart6);
 }
 
 void UART6_Transmit(uint8_t *pData, uint16_t Size)
