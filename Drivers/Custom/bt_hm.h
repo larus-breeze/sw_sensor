@@ -5,8 +5,8 @@
  *      Author: Maximilian Betz
  */
 
-#ifndef BT_HM_11_H_
-#define BT_HM_11_H_
+#ifndef BT_HM_H_
+#define BT_HM_H_
 
 #ifdef __cplusplus
  extern "C" {
@@ -17,11 +17,11 @@
 
 bool Bluetooth_Init(void);
 void Bluetooth_Transmit(uint8_t *pData, uint16_t Size);
-bool Bluetooth_Receive(uint8_t *pRxByte, portTickType timeout);
+bool Bluetooth_Receive(uint8_t *pRxByte, uint32_t timeout);
 
 #ifdef __cplusplus
 }
 #endif
 
 
-#endif /* BT_HM_11_H_ */
+#endif /* BT_HM_H_ */

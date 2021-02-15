@@ -1,11 +1,11 @@
+#include <bt_hm.h>
 #include "system_configuration.h"
 #include "FreeRTOS_wrapper.h"
 #include "main.h"
 #include "uart6.h"
 #include "stdio.h"
-#include "bt_hm_11.h"
 
-#define ITM_TRACE_ENABLE 1
+#define ITM_TRACE_ENABLE 0
 
 #if ACTIVATE_BLUETOOTH_TEST
 
@@ -125,7 +125,6 @@ bool Bluetooth_Cmd(uint8_t *cmd)
  *
  * The different Modules:
  *
- *
  * HM-11 ordered in Germany
  * AT+VERS?	HMSoft V545
  * AT+IMME1
@@ -135,14 +134,12 @@ bool Bluetooth_Cmd(uint8_t *cmd)
  * AT+START
  * Does not report a lost connection!
  *
- *
  * HM-11 ordered in China
  * AT+VERS?	HMSoft V610
  * AT+BAUD4  	(115200)
  * AT+POWE3   	Set to 6dm
  * Reports connection and lost.
  * Locked me out!  Module only talked again via UART after a power cycle. (Caused by pressing reconnect from XCSOAR)
- *
  *
  * HM-19 ordered in China
  * AT+VERS?	HMSoft V114 (could not
@@ -154,23 +151,21 @@ bool Bluetooth_Cmd(uint8_t *cmd)
  * AT+START						OK+CONN\r\n
  * AT+BAUD7 (115200)  Effect only after reset. 		OK+SET:7
  *
- *Configuration commands:
+ * Configuration commands:
  */
 
 /* \r\n not required. "AT Command are fixed length commands and new line is this redundant. "HowToUse Hm-1x.pdf
  * This can not be true especially for setting a custom NAME?*/
 static uint8_t baudratecmd[] = "AT+BAUD7";  /* Change to 115200 baud  HM.19*/
-static uint8_t disableConnecting[] = "AT+IMME1";  /* Disable automatic connection*/
-static uint8_t enableConnecting[] = "AT+IMME0";  /* Enable automatic connection*/
 static uint8_t setName[] = "AT+NAMESOAR";
-static uint8_t getName[] = "AT+NAME?";
-static uint8_t enableNotifications[] = "AT+NOTI1";
-static uint8_t resetToFactorySettings[] = "AT+RENEW";
 static uint8_t interruptModule[] = "AT";
 static uint8_t resetModule[] = "AT+RESET";
-//static uint8_t baudratequerry[] = "AT+BAUD?\r\n";
 //static uint8_t getpowercmd[] = "AT+POWE?\r\n";
 //static uint8_t desirecmode[] = "AT+MODE0\r\n";   //AT- configure prior connection, transparent uart after connection
+//static uint8_t disableConnecting[] = "AT+IMME1";  /* Disable automatic connection*/
+//static uint8_t enableConnecting[] = "AT+IMME0";  /* Enable automatic connection*/
+//static uint8_t resetToFactorySettings[] = "AT+RENEW";
+//static uint8_t getName[] = "AT+NAME?";
 
 void Bluetooth_Reset(void)
 {
@@ -187,7 +182,7 @@ bool Bluetooth_Init(void)
   Bluetooth_Reset(); /* Its in reset mode prior to this.*/
 
   UART6_DeInit(); /* Stop driving TX line.*/
-  UART6_Init();
+  UART6_Init();  /* Stop here and connect external UART adapter for debugging.*/
 
 #if BT_CONFIGURE
   /*First try to recognize used baudrate*/
@@ -195,7 +190,7 @@ bool Bluetooth_Init(void)
   UART6_ChangeBaudRate(9600);
   if(true == Bluetooth_Cmd(interruptModule))
     {
-      /*Modules uses Baudrate 9600, and has thus never configured before!*/
+      /*Modules uses Baudrate 9600, and thus has never configured before!*/
       Bluetooth_Cmd(setName);
       Bluetooth_Cmd(baudratecmd);
       Bluetooth_Cmd(resetModule);
@@ -210,6 +205,7 @@ bool Bluetooth_Init(void)
       update_system_state_set(BLUEZ_OUTPUT_ACTIVE);
     }
 
+  delay(500); /*Delay after last AT command.*/
   return true;
 }
 
@@ -221,7 +217,7 @@ void Bluetooth_Transmit(uint8_t *pData, uint16_t Size)
 					 or if not synchronized with connection status. Can we check a DIO pin? */
 }
 
-bool Bluetooth_Receive(uint8_t *pRxByte, portTickType timeout)
+bool Bluetooth_Receive(uint8_t *pRxByte, uint32_t timeout)
 {
   return UART6_Receive(pRxByte, timeout);
 }

@@ -2,8 +2,9 @@
 #include "FreeRTOS_wrapper.h"
 #include "common.h"
 #include "NMEA_Output.h"
+
+#include <bt_hm.h>
 #include "NMEA_format.h"
-#include "bt_hm_11.h"
 #include "usb_device.h"
 #include "usbd_cdc.h"
 
