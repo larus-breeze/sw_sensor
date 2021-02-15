@@ -51,30 +51,47 @@ void Bluetooth_SendCmd(uint8_t *cmd)
     }
   /* Send command*/
   UART6_Transmit(cmd, length);
+#if ITM_TRACE_ENABLE
+  ITM_SendChar('\r');
+  ITM_SendChar('\n');
+  for(uint32_t i = 0; i < length; i++)
+    {
+      ITM_SendChar(cmd[i]);
+    }
+#endif
 }
 
 
+void Bluetooth_FlushRx(void)
+{
+  uint8_t rxByte = 0;
+  while(true == UART6_Receive(&rxByte, 0));
+}
+
+
+#define BLUETOOTH_DEFAULT_UART_RX_TIMEOUT 500
 bool Bluetooth_Cmd(uint8_t *cmd)
 {
   uint8_t rxByte = 0;
   uint8_t detector = 0;
 
+  /*Give module some time to finish previous command*/
+  delay(50);
+
   /*Flush UART RX queue*/
-  while(true == UART6_Receive(&rxByte))
-    {
-#if ITM_TRACE_ENABLE
-      ITM_SendChar(rxByte);
-#endif
-    }
+  Bluetooth_FlushRx();
 
   /* Send command*/
   Bluetooth_SendCmd(cmd);
 
-  uint32_t timeout = 1000;
-  while(timeout > 0){
-      timeout--;
-      delay(1);
-      if(true == UART6_Receive(&rxByte))
+#if ITM_TRACE_ENABLE
+  ITM_SendChar('\r');
+  ITM_SendChar('\n');
+#endif
+
+  while(true)
+    {
+      if(true == UART6_Receive(&rxByte, BLUETOOTH_DEFAULT_UART_RX_TIMEOUT))
 	{
 #if ITM_TRACE_ENABLE
 	  ITM_SendChar(rxByte);
@@ -86,35 +103,71 @@ bool Bluetooth_Cmd(uint8_t *cmd)
 	  if((rxByte == 'K')  && (detector == 1))
 	    {
 	      detector = 2;
-	    }
-	  if((rxByte == '+')  && (detector == 2))
-	    {
-	      /*Bluetooth module acknowledged with OK+.*/
-	      return true;
+	      while(true == UART6_Receive(&rxByte, 1));  /*Get bytes after OK*/
+	      return true; /*Bluetooth module acknowledged with OK */
 	    }
 	}
-  }
-  //ASSERT(timeout > 0); /*Bluetooth might already be paared this should not be the case here*/
+      else
+	{
+	  break;
+	}
+
+    }
   return false; /*No proper acknowledge from Bluetooth module*/
 }
 
-void Bluetooth_FlushRx(void)
-{
-  uint8_t rxByte = 0;
-  while(true == UART6_Receive(&rxByte))
-    {
-#if ITM_TRACE_ENABLE
-      ITM_SendChar(rxByte);
-#endif
-    }
-}
+/*   It seems that it is required  to recognize a lost connection! In that case we need to stop sending
+ *   data until connection is established again!  Reported by OK+CONN (HM-19)
+ *   Tested HM-19 with SONY XA2 Ultra LineagOS.  Bluetooth stopped working aftera while. Only a reboot helped.
+ *   Works acceptable with Samsung XCover Pro,   Sony XA2 Ultra,   CAT S52.  Deactivating and activating
+ *   connection from XCSOAR works good. Even if lots of data is continuously transferred.
+ *
+ *
+ * The different Modules:
+ *
+ *
+ * HM-11 ordered in Germany
+ * AT+VERS?	HMSoft V545
+ * AT+IMME1
+ * AT+BAUD4 	(115200)
+ * AT+NAMEHM11DE
+ * AT+RESET
+ * AT+START
+ * Does not report a lost connection!
+ *
+ *
+ * HM-11 ordered in China
+ * AT+VERS?	HMSoft V610
+ * AT+BAUD4  	(115200)
+ * AT+POWE3   	Set to 6dm
+ * Reports connection and lost.
+ * Locked me out!  Module only talked again via UART after a power cycle. (Caused by pressing reconnect from XCSOAR)
+ *
+ *
+ * HM-19 ordered in China
+ * AT+VERS?	HMSoft V114 (could not
+ * HM-19 commands			Answer
+ * AT        						OK  |     OK+LOST\r\n
+ * AT+RESET						OK+RESET
+ * AT+VERS?						OK+Get:HMSoft V114
+ * AT+NAME?						OK+GET:HMSoft
+ * AT+START						OK+CONN\r\n
+ * AT+BAUD7 (115200)  Effect only after reset. 		OK+SET:7
+ *
+ *Configuration commands:
+ */
 
-static uint8_t baudratecmd[] = "AT+BAUD4\r\n";  /* Change to 115200 baud*/
-static uint8_t disableConnecting[] = "AT+IMME0\r\n";  /* Disable automatic connection*/
-static uint8_t enableConnecting[] = "AT+IMME1\r\n";  /* Enable automatic connection*/
-static uint8_t setName[] = "AT+NAMED1234";
-
-
+/* \r\n not required. "AT Command are fixed length commands and new line is this redundant. "HowToUse Hm-1x.pdf
+ * This can not be true especially for setting a custom NAME?*/
+static uint8_t baudratecmd[] = "AT+BAUD7";  /* Change to 115200 baud  HM.19*/
+static uint8_t disableConnecting[] = "AT+IMME1";  /* Disable automatic connection*/
+static uint8_t enableConnecting[] = "AT+IMME0";  /* Enable automatic connection*/
+static uint8_t setName[] = "AT+NAMESOAR";
+static uint8_t getName[] = "AT+NAME?";
+static uint8_t enableNotifications[] = "AT+NOTI1";
+static uint8_t resetToFactorySettings[] = "AT+RENEW";
+static uint8_t interruptModule[] = "AT";
+static uint8_t resetModule[] = "AT+RESET";
 //static uint8_t baudratequerry[] = "AT+BAUD?\r\n";
 //static uint8_t getpowercmd[] = "AT+POWE?\r\n";
 //static uint8_t desirecmode[] = "AT+MODE0\r\n";   //AT- configure prior connection, transparent uart after connection
@@ -127,57 +180,49 @@ void Bluetooth_Reset(void)
   HAL_GPIO_WritePin(BL_RESETB_GPIO_Port, BL_RESETB_Pin, GPIO_PIN_SET);
   delay(50);
 }
+#define BT_CONFIGURE 1
 
 bool Bluetooth_Init(void)
 {
-  UART6_Init();
   Bluetooth_Reset(); /* Its in reset mode prior to this.*/
 
-   /*First disable auto connecting mode.*/
-  UART6_ChangeBaudRate(115200);
-  Bluetooth_SendCmd(disableConnecting);  /* All commands seem to not work!*/
+  UART6_DeInit(); /* Stop driving TX line.*/
+  UART6_Init();
+
+#if BT_CONFIGURE
+  /*First try to recognize used baudrate*/
+  delay(500); /*Let module wake up after reset*/
   UART6_ChangeBaudRate(9600);
-  Bluetooth_SendCmd(disableConnecting);
-
-  Bluetooth_SendCmd(setName);  /* Not working */
-
+  if(true == Bluetooth_Cmd(interruptModule))
+    {
+      /*Modules uses Baudrate 9600, and has thus never configured before!*/
+      Bluetooth_Cmd(setName);
+      Bluetooth_Cmd(baudratecmd);
+      Bluetooth_Cmd(resetModule);
+    }
   delay(500);
-  Bluetooth_FlushRx();
-  Bluetooth_Reset();
+#endif
 
-  UART6_ChangeBaudRate(9600);
-  Bluetooth_Cmd(baudratecmd);  /* Set baudrate to 115200*/
   UART6_ChangeBaudRate(115200);
+  if(true == Bluetooth_Cmd(interruptModule))
+    {
+      /*Seems that bluetooth modules is configured and answers at 115200 baud.*/
+      update_system_state_set(BLUEZ_OUTPUT_ACTIVE);
+    }
 
-  /* Last step enable auto connection mode*/
-  Bluetooth_Cmd(enableConnecting);
-
-  /*Hope that HM-11 understood change command or already talks at 115200 baud */
-   delay(1000);  /* Give the Bluetooth module some time to process changing the Baudrate*/
-
-   return true;
+  return true;
 }
 
 
-//static char altitude[]  = "$PGRMZ,246,f,3*1B\r\n";
 void Bluetooth_Transmit(uint8_t *pData, uint16_t Size)
 {
-   Bluetooth_FlushRx();
-   UART6_Transmit(pData, Size);     /*TODO: seems to block startup / paring if to much data is transmitted
+  Bluetooth_FlushRx();
+  UART6_Transmit(pData, Size);     /*TODO: seems to block startup / paring if to much data is transmitted
 					 or if not synchronized with connection status. Can we check a DIO pin? */
-
-#if ITM_TRACE_ENABLE
-for(int i = 0; i < Size; i++)
-  {
-    ITM_SendChar(pData[i]);
-  }
-  ITM_SendChar('\r');
-  ITM_SendChar('\n');
-#endif
 }
 
-bool Bluetooth_Receive(uint8_t *pRxByte)
+bool Bluetooth_Receive(uint8_t *pRxByte, portTickType timeout)
 {
-  return UART6_Receive(pRxByte);
+  return UART6_Receive(pRxByte, timeout);
 }
 

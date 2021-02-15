@@ -15,9 +15,10 @@
 #include "stm32f4xx_hal.h"
 
 void UART6_Init(void);
+void UART6_DeInit(void);
 void UART6_ChangeBaudRate(uint32_t rate);
 void UART6_Transmit(uint8_t *pData, uint16_t Size);
-bool UART6_Receive(uint8_t *pRxByte);
+bool UART6_Receive(uint8_t *pRxByte, uint32_t timeout);
 extern UART_HandleTypeDef huart6;
 
 #ifdef __cplusplus

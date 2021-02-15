@@ -17,7 +17,7 @@
 
 bool Bluetooth_Init(void);
 void Bluetooth_Transmit(uint8_t *pData, uint16_t Size);
-bool Bluetooth_Receive(uint8_t *pRxByte);
+bool Bluetooth_Receive(uint8_t *pRxByte, portTickType timeout);
 
 #ifdef __cplusplus
 }
