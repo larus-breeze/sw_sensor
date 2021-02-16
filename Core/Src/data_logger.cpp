@@ -128,8 +128,10 @@ void data_logger_runnable(void*)
 				if( buf_ptr < buffer+BUFSIZE)
 					continue; // buffer only filled partially
 
-				fresult = f_write (&fp, buffer, BUFSIZE, (UINT*) &writtenBytes);
-				ASSERT((fresult == FR_OK) && (writtenBytes == BUFSIZE));
+				fresult = f_write (&fp, buffer, BUFSIZE, (UINT*) &writtenBytes);  /*Shall return FR_DENIED if disk is full.*/
+				ASSERT((fresult == FR_OK) && (writtenBytes == BUFSIZE));   /* Returns writtenBytes = 0 if disk is full. */
+				/* TODO: decide what to do if disk is full.  Simple: Stop Logging.  Better: Remove older files until e.g. 1GB is free
+				at startup. FATFS configuration is not up to that. */
 
 				uint32_t rest = buf_ptr -(buffer+BUFSIZE);
 				memcpy( buffer, buffer+BUFSIZE, rest);
