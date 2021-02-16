@@ -42,6 +42,10 @@ RestrictedTask bluetooth_handling(bluetooth_hm_11, "BT_HM_11", 256);
 #endif
 
 
+#define BLUETOOTH_DEFAULT_UART_RX_TIMEOUT 500
+#define BLUETOOTH_CONNECTION_TIMEOUT 5000
+static bool ble_connected = false;
+
 void Bluetooth_SendCmd(uint8_t *cmd)
 {
   uint32_t length = 0;
@@ -69,7 +73,6 @@ void Bluetooth_FlushRx(void)
 }
 
 
-#define BLUETOOTH_DEFAULT_UART_RX_TIMEOUT 500
 bool Bluetooth_Cmd(uint8_t *cmd)
 {
   uint8_t rxByte = 0;
@@ -212,9 +215,11 @@ bool Bluetooth_Init(void)
 
 void Bluetooth_Transmit(uint8_t *pData, uint16_t Size)
 {
-  Bluetooth_FlushRx();
-  UART6_Transmit(pData, Size);     /*TODO: seems to block startup / paring if to much data is transmitted
-					 or if not synchronized with connection status. Can we check a DIO pin? */
+  if(true == ble_connected)
+    {
+      /* Only transmit if module is connected.*/
+      UART6_Transmit(pData, Size);
+    }
 }
 
 bool Bluetooth_Receive(uint8_t *pRxByte, uint32_t timeout)
@@ -222,3 +227,73 @@ bool Bluetooth_Receive(uint8_t *pRxByte, uint32_t timeout)
   return UART6_Receive(pRxByte, timeout);
 }
 
+static void BLE_runnable (void*)
+{
+  Bluetooth_Init();
+  delay(500);
+
+  uint8_t rxByte = 0;
+  uint32_t detector = 0;
+  for(;;)
+    {
+      if(true == Bluetooth_Receive(&rxByte, BLUETOOTH_CONNECTION_TIMEOUT))
+	{
+	  /*Detect and parse response messages from BLE module*/
+	  if('+' == rxByte)
+	    {
+	      /*Restart detector on '+' reception*/
+	      detector = 1;
+	    }
+
+	  if(('C' == rxByte) && (detector == 1))
+	    {
+	      detector = 2;
+	    }
+	  if(('O' == rxByte) && (detector == 2))
+	    {
+	      detector = 3;
+	    }
+	  if(('N' == rxByte) && (detector == 3))
+	    {
+	      detector = 4;
+	    }
+	  if(('N' == rxByte) && (detector == 4))
+	    {
+	      detector = 0;
+	      /*Detected OK+CONN*/
+	      ble_connected = true;
+	    }
+
+
+	  if(('L' == rxByte) && (detector == 1))
+	    {
+	      detector = 2;
+	    }
+	  if(('O' == rxByte) && (detector == 2))
+	    {
+	      detector = 3;
+	    }
+	  if(('S' == rxByte) && (detector == 3))
+	    {
+	      detector = 4;
+	    }
+	  if(('T' == rxByte) && (detector == 4))
+	    {
+	      detector = 0;
+	      /*Detected OK+LOST.  Do a period reset here as sometimes reconnection is not possible*/
+	      ble_connected = false;
+
+	    }
+	}
+      else
+	{
+	  /*Nothing received. Do a reset after a 5 seconds if not connected.*/
+	  if(false == ble_connected)
+	  {
+	      Bluetooth_Reset();
+	  }
+	}
+    }
+}
+
+Task bluetooth_task (BLE_runnable, "BLE", 256, 0, BLUETOOTH_PRIORITY);

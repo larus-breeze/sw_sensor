@@ -18,10 +18,6 @@ static void runnable (void*)
   update_system_state_set( USB_OUTPUT_ACTIVE);
 #endif
 
-#if ACTIVATE_BLUETOOTH_NMEA
-  Bluetooth_Init();
-#endif
-
   for (synchronous_timer t (NMEA_REPORTING_PERIOD); true; t.sync ())
     {
       char *next;
