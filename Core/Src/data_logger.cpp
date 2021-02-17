@@ -26,7 +26,7 @@ COMMON static char filename[25];
 void data_logger_runnable(void*)
 {
 	HAL_SD_DeInit (&hsd);
-	delay (2000); //TODO: Quick consecutive resets cause SD Card to hang. This improved but does not fix the situation.
+	delay (2000); //TODO: Quick consecutive resets cause SD Card to hang. This improved but does not fix the situation. Migh requre switching sd card power
 
 	FRESULT fresult;
 	FIL fp;
