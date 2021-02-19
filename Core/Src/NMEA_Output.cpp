@@ -25,7 +25,7 @@ static void runnable (void*)
       format_RMC (GNSS, NMEA_buf.string);
       next = NMEA_append_tail (NMEA_buf.string);
 
-      format_GGA (GNSS, next);
+      format_GGA (GNSS, next);  //TODO: ensure that this reports the altitude in meter above medium sea level and height above wgs84: http://aprs.gids.nl/nmea/#gga
       next = NMEA_append_tail (next);
 
       format_MWV (output_data.wind[NORTH], output_data.wind[EAST], next);
@@ -33,7 +33,7 @@ static void runnable (void*)
 
       format_PTAS1 (output_data.vario,
 		    output_data.integrator_vario,
-		    output_data.c.position.e[DOWN] * -1.0,
+		    output_data.c.position.e[DOWN] * -1.0,   //TODO: PTAS shall report pure barometric altitude, based on static_pressure. As there can be a QNH applied to in XCSOAR.
 		    output_data.TAS,
 		    next);
       next = NMEA_append_tail (next);
