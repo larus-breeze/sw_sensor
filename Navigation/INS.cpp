@@ -16,8 +16,8 @@
 #define CROSS_GAIN 0.05f		//!< Attitude controller: cross-product gain
 
 #define CIRCLE_LIMIT 200 		//!< 20 s hysteresis / delay
-#define HIGH_TURN_RATE_SQUARED 0.02 	//!< turn rate high limit squared
-#define LOW_TURN_RATE_SQUARED 0.005 	//!< turn rate low limit squared
+#define HIGH_TURN_RATE 0.15 		//!< turn rate high limit
+#define LOW_TURN_RATE  0.0707 		//!< turn rate low limit
 
 #if OLD_FORMAT == 1
 #define ALTI_DIFF 0.136 // antenna height difference D-KCOM
@@ -65,14 +65,14 @@ void INS_type::attitude_setup( const float3vector & acceleration, const float3ve
 */
 circle_state_t INS_type::update_circling_state( const float3vector &gyro)
 {
-	float turn_rate=gyro.e[RIGHT]*gyro.e[RIGHT] + gyro.e[BOTTOM]*gyro.e[BOTTOM];
+	float turn_rate_abs=abs( turn_rate);
 
 	if( circling_counter < CIRCLE_LIMIT)
-	  if( turn_rate > HIGH_TURN_RATE_SQUARED)
+	  if( turn_rate_abs > HIGH_TURN_RATE)
 	    ++circling_counter;
 
 	if( circling_counter > 0)
-	  if( turn_rate < LOW_TURN_RATE_SQUARED)
+	  if( turn_rate_abs < LOW_TURN_RATE)
 	    --circling_counter;
 
 	if( circling_counter == 0)
@@ -181,7 +181,10 @@ void INS_type::update_compass(
 	  update (acc, gyro + gyro_correction, mag);
 }
 
-void INS_type::update_diff_GNSS( //!< rotate quaternion taking angular rate readings
+/**
+ * @brief  update attitude from IMU data D-GNSS compass
+ */
+void INS_type::update_diff_GNSS(
     const float3vector &gyro, const float3vector &acc, const float3vector &mag,
     const float3vector &GNSS_acceleration,
     float GNSS_heading)

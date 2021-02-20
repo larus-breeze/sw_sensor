@@ -2,7 +2,7 @@
 #include "my_assert.h"
 #include "FreeRTOS_wrapper.h"
 
-#define UART6_DEFAULT_TIMEOUT 220
+#define UART6_DEFAULT_TIMEOUT 250
 #define UART6_RX_QUEUE_SIZE 64
 
 static COMMON QueueHandle_t UART6_CPL_Message_Id = NULL;

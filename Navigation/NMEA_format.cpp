@@ -1,5 +1,7 @@
 #include "NMEA_format.h"
 
+#define ROM const __attribute__ ((section (".rodata")))
+
 #include "vsqrtf.h"
 #include "asin_atan.h"
 
@@ -15,6 +17,41 @@ inline float clip( float x, float min, float max )
   else if (x > max)
     x = max;
   return x;
+}
+
+char * format_integer( uint32_t value, char *s)
+{
+  if( value < 10)
+    {
+    *s++ = value + '0';
+    return s;
+    }
+    else
+    {
+      s = format_integer( value / 10, s);
+      s = format_integer( value % 10, s);
+    }
+}
+
+char * integer_to_ascii( int32_t number, uint32_t decimal_factor, char *s)
+{
+  if( number < 0)
+    {
+      *s++ = '-';
+      number = -number;
+    }
+  s = format_integer( number / decimal_factor, s);
+  *s++='.';
+  s = format_integer( number % decimal_factor, s);
+  return s;
+}
+
+inline char *append_string( char *target, const char *source)
+{
+  while( *source)
+      *target++ = *source++;
+  *target = 0; // just to be sure :-)
+  return target;
 }
 
 char *
@@ -62,13 +99,11 @@ sqr (float a)
 {
   return a * a;
 }
+ROM char GPRMC[]="$GPRMC,";
 
 char *format_RMC (const GNSS_type &gnss, char *p)
 {
-  strcpy (p, (const char *) "$GPRMC,");
-
-  while (*p)
-    ++p;
+  p = append_string( p, GPRMC);
 
   *p++ = (gnss.coordinates.hour) / 10 + '0';
   *p++ = (gnss.coordinates.hour) % 10 + '0';
@@ -145,12 +180,11 @@ char *format_RMC (const GNSS_type &gnss, char *p)
   return p;
 }
 
+ROM char GPGGA[]="$GPGGA,";
+
 char *format_GGA(const GNSS_type &gnss, char *p)
 {
-  strcpy (p, (const char *) "$GPGGA,");
-
-  while (*p)
-    ++p;
+  p = append_string( p, GPGGA);
 
   *p++ = (gnss.coordinates.hour)   / 10 + '0';
   *p++ = (gnss.coordinates.hour)   % 10 + '0';
@@ -211,9 +245,11 @@ char *format_GGA(const GNSS_type &gnss, char *p)
   return p;
 }
 
+ROM char GPMWV[]="$GPMWV,";
+
 char *format_MWV ( float wind_north, float wind_east, char *p)
 {
-  strcpy (p, (const char *) "$GPMWV,");
+  p = append_string( p, GPMWV);
 
 //  wind_north = 3.0; // this setting reports 18km/h from 53 degrees
 //  wind_east = 4.0;
@@ -259,6 +295,8 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
   return p;
 }
 
+ROM char PTAS1[]="$PTAS1,";
+
 char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, char *p)
 {
   vario=clip(vario, -10.0f, 10.0f);
@@ -269,10 +307,7 @@ char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, ch
   uint16_t i_altitude = altitude * METER_TO_FEET + 2000.5;
   uint16_t i_TAS = TAS * MPS_TO_NMPH + 0.5;
 
-  strcpy (p, (const char *) "$PTAS1,");
-
-  while (*p)
-    ++p;
+  p = append_string( p, PTAS1);
 
   *p++ = i_vario / 100 + '0';
   i_vario %= 100;
@@ -306,9 +341,34 @@ char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, ch
   return p;
 }
 
+ROM char POV[]="$POV,S,";
+
+char *format_POV( float TAS, float pabs, float pitot, float TEK_vario, char *p)
+{
+  p = append_string( p, POV);
+  p = integer_to_ascii( (int)(TAS * 100.0f), 100, p);
+
+  p = append_string( p, ",P,");
+  p = integer_to_ascii( (int)pabs, 100, p); // pressure already in Pa = 100 hPa
+
+  if( pitot < 0.0f)
+    pitot = 0.0f;
+  p = append_string( p, ",Q,");
+  p = integer_to_ascii( (int)pitot, 100, p);// pressure already in Pa = 100 hPa
+
+  p = append_string( p, ",E,");
+  p = integer_to_ascii( (int)(TEK_vario * 100.0f), 100, p);
+
+  *p++ = 0;
+
+  return p;
+}
+
+ROM char HEX[]="0123456789ABCDEF";
+
 inline char hex4( uint8_t data)
 {
-  return "0123456789ABCDEF"[data];
+  return HEX[data];
 }
 
 bool NMEA_checksum( const char *line)

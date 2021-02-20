@@ -46,7 +46,11 @@ static void runnable (void*)
 		    next);
       next = NMEA_append_tail (next);
 
-      NMEA_buf.length = next - (const char*) (NMEA_buf.string);
+      format_POV( output_data.TAS, output_data.m.static_pressure,
+			 output_data.m.pitot_pressure, output_data.vario, next);
+      next = NMEA_append_tail (next);
+
+      NMEA_buf.length = next - NMEA_buf.string;
 
 #if ACTIVATE_USB_NMEA
       USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);
