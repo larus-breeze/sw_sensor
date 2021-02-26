@@ -43,7 +43,7 @@ communicator_runnable (void*)
       if (++count_10Hz >= 10)
 	{
 	  count_10Hz = 0;
-	  trigger_CAN ();
+	  trigger_CAN (); // todo alle abtastraten checken !
 	}
 #endif
     }

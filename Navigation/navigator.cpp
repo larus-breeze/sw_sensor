@@ -6,7 +6,7 @@ void navigator_t::update_IMU (
     const float3vector &mag,
     const float3vector &gyro)
 {
-  ins.update_diff_GNSS (
+  ins.update_diff_GNSS ( // todo GNSS-kompass nicht immer verfügbar
 	  gyro, acc, mag,
 	  GNSS_acceleration,
 	  GNSS_heading);
@@ -15,7 +15,7 @@ void navigator_t::update_IMU (
 	  gyro, acc, mag,
 	  GNSS_acceleration);
 
-  true_airspeed[NORTH] = ins.get_north () * TAS;
+  true_airspeed[NORTH] = ins.get_north () * TAS; // todo which special ins to use = ???
   true_airspeed[EAST]  = ins.get_east ()  * TAS;
   true_airspeed[DOWN]  = ins.get_down ()  * TAS; // todo: do we need this one ?
 

@@ -138,7 +138,7 @@ void INS_type::update_compass(
 	  {
 	    case STRAIGHT_FLIGHT:
 	    {
-	      nav_correction[DOWN]  =   nav_induction[EAST] * M_H_GAIN;
+	      nav_correction[DOWN]  =   nav_induction[EAST] * M_H_GAIN; // todo hier fehlt magnet-modell erde
 
 	      gyro_correction = nav2body * nav_correction;
 
@@ -150,7 +150,7 @@ void INS_type::update_compass(
 	    case CIRCLING:
 	    {
 
-              float cross_correction =
+              float cross_correction = // kreuzprodukt aus GSNN-acc und INS-acc -> Korrektur heading
         	    nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
 		  - nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
 
@@ -191,7 +191,7 @@ void INS_type::update_diff_GNSS(
 {
 	  float3vector nav_acceleration = body2nav * acc;
 
-	  float heading_gnss_work = GNSS_heading + ALTI_DIFF * sinf (euler.r); // todo correct this patch
+	  float heading_gnss_work = GNSS_heading + ALTI_DIFF * sinf (euler.r); // todo config parameter individuell
 	  heading_gnss_work = heading_gnss_work - euler.y;
 
 	  if( heading_gnss_work > M_PI) // map into { -PI PI}
