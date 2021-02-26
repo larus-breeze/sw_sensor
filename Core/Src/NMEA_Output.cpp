@@ -2,8 +2,9 @@
 #include "FreeRTOS_wrapper.h"
 #include "common.h"
 #include "NMEA_Output.h"
+
+#include <bt_hm.h>
 #include "NMEA_format.h"
-#include "uart6.h"
 #include "usb_device.h"
 #include "usbd_cdc.h"
 
@@ -17,15 +18,6 @@ static void runnable (void*)
   update_system_state_set( USB_OUTPUT_ACTIVE);
 #endif
 
-#if ACTIVATE_BLUETOOTH_NMEA
-  UART6_Init();
-  HAL_GPIO_WritePin(BL_RESETB_GPIO_Port, BL_RESETB_Pin, GPIO_PIN_RESET);
-  delay(100);
-  HAL_GPIO_WritePin(BL_RESETB_GPIO_Port, BL_RESETB_Pin, GPIO_PIN_SET);
-  delay(200);
-  update_system_state_set( BLUEZ_OUTPUT_ACTIVE);
-#endif
-
   for (synchronous_timer t (NMEA_REPORTING_PERIOD); true; t.sync ())
     {
       char *next;
@@ -33,7 +25,7 @@ static void runnable (void*)
       format_RMC (GNSS, NMEA_buf.string);
       next = NMEA_append_tail (NMEA_buf.string);
 
-      format_GGA (GNSS, next);
+      format_GGA (GNSS, next);  //TODO: ensure that this reports the altitude in meter above medium sea level and height above wgs84: http://aprs.gids.nl/nmea/#gga
       next = NMEA_append_tail (next);
 
       format_MWV (output_data.wind[NORTH], output_data.wind[EAST], next);
@@ -41,7 +33,7 @@ static void runnable (void*)
 
       format_PTAS1 (output_data.vario,
 		    output_data.integrator_vario,
-		    output_data.c.position.e[DOWN] * -1.0,
+		    output_data.c.position.e[DOWN] * -1.0,   //TODO: PTAS shall report pure barometric altitude, based on static_pressure. As there can be a QNH applied to in XCSOAR.
 		    output_data.TAS,
 		    next);
       next = NMEA_append_tail (next);
@@ -57,7 +49,7 @@ static void runnable (void*)
       USBD_CDC_TransmitPacket(&hUsbDeviceFS);
 #endif
 #if ACTIVATE_BLUETOOTH_NMEA
-      UART6_Transmit( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
+      Bluetooth_Transmit( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
 #endif
     }
 }

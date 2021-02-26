@@ -1,4 +1,4 @@
 Debug/*
 /Debug/
 /.settings/language.settings.xml
-
+/Core/Inc/git-commit-version.h
