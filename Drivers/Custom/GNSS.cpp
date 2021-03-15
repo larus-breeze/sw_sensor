@@ -80,7 +80,7 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	    ((float)(p->nano) - (float)(coordinates.nano)) +
 	    (p->second - coordinates.second) * 1e+9f);
 #else
-#define sample_rate 50.0f // 200ms
+#define sample_rate 10.0f // depending on master GNSS RX configuration
 #endif
 	// record new time
 	coordinates.year   = p->year % 100;

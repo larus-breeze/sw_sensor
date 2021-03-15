@@ -1,3 +1,8 @@
+/** ***********************************************************************
+ * @file		OfflineCalculator.cpp
+ * @brief		read logged sensor data and simulate output
+ * @author		Dr. Klaus Schaefer
+ **************************************************************************/
 #include "system_configuration.h"
 
 #if RUN_OFFLINE_CALCULATION == 1

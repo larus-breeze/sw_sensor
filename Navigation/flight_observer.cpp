@@ -1,3 +1,8 @@
+/** ***********************************************************************
+ * @file		flight_observer.cpp
+ * @brief		windspeed and vario update
+ * @author		Dr. Klaus Schaefer
+ **************************************************************************/
 #include "system_configuration.h"
 #include "flight_observer.h"
 
@@ -35,7 +40,7 @@ void flight_observer_t::update (
 		      KalmanVario_pressure.get_x(KalmanVario_t::VARIO) * KalmanVario_pressure.get_x(KalmanVario_t::ACCELERATION_OBSERVED)
 		   ) * RECIP_GRAVITY;
 #endif
-  speed_compensation_INS =
+  speed_compensation_GNSS =
 		  (
 		      (gnss_velocity.e[NORTH] - windspeed.e[NORTH]) * gnss_acceleration.e[NORTH] +
 		      (gnss_velocity.e[EAST]  - windspeed.e[EAST])  * gnss_acceleration.e[EAST] +
@@ -43,5 +48,5 @@ void flight_observer_t::update (
 		   ) * RECIP_GRAVITY;
 
   vario_averager_pressure.respond( speed_compensation_TAS - vario_uncompensated_pressure); // -> positive on positive energy gain
-  vario_averager_GNSS.respond( speed_compensation_INS - vario_uncompensated_GNSS); // -> positive on positive energy gain
+  vario_averager_GNSS.respond( speed_compensation_GNSS - vario_uncompensated_GNSS); // -> positive on positive energy gain
 }

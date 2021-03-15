@@ -1,10 +1,8 @@
-/*
- * CAN_output.h
- *
- *  Created on: Dec 29, 2020
- *      Author: schaefer
- */
-
+/** ***********************************************************************
+ * @file		CAN_output.h
+ * @brief		format internal data and send to CAN
+ * @author		Dr. Klaus Schaefer
+ **************************************************************************/
 #ifndef SRC_CAN_OUTPUT_H_
 #define SRC_CAN_OUTPUT_H_
 

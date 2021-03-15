@@ -1,9 +1,8 @@
-/*
- * variointegrator.cpp
- *
- *  Created on: Sep 5, 2020
- *      Author: schaefer
- */
+/** ***********************************************************************
+ * @file		variointegrator.cpp
+ * @brief		maintain vario average information
+ * @author		Dr. Klaus Schaefer
+ **************************************************************************/
 
 #include <variointegrator.h>
 #include "math.h"

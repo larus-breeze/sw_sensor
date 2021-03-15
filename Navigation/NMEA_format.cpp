@@ -1,3 +1,8 @@
+/** ***********************************************************************
+ * @file		NMEA_format.cpp
+ * @brief		converters for NMEA string output
+ * @author		Dr. Klaus Schaefer
+ **************************************************************************/
 #include "NMEA_format.h"
 
 #define ROM const __attribute__ ((section (".rodata")))

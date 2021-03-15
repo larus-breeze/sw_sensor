@@ -1,3 +1,8 @@
+/** ***********************************************************************
+ * @file		communicator.cpp
+ * @brief		talk to sensors and synchronize output
+ * @author		Dr. Klaus Schaefer
+ **************************************************************************/
 #include "system_configuration.h"
 
 #if RUN_COMMUNICATOR == 1
@@ -24,12 +29,12 @@ communicator_runnable (void*)
 
   while (true)
     {
-      notify_take (true); // wait for synchronization by IMU
+      notify_take (true); // wait for synchronization by IMU @ 100 Hz
 
       navigator.update_pabs (output_data.m.static_pressure);
       navigator.update_pitot (output_data.m.pitot_pressure);
 
-      if (GNSS_new_data_ready) // triggered at 10 Hz
+      if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
 	{
 	  GNSS_new_data_ready = false;
 	  navigator.update_GNSS( GNSS.coordinates);

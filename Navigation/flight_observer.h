@@ -1,3 +1,8 @@
+/** ***********************************************************************
+ * @file		flight_observer.h
+ * @brief		windspeed and vario update
+ * @author		Dr. Klaus Schaefer
+ **************************************************************************/
 #ifndef FLIGHT_OBSERVER_H_
 #define FLIGHT_OBSERVER_H_
 
@@ -41,7 +46,7 @@ public:
 	}
 	float get_speed_compensation_INS( void ) const
 	{
-		return speed_compensation_INS;
+		return speed_compensation_GNSS;
 	}
 	float get_vario_uncompensated_GNSS( void ) const
 	{
@@ -74,7 +79,7 @@ private:
 	pt2<float,float> windspeed_averager_EAST;
 	differentiator<float,float>kinetic_energy_differentiator;
 	float speed_compensation_TAS;
-	float speed_compensation_INS;
+	float speed_compensation_GNSS;
 	float vario_uncompensated_GNSS;
 	float vario_uncompensated_pressure;
 	KalmanVario_t KalmanVario_GNSS;

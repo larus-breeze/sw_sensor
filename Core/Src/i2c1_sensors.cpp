@@ -42,6 +42,8 @@ static void runnable( void *)
 			break;
 	}
 #endif
+	if(I2C_OK == I2C_Read( &hi2c1, I2C_ADDRESS, data, 2))
+	    update_system_state_set( PITOT_SENSOR_AVAILABLE);
 
 	for( synchronous_timer t(10); true; t.sync())
 	{
@@ -49,7 +51,7 @@ static void runnable( void *)
 		{
 			ASSERT(( data[0] & 0xC0)==0); 			// no error flags !
 			uint16_t raw_data = (data[0] << 8) | data[1];
-			output_data.m.pitot_pressure = (float)( raw_data - OFFSET) * SPAN;
+			output_data.m.pitot_pressure = (float)( raw_data - OFFSET) * SPAN; // todo implement sensor inidvid. calib.
 		}
 		else
 		{

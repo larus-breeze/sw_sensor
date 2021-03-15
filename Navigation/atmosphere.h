@@ -1,10 +1,8 @@
-/*
- * atmosphere.h
- *
- *  Created on: Mar 30, 2015
- *      Author: schaefer
- */
-
+/** ***********************************************************************
+ * @file		atmosphere.h
+ * @brief		ICAO STD atmosphere calculations
+ * @author		Dr. Klaus Schaefer
+ **************************************************************************/
 #ifndef APPLICATION_ATMOSPHERE_H_
 #define APPLICATION_ATMOSPHERE_H_
 

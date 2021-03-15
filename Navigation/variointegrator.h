@@ -1,9 +1,8 @@
-/*
- * variointegrator.h
- *
- *  Created on: Sep 5, 2020
- *      Author: schaefer
- */
+/** ***********************************************************************
+ * @file		variointegrator.h
+ * @brief		maintain vario average information
+ * @author		Dr. Klaus Schaefer
+ **************************************************************************/
 
 #ifndef VARIOINTEGRATOR_H_
 #define VARIOINTEGRATOR_H_

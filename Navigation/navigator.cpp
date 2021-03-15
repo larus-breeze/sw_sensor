@@ -1,3 +1,9 @@
+/** ***********************************************************************
+ * @file		navigator.cpp
+* @brief		maintain speed attitude and position data
+  * @author		Dr. Klaus Schaefer
+ **************************************************************************/
+
 #include <navigator.h>
 
 // to be called at 100 Hz

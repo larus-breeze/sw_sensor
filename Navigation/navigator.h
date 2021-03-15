@@ -1,3 +1,8 @@
+/** ***********************************************************************
+ * @file		navigator.cpp
+ * @brief		maintain speed attitude and position data
+ * @author		Dr. Klaus Schaefer
+ **************************************************************************/
 #ifndef NAVIGATORT_H_
 #define NAVIGATORT_H_
 

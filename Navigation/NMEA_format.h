@@ -1,10 +1,8 @@
-/*
- * NMEA_format.h
- *
- *  Created on: Dec 18, 2018
- *      Author: schaefer
- */
-
+/** ***********************************************************************
+ * @file		NMEA_format.h
+ * @brief		converters for NMEA string output
+ * @author		Dr. Klaus Schaefer
+ **************************************************************************/
 #ifndef APPLICATION_NMEA_FORMAT_H_
 #define APPLICATION_NMEA_FORMAT_H_
 

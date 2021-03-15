@@ -1,3 +1,8 @@
+/** ***********************************************************************
+ * @file		CAN_output.cpp
+ * @brief		format internal data and send to CAN
+ * @author		Dr. Klaus Schaefer
+ **************************************************************************/
 #include "system_configuration.h"
 
 #if RUN_CAN_OUTPUT == 1
