@@ -7,7 +7,7 @@
 #ifndef VARIOINTEGRATOR_H_
 #define VARIOINTEGRATOR_H_
 
-#include "INS.h"
+#include <AHRS.h>
 #define SQR(x) ((x)*(x))
 #define SIN(x) sinf(x)
 #include "pt2.h"

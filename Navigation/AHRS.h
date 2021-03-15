@@ -1,11 +1,11 @@
 /** ***********************************************************************
- * @file		INS.h
- * @brief		AHRS / INS module header
+ * @file		AHRS.h
+ * @brief		AHRS header
  * @author		Dr. Klaus Schaefer
  **************************************************************************/
 
-#ifndef INS_H_
-#define INS_H_
+#ifndef AHRS_H_
+#define AHRS_H_
 
 typedef float ftype;
 //typedef float ftype;
@@ -22,10 +22,10 @@ typedef enum  { STRAIGHT_FLIGHT, TRANSITION, CIRCLING} circle_state_t;
 typedef integrator<float, float3vector> vector3integrator;
 
 //! Attitude and heading reference system class
-class INS_type
+class AHRS_type
 {
 public:
-	INS_type(float sampling_time)
+	AHRS_type(float sampling_time)
 		:
 		  Ts(sampling_time),
 		  Ts_div_2 (sampling_time / 2.0),
@@ -146,4 +146,4 @@ private:
 	unsigned circling_counter;
 };
 
-#endif /* INS_H_ */
+#endif /* AHRS_H_ */

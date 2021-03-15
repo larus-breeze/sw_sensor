@@ -2,6 +2,9 @@
  * @file		KalmanVario.cpp
  * @brief		Kalman Filter for vertical navigation (i.e. altitude)
  * @author		Dr. Klaus Schaefer
+ * *Sensor fusion observer*
+ * Blend vertical acceleration inclusive gravity with altitude data
+ * to provide UN-compensated variometer plus vertical net acceleration w/o gravity
  **************************************************************************/
 
 #include <KalmanVario.h>

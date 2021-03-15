@@ -6,8 +6,8 @@
 #ifndef NAVIGATORT_H_
 #define NAVIGATORT_H_
 
+#include <AHRS.h>
 #include "GNSS.h"
-#include "INS.h"
 #include "differentiator.h"
 #include "variointegrator.h"
 #include "atmosphere.h"
@@ -68,8 +68,8 @@ public:
     return flight_observer;
     }
 
-  INS_type 		ins;
-  INS_type 		ins_magnetic;
+  AHRS_type 		ins;
+  AHRS_type 		ins_magnetic;
 
 private:
   atmosphere_t 		atmosphere;

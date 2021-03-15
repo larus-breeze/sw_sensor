@@ -1,12 +1,12 @@
 /** ***********************************************************************
- * @file		INS.cpp
- * @brief		INS Implementation
+ * @file		AHRS.cpp
+ * @brief		AHRS Implementation: maintain aircraft attitude
  * @author		Dr. Klaus Schaefer
  **************************************************************************/
 
+#include <AHRS.h>
 #include "system_configuration.h"
 #include "my_assert.h"
-#include "INS.h"
 #include "GNSS.h"
 
 #define P_GAIN 0.03f			//!< Attitude controller: proportional gain
@@ -28,7 +28,7 @@
 /**
  * @brief initial attitude setup from observables
 */
-void INS_type::attitude_setup( const float3vector & acceleration, const float3vector & induction)
+void AHRS_type::attitude_setup( const float3vector & acceleration, const float3vector & induction)
 {
 	float3vector north, east, down;
 
@@ -63,7 +63,7 @@ void INS_type::attitude_setup( const float3vector & acceleration, const float3ve
 /**
  * @brief  decide about circling state
 */
-circle_state_t INS_type::update_circling_state( const float3vector &gyro)
+circle_state_t AHRS_type::update_circling_state( const float3vector &gyro)
 {
 	float turn_rate_abs=abs( turn_rate);
 
@@ -90,7 +90,7 @@ circle_state_t INS_type::update_circling_state( const float3vector &gyro)
  *
  * Side-effect: create rotation matrices, NAV-acceleration, NAV-induction
  */
-void INS_type::update( const float3vector &acc, const float3vector &gyro, const float3vector &mag)
+void AHRS_type::update( const float3vector &acc, const float3vector &gyro, const float3vector &mag)
 {
 	attitude.rotate(
 			gyro.e[ROLL] * Ts_div_2,
@@ -116,7 +116,7 @@ void INS_type::update( const float3vector &acc, const float3vector &gyro, const 
 /**
  * @brief  update attitude from IMU data and magnetometer
  */
-void INS_type::update_compass(
+void AHRS_type::update_compass(
 		const float3vector &gyro,
 		const float3vector &acc,
 		const float3vector &mag,
@@ -184,7 +184,7 @@ void INS_type::update_compass(
 /**
  * @brief  update attitude from IMU data D-GNSS compass
  */
-void INS_type::update_diff_GNSS(
+void AHRS_type::update_diff_GNSS(
     const float3vector &gyro, const float3vector &acc, const float3vector &mag,
     const float3vector &GNSS_acceleration,
     float GNSS_heading)
