@@ -45,6 +45,8 @@ static void runnable( void *)
 	if(I2C_OK == I2C_Read( &hi2c1, I2C_ADDRESS, data, 2))
 	    update_system_state_set( PITOT_SENSOR_AVAILABLE);
 
+	delay( 10); // wait for "next measurement available"
+
 	for( synchronous_timer t(10); true; t.sync())
 	{
 		if(I2C_OK == I2C_Read( &hi2c1, I2C_ADDRESS, data, 2))
