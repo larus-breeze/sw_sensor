@@ -39,12 +39,12 @@ void UART6_ChangeBaudRate(uint32_t rate)
   HAL_UART_Receive_IT(&huart6, &uart6_rx_byte, 1); // Activate interrupt for rx data
 }
 
-void UART6_Transmit(uint8_t *pData, uint16_t Size)
+void UART6_Transmit(const uint8_t *pData, uint16_t Size)
 {
   HAL_StatusTypeDef status = HAL_OK;
   BaseType_t queue_status = pdFALSE;
 
-  status = HAL_UART_Transmit_DMA(&huart6, pData, Size);
+  status = HAL_UART_Transmit_DMA(&huart6, (uint8_t *)pData, Size);
   ASSERT(HAL_OK == status);
 
   queue_status = xQueueReceive(UART6_CPL_Message_Id, 0, UART6_DEFAULT_TIMEOUT);

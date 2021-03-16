@@ -43,7 +43,7 @@ public:
    */
   void update_pitot( float pressure)
   {
-    pitot_pressure=pressure;
+    pitot_pressure=pressure + 552.0f; // patch klaus
     TAS = atmosphere.get_TAS_from_dynamic_pressure ( pitot_pressure);
     IAS = atmosphere.get_IAS_from_dynamic_pressure ( pitot_pressure);
   }

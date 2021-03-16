@@ -46,7 +46,7 @@ RestrictedTask bluetooth_handling(bluetooth_hm_11, "BT_HM_11", 256);
 #define BLUETOOTH_CONNECTION_TIMEOUT 5000
 static bool ble_connected = false;
 
-void Bluetooth_SendCmd(uint8_t *cmd)
+void Bluetooth_SendCmd(const uint8_t *cmd)
 {
   uint32_t length = 0;
   while(cmd[length] != 0)
@@ -73,7 +73,7 @@ void Bluetooth_FlushRx(void)
 }
 
 
-bool Bluetooth_Cmd(uint8_t *cmd)
+bool Bluetooth_Cmd(const uint8_t *cmd)
 {
   uint8_t rxByte = 0;
   uint8_t detector = 0;
@@ -121,7 +121,7 @@ bool Bluetooth_Cmd(uint8_t *cmd)
 
 /*   It seems that it is required  to recognize a lost connection! In that case we need to stop sending
  *   data until connection is established again!  Reported by OK+CONN (HM-19)
- *   Tested HM-19 with SONY XA2 Ultra LineagOS.  Bluetooth stopped working aftera while. Only a reboot helped.
+ *   Tested HM-19 with SONY XA2 Ultra LineagOS.  Bluetooth stopped working after a while. Only a reboot helped.
  *   Works acceptable with Samsung XCover Pro,   Sony XA2 Ultra,   CAT S52.  Deactivating and activating
  *   connection from XCSOAR works good. Even if lots of data is continuously transferred.
  *
@@ -159,10 +159,11 @@ bool Bluetooth_Cmd(uint8_t *cmd)
 
 /* \r\n not required. "AT Command are fixed length commands and new line is this redundant. "HowToUse Hm-1x.pdf
  * This can not be true especially for setting a custom NAME?*/
-static uint8_t baudratecmd[] = "AT+BAUD7";  /* Change to 115200 baud  HM.19*/
-static uint8_t setName[] = "AT+NAMESOAR";
-static uint8_t interruptModule[] = "AT";
-static uint8_t resetModule[] = "AT+RESET";
+ROM uint8_t baudratecmd[] = "AT+BAUD7";  /* Change to 115200 baud  HM.19*/
+ROM uint8_t setName[] = "AT+NAMEDKCOM";
+ROM uint8_t setPIN[] = "AT+PIN000000";
+ROM uint8_t interruptModule[] = "AT";
+ROM uint8_t resetModule[] = "AT+RESET";
 //static uint8_t getpowercmd[] = "AT+POWE?\r\n";
 //static uint8_t desirecmode[] = "AT+MODE0\r\n";   //AT- configure prior connection, transparent uart after connection
 //static uint8_t disableConnecting[] = "AT+IMME1";  /* Disable automatic connection*/
@@ -195,6 +196,7 @@ bool Bluetooth_Init(void)
     {
       /*Modules uses Baudrate 9600, and thus has never configured before!*/
       Bluetooth_Cmd(setName);
+      Bluetooth_Cmd(setPIN);
       Bluetooth_Cmd(baudratecmd);
       Bluetooth_Cmd(resetModule);
     }

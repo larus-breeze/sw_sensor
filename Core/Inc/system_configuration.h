@@ -9,7 +9,7 @@
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
 #define RUN_L3GD20 		1
-#define RUN_FXOS8700		1
+#define RUN_FXOS8700		0
 #define RUN_PITOT_MODULE 	1
 #define RUN_CAN_TESTER		0
 
@@ -27,13 +27,14 @@
 
 #define RUN_OFFLINE_CALCULATION 0 // offline test mode
 #define RUN_COMMUNICATOR	1 // normal mode
-#define RUN_CAN_OUTPUT		1
+#define RUN_CAN_OUTPUT		0
 
 #define RUN_DATA_LOGGER		1
-#define LOG_OBSERVATIONS	1 // log IMU + pressure data
-#define LOG_COORDINATES		1 // log GNSS data
-#define LOG_OUTPUT_DATA		0 // logging all inclusive
-#define OLD_FORMAT 		0 // for year 2020 old data
+#define LOG_OBSERVATIONS	0 // log IMU + pressure data
+#define LOG_COORDINATES		0 // log GNSS data
+#define LOG_OUTPUT_DATA		1 // logging all inclusive
+#define OLD_FORMAT 		0 // for year 2020 old data without cheap sensor info
+				  // and without GNSS speed information
 
 #define RUN_SPI_TESTER		0
 #define RUN_SDIO_TEST		0
@@ -55,8 +56,8 @@
 
 enum
 {
-	GNSS_AVAILABLE 			= 1,
-	D_GNSS_AVAILABLE 		= 2,
+	GNSS_AVAILABLE 		= 1,
+	D_GNSS_AVAILABLE 	= 2,
 
 	MTI_SENSOR_AVAILABE 	= 0x10,
 	FXOS_SENSOR_AVAILABLE 	= 0x20,
@@ -65,9 +66,9 @@ enum
 	MS5611_PITOT_AVAILABLE  = 0x100,
 	PITOT_SENSOR_AVAILABLE 	= 0x200,
 
-	USB_OUTPUT_ACTIVE		= 0x1000,
-	BLUEZ_OUTPUT_ACTIVE		= 0x2000,
-	CAN_OUTPUT_ACTIVE		= 0x4000,
+	USB_OUTPUT_ACTIVE	= 0x1000,
+	BLUEZ_OUTPUT_ACTIVE	= 0x2000,
+	CAN_OUTPUT_ACTIVE	= 0x4000,
 };
 
 extern volatile unsigned system_state;

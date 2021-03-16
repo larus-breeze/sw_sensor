@@ -17,7 +17,7 @@
 void UART6_Init(void);
 void UART6_DeInit(void);
 void UART6_ChangeBaudRate(uint32_t rate);
-void UART6_Transmit(uint8_t *pData, uint16_t Size);
+void UART6_Transmit(const uint8_t *pData, uint16_t Size);
 bool UART6_Receive(uint8_t *pRxByte, uint32_t timeout);
 extern UART_HandleTypeDef huart6;
 
