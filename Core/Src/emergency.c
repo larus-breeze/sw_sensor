@@ -33,6 +33,11 @@ assert_failed(uint8_t* file, uint32_t line)
   __asm volatile ( "bkpt 0" );
 }
 
+void FPU_IRQHandler( void)
+{
+  asm("bkpt 0");
+}
+
 /**
  * @brief   This function handles NMI exception.
  * @param  None

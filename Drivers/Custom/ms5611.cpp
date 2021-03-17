@@ -139,8 +139,12 @@ inline void MS5611::calibrate (const uint32_t d1, const uint32_t d2)
 		SENS -= SENS2;
 	}
 
-	temperature_celsius = celsius;
-	pressure_octapascal = (int32_t) (((((D1 * SENS) >> 21) - OFF) >> 12)); // gives Pascal / 8
+	if(( celsius > -5000) && ( celsius < 10000)) // ignore out of range value
+	    temperature_celsius = celsius;
+
+	int32_t pressure_raw = (int32_t) (((((D1 * SENS) >> 21) - OFF) >> 12)); // gives Pascal / 8
+	if( (pressure_raw > 200000) && (pressure_raw < 840000))
+	  pressure_octapascal = pressure_raw;
 }
 
 void MS5611::update (void)

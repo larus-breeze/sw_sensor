@@ -79,10 +79,21 @@ int main(void)
   SystemClock_Config();
   SystemCoreClockUpdate();
 
-#if 0
+#if 1
   uint32_t fpscr = __get_FPSCR(); // set FPU flush to zero mode
   fpscr |= FPU_FPDSCR_FZ_Msk;	  // NANs will become 0.0f
   __set_FPSCR(fpscr);
+#endif
+
+  // enable floating-point exception
+  uint32_t prioritygroup = NVIC_GetPriorityGrouping ();
+  NVIC_SetPriority ((IRQn_Type) FPU_IRQn,
+		    NVIC_EncodePriority (prioritygroup, 15, 0));
+  NVIC_EnableIRQ ((IRQn_Type) FPU_IRQn);
+
+#if 0 // test FPU exception
+  volatile float test = 0.0f;
+  test = 1.0f / test;
 #endif
 
 #if configUSE_TRACE_FACILITY == 1
