@@ -50,3 +50,9 @@ void flight_observer_t::update (
   vario_averager_pressure.respond( speed_compensation_TAS - vario_uncompensated_pressure); // -> positive on positive energy gain
   vario_averager_GNSS.respond( speed_compensation_GNSS - vario_uncompensated_GNSS); // -> positive on positive energy gain
 }
+
+void flight_observer_t::reset(float pressure_altitude, float GNSS_altitude)
+{
+  KalmanVario_GNSS.reset( GNSS_altitude, -9.81f);
+  KalmanVario_pressure.reset( pressure_altitude, -9.81f);
+}

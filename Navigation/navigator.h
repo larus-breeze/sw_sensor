@@ -20,7 +20,7 @@ public:
   navigator_t (void)
 	:ins (0.01),
 	 ins_magnetic (0.01),
-     atmosphere (101325.0f)
+	 atmosphere (101325.0f)
   {};
 
   void report_data( output_data_t &d);
@@ -37,13 +37,18 @@ public:
   {
     atmosphere.set_pressure(pressure);
   }
+
+  void reset_altitude( void)
+  {
+    flight_observer.reset( atmosphere.get_altitude(), GNSS_altitude);
+  }
   /**
    * @brief update pitot pressure
    * called @ 100 Hz
    */
   void update_pitot( float pressure)
   {
-    pitot_pressure=pressure + 552.0f; // patch klaus
+    pitot_pressure=pressure;
     TAS = atmosphere.get_TAS_from_dynamic_pressure ( pitot_pressure);
     IAS = atmosphere.get_IAS_from_dynamic_pressure ( pitot_pressure);
   }

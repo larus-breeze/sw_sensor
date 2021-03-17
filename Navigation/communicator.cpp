@@ -27,12 +27,24 @@ communicator_runnable (void*)
   uint8_t count_10Hz = 1; // de-synchronize CAN output by 1 cycle
 #endif
 
+  for( unsigned i=0; i < 200; ++i) // wait 200 IMU loops
+    notify_take (true);
+
+  while( ! GNSS_new_data_ready) // another lousy spinlock !
+    delay(100);
+
+  GNSS_new_data_ready = false;
+  navigator.update_GNSS( GNSS.coordinates);
+
+  navigator.update_pabs (output_data.m.static_pressure);
+  navigator.reset_altitude();
+
   while (true)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
 
       navigator.update_pabs (output_data.m.static_pressure);
-      navigator.update_pitot (output_data.m.pitot_pressure);
+      navigator.update_pitot (output_data.m.pitot_pressure + 552.0f); // todo patch klaus
 
       if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
 	{

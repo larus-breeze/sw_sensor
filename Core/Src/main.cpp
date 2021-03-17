@@ -79,9 +79,11 @@ int main(void)
   SystemClock_Config();
   SystemCoreClockUpdate();
 
+#if 0
   uint32_t fpscr = __get_FPSCR(); // set FPU flush to zero mode
   fpscr |= FPU_FPDSCR_FZ_Msk;	  // NANs will become 0.0f
   __set_FPSCR(fpscr);
+#endif
 
 #if configUSE_TRACE_FACILITY == 1
 	vTraceEnable(TRC_START);

@@ -17,14 +17,6 @@ ROM float KalmanVario_t::Gain[N][L]= //!< Kalman Gain for 100Hz sampling rate
 	  -0.011857330213848,   0.000264240373951
     };
 
-KalmanVario_t::KalmanVario_t ( float _x, float v, float a)
-{
-  x[0] = _x;
-  x[1] = v;
-  x[2] = a;
-  x[3] = 0;
-}
-
 float KalmanVario_t::update( const float altitude, const float acceleration)
 {
   // predict x[] by propagating it through the system model

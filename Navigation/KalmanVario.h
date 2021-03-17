@@ -35,7 +35,18 @@ public:
   {
     ALTITUDE, VARIO, ACCELERATION_OBSERVED, ACCELERATION_OFFSET
   }  state;
-  KalmanVario_t ( float x=0.0, float v=0.0, float a=0.0);
+
+  KalmanVario_t ( float _x=0.0, float v=0.0, float a=0.0, float a_offset=0.0f)
+    : x{_x, v, a, a_offset}
+  {}
+
+  void reset(  const float altitude, const float acceleration_offset)
+  {
+    x[0] = altitude;
+    x[1] = 0.0f;
+    x[2] = 0.0f;
+    x[3] = acceleration_offset;
+  }
 
   float update( const float altitude, const float acceleration);
 
