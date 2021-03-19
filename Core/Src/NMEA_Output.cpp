@@ -31,13 +31,15 @@ static void runnable (void*)
       format_MWV (output_data.wind[NORTH], output_data.wind[EAST], next);
       next = NMEA_append_tail (next);
 
+#if USE_PTAS
+
       format_PTAS1 (output_data.vario,
 		    output_data.integrator_vario,
 		    output_data.c.position.e[DOWN] * -1.0,   //TODO: PTAS shall report pure barometric altitude, based on static_pressure. As there can be a QNH applied to in XCSOAR.
 		    output_data.TAS,
 		    next);
       next = NMEA_append_tail (next);
-
+#endif
       format_POV( output_data.TAS, output_data.m.static_pressure,
 			 output_data.m.pitot_pressure, output_data.vario, next);
       next = NMEA_append_tail (next);

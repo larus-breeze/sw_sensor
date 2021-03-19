@@ -15,8 +15,8 @@
 #define RUN_PITOT_MODULE 	1
 #define RUN_CAN_TESTER		0
 
-#define ACTIVATE_USB_NMEA	0
-#define ACTIVATE_BLUETOOTH_NMEA	0
+#define ACTIVATE_USB_NMEA	1
+#define ACTIVATE_BLUETOOTH_NMEA	1
 
 #define ACTIVATE_USB_TEST	0
 #define ACTIVATE_BLUETOOTH_TEST	0
@@ -29,7 +29,7 @@
 
 #define RUN_OFFLINE_CALCULATION 0 // offline test mode
 #define RUN_COMMUNICATOR	1 // normal mode
-#define RUN_CAN_OUTPUT		0
+#define RUN_CAN_OUTPUT		1
 
 #define RUN_DATA_LOGGER		1
 #define LOG_OBSERVATIONS	0 // log IMU + pressure data

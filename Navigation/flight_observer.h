@@ -15,7 +15,8 @@
 #include "pt2.h"
 
 #define WINDSPEED_F_BY_FS ( 1.0f / 30.0f / 100.0f) // 30s
-#define VARIO_F_BY_FS ( 1.0f / 1.0f / 100.0f)      // 1s
+#define ACCELERATION_F_BY_FS ( 1.0f / 5.0f / 100.0f)
+#define VARIO_F_BY_FS ( 1.0 / 1.5f / 100.0f)      // 1.5s
 
 class flight_observer_t
 {
@@ -26,6 +27,8 @@ public:
   vario_averager_GNSS( VARIO_F_BY_FS),
   windspeed_averager_NORTH( WINDSPEED_F_BY_FS),
   windspeed_averager_EAST( WINDSPEED_F_BY_FS),
+  acceleration_averager_NORTH( ACCELERATION_F_BY_FS),
+  acceleration_averager_EAST( ACCELERATION_F_BY_FS),
   kinetic_energy_differentiator( 1.0f, 1.0f / 100.0f),
   KalmanVario_GNSS( 0.0f,0.0f,0.0f    ,-9.81f),
   KalmanVario_pressure( 0.0f,0.0f,0.0f,-9.81f)
@@ -90,6 +93,8 @@ private:
 	pt2<float,float> vario_averager_GNSS;
 	pt2<float,float> windspeed_averager_NORTH;
 	pt2<float,float> windspeed_averager_EAST;
+	pt2<float,float> acceleration_averager_NORTH;
+	pt2<float,float> acceleration_averager_EAST;
 
 	differentiator<float,float>kinetic_energy_differentiator;
 

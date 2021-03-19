@@ -15,6 +15,8 @@
 #define RAD_TO_DEGREE_10 572.958
 #define METER_TO_FEET 3.2808
 
+ROM char HEX[]="0123456789ABCDEF";
+
 inline float clip( float x, float min, float max )
 {
   if( x < min)
@@ -38,17 +40,20 @@ char * format_integer( uint32_t value, char *s)
     }
 }
 
-char * integer_to_ascii( int32_t number, uint32_t decimal_factor, char *s)
+char * integer_to_ascii_2_decimals( int32_t number, char *s)
 {
   if( number < 0)
     {
       *s++ = '-';
       number = -number;
     }
-  s = format_integer( number / decimal_factor, s);
+  s = format_integer( number / 100, s);
   *s++='.';
-  s = format_integer( number % decimal_factor, s);
-  return s;
+  s[1]=HEX[number % 10]; // format exact 2 decimals
+  number /= 10;
+  s[0]=HEX[number % 10];
+  s[2]=0;
+  return s+2;
 }
 
 inline char *append_string( char *target, const char *source)
@@ -300,6 +305,7 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
   return p;
 }
 
+#if USE_PTAS
 ROM char PTAS1[]="$PTAS1,";
 
 char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, char *p)
@@ -345,31 +351,30 @@ char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, ch
 
   return p;
 }
+#endif // USE_PTAS
 
 ROM char POV[]="$POV,S,";
 
 char *format_POV( float TAS, float pabs, float pitot, float TEK_vario, char *p)
 {
   p = append_string( p, POV);
-  p = integer_to_ascii( (int)(TAS * 100.0f), 100, p);
+  p = integer_to_ascii_2_decimals( (int)(TAS * 100.0f), p);
 
   p = append_string( p, ",P,");
-  p = integer_to_ascii( (int)pabs, 100, p); // pressure already in Pa = 100 hPa
+  p = integer_to_ascii_2_decimals( (int)pabs, p); // pressure already in Pa = 100 hPa
 
   if( pitot < 0.0f)
     pitot = 0.0f;
   p = append_string( p, ",Q,");
-  p = integer_to_ascii( (int)pitot, 100, p);// pressure already in Pa = 100 hPa
+  p = integer_to_ascii_2_decimals( (int)pitot, p);// pressure already in Pa = 100 hPa
 
   p = append_string( p, ",E,");
-  p = integer_to_ascii( (int)(TEK_vario * 100.0f), 100, p);
+  p = integer_to_ascii_2_decimals( (int)(TEK_vario * 100.0f), p);
 
   *p++ = 0;
 
   return p;
 }
-
-ROM char HEX[]="0123456789ABCDEF";
 
 inline char hex4( uint8_t data)
 {

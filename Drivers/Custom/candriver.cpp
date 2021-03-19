@@ -77,8 +77,9 @@ namespace CAN_driver_ISR
 
     BaseType_t xHigherPriorityTaskWoken = false;
     bool result = CAN_driver.RX_queue.send_from_ISR (msg);
+#if CAN_RX_ERROR_REPORT
     ASSERT(result == true); // trap for RX queue overrun
-
+#endif
     CANx->RF0R |= CAN_RF0R_RFOM0; // release FIFO 0
 
     portEND_SWITCHING_ISR (xHigherPriorityTaskWoken);

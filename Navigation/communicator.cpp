@@ -44,7 +44,7 @@ communicator_runnable (void*)
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
 
       navigator.update_pabs (output_data.m.static_pressure);
-      navigator.update_pitot (output_data.m.pitot_pressure + 552.0f); // todo patch klaus
+      navigator.update_pitot (output_data.m.pitot_pressure);
 
       if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
 	{

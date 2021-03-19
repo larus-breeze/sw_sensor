@@ -40,10 +40,12 @@ void flight_observer_t::update (
 		      KalmanVario_pressure.get_x(KalmanVario_t::VARIO) * KalmanVario_pressure.get_x(KalmanVario_t::ACCELERATION_OBSERVED)
 		   ) * RECIP_GRAVITY;
 #endif
+  float acc_north = gnss_acceleration.e[NORTH]; //acceleration_averager_NORTH.respond(gnss_acceleration.e[NORTH]);
+  float acc_east  = gnss_acceleration.e[EAST]; //acceleration_averager_EAST.respond(gnss_acceleration.e[EAST]);
   speed_compensation_GNSS =
 		  (
-		      (gnss_velocity.e[NORTH] - windspeed.e[NORTH]) * gnss_acceleration.e[NORTH] +
-		      (gnss_velocity.e[EAST]  - windspeed.e[EAST])  * gnss_acceleration.e[EAST] +
+		      (gnss_velocity.e[NORTH] - windspeed.e[NORTH]) * acc_north +
+		      (gnss_velocity.e[EAST]  - windspeed.e[EAST])  * acc_east +
 		      KalmanVario_GNSS.get_x(KalmanVario_t::VARIO) * KalmanVario_GNSS.get_x(KalmanVario_t::ACCELERATION_OBSERVED)
 		   ) * RECIP_GRAVITY;
 
