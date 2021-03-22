@@ -10,8 +10,6 @@
 #include "common.h"
 #include "fxos8700cq.h"
 
-#if RUN_PITOT_MODULE
-
 #define I2C_ADDRESS (0x28<<1) // 7 bits left-adjusted
 /*
  * Bereich: 80% von 16384 counts auf 1PSI verteilt
@@ -39,16 +37,21 @@ static void runnable( void *)
 	{
 		fxos8700_available = FXOS8700_Initialize(ACCEL_RANGE_4G);
 		if (true == fxos8700_available)
-			break;
+		  {
+		  update_system_state_set( FXOS_SENSOR_AVAILABLE);
+		  break;
+		  }
 	}
 #endif
+#if RUN_PITOT_MODULE
 	if(I2C_OK == I2C_Read( &hi2c1, I2C_ADDRESS, data, 2))
 	    update_system_state_set( PITOT_SENSOR_AVAILABLE);
 
 	delay( 10); // wait for "next measurement available"
-
+#endif
 	for( synchronous_timer t(10); true; t.sync())
 	{
+#if RUN_PITOT_MODULE
 		if(I2C_OK == I2C_Read( &hi2c1, I2C_ADDRESS, data, 2))
 		{
 			ASSERT(( data[0] & 0xC0)==0); 			// no error flags !
@@ -60,7 +63,7 @@ static void runnable( void *)
 			//TODO: log Sensor read error. Shall we set Pitot pressure here to 0 to ensure
 			// faulty reading does not cause a wrong air speed?
 		}
-
+#endif
 #if RUN_FXOS8700
 		if(true == fxos8700_available)  // Only read value if sensor is available
 		{
@@ -84,5 +87,4 @@ static void runnable( void *)
 
 RestrictedTask pitot_reading ( runnable, "PITOT", 512, 0, PITOT_PRIORITY + portPRIVILEGE_BIT);
 
-#endif
 

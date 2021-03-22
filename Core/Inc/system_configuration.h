@@ -8,6 +8,13 @@
 
 #define ACTIVATE_WATCHDOG	1
 
+#define USE_GNSS_VARIO		1 	// else pressure-vario
+
+#define ALTI_DIFF 		0.136 	// antenna height difference compensation
+					// front lower for D-KCOM
+
+#define BLUETOOTH_NAME		"AT+NAMED-KCOM"
+
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
 #define RUN_L3GD20 		1

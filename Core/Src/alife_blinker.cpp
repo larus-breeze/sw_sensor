@@ -52,6 +52,7 @@ blink (void*)
       if( (++rythm & 0x0f) ==0)
 	  HAL_GPIO_TogglePin (LED_STATUS1_GPIO_Port, LED_STATUS3_Pin);
 
+#if ACTIVATE_WATCHDOG
 #if WATCHDOG_STATISTICS
       uint32_t watchdog_actual = WwdgHandle.Instance->CR & 0x7f;
       if( watchdog_actual > watchdog_max)
@@ -61,6 +62,7 @@ blink (void*)
 #endif
       if (HAL_WWDG_Refresh (&WwdgHandle) != HAL_OK)
 	  Error_Handler ();
+#endif
     }
 }
 

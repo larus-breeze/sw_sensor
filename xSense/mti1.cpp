@@ -77,7 +77,7 @@ static inline void init_ports_and_reset_mti(void) // GPIO stuff
 	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 	HAL_GPIO_WritePin( IMU_PORT, IMU_NRST, GPIO_PIN_RESET);
-	delay(1);
+	delay(100);
 	HAL_GPIO_WritePin( IMU_PORT, IMU_NRST, GPIO_PIN_SET);
 	delay(1);
 }
@@ -107,8 +107,6 @@ void readDataFrom_MTI( MtsspInterface* device, uint8_t * buf)
 		device->readFromPipe(&buf[2], measurementMessageSize, XBUS_MEASUREMENT_PIPE);
 		if(buf[4]==0x40 && buf[0x13]==0x80 && buf[0x22]==0xC0)
 		{
-			update_system_state_set( MTI_SENSOR_AVAILABE);
-
 			float_word x;
 			x.u = __REV( *(uint32_t*)(buf+0x07+0));
 			output_data.m.acc[0]=x.f;
@@ -158,11 +156,7 @@ extern "C" void EXTI15_10_IRQHandler(void)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == IMU_DRDY)
-    {
-//      vTracePrint(chn, "Hello World!");
       MTi_ready.signal_from_ISR();
-      //	  mti_driver.notify_from_ISR( 1, eSetBits);
-    }
 }
 
 /*!	\brief Returns the value of the DataReady line
@@ -177,13 +171,24 @@ static ROM uint8_t config_data[] = // config: ACC GYRO MAG STATUS
 // "wrong" config:
 //{0x80,0x30,0x00,0x00,0x40,0x20,0x00,0x64,0x80,0x20,0x00,0x64,0xC0,0x20,0x00,0x64,0xE0,0x20,0x00,0x00};
 
+static bool check_for_correct_configuration( uint8_t *data)
+{
+  unsigned counter=0;
+  for( const uint8_t * my_config=config_data; *my_config == *data; ++counter)
+    {
+      ++my_config;
+      ++data;
+    }
+  return counter == sizeof( config_data)-2;
+}
+
 inline void wait_until_MTi_reports_data_ready(void)
 {
 //	xTaskNotifyStateClear(MTi_task);
 //	notify_take(1, 10);
 //	for( bool ready=checkDataReadyLine(); ! ready; ready=checkDataReadyLine())
 //		delay(2);
-    if( ! checkDataReadyLine())
+  while( ! checkDataReadyLine())
 	    MTi_ready.wait(20);
 }
 
@@ -208,29 +213,45 @@ static void run( void *)
 	readDataFrom_MTI( &IMU_interface, buf);
 
 	delay(100);
+	while (true) // until configuration has been set successfully
+	  {
+	  XbusMessage read_cnf( XMID_ReqOutputConfig);
+	  IMU_interface.sendXbusMessage( &read_cnf);
 
-	XbusMessage go_cnf( XMID_GotoConfig);
-	IMU_interface.sendXbusMessage(&go_cnf);
+	  wait_until_MTi_reports_data_ready();
+	  readDataFrom_MTI( &IMU_interface, buf);
 
-	delay(100);
+	  if( check_for_correct_configuration( buf + 4)) // skip header -> + 4
+	    {
+	      update_system_state_set( MTI_SENSOR_AVAILABE);
+	      break; // now correct configuration has been confirmed
+	    }
 
-	wait_until_MTi_reports_data_ready();
-	readDataFrom_MTI( &IMU_interface, buf);
+	  XbusMessage go_cnf( XMID_GotoConfig);
+	  IMU_interface.sendXbusMessage(&go_cnf);
 
-	delay(100);
+	  delay(100);
 
-	XbusMessage msg(XMID_SetOutputConfig);
-	msg.m_length = sizeof(config_data);
-	msg.m_data = (uint8_t *)config_data;
-	IMU_interface.sendXbusMessage(&msg);
+	  XbusMessage msg(XMID_SetOutputConfig);
+	  msg.m_length = sizeof(config_data);
+	  msg.m_data = (uint8_t *)config_data;
+	  IMU_interface.sendXbusMessage(&msg);
 
-	delay(100);
+	  delay(100);
 
-	wait_until_MTi_reports_data_ready();
-	readDataFrom_MTI( &IMU_interface, buf);
+	  wait_until_MTi_reports_data_ready();
+	  readDataFrom_MTI( &IMU_interface, buf);
+	  if( check_for_correct_configuration( buf+2))
+	    {
+	      update_system_state_set( MTI_SENSOR_AVAILABE);
+	      break; // now correct configuration has been confirmed
+	    }
+	  }
 
 	XbusMessage cnf( XMID_GotoMeasurement);
 	IMU_interface.sendXbusMessage( &cnf);
+	wait_until_MTi_reports_data_ready();
+	readDataFrom_MTI( &IMU_interface, buf);
 
 	while( true)
 	{

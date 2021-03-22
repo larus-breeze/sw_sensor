@@ -102,6 +102,10 @@ MemManage_Handler(void)
 	  Fault_status    = *(uint8_t*) 0xe000ed28;
   // If you are stranded here:
   // Check Bad_Memory_Address and Bad_Instruction_Address !
+	  // 0x92 : Stack overflow (push)
+	  // 0x82 : Data access error
+	  // 0x81 : Instruction access error
+
   __asm volatile
   (
       " tst lr, #4                      		\n"
