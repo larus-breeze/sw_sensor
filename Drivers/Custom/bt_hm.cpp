@@ -160,7 +160,7 @@ bool Bluetooth_Cmd(const uint8_t *cmd)
 /* \r\n not required. "AT Command are fixed length commands and new line is this redundant. "HowToUse Hm-1x.pdf
  * This can not be true especially for setting a custom NAME?*/
 ROM uint8_t baudratecmd[] = "AT+BAUD7";  /* Change to 115200 baud  HM.19*/
-ROM uint8_t setName[] = "AT+NAMEDKCOM";
+ROM uint8_t setName[] = BLUETOOTH_NAME;
 ROM uint8_t setPIN[] = "AT+PIN000000";
 ROM uint8_t interruptModule[] = "AT";
 ROM uint8_t resetModule[] = "AT+RESET";

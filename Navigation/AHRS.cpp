@@ -19,12 +19,6 @@
 #define HIGH_TURN_RATE 0.15 		//!< turn rate high limit
 #define LOW_TURN_RATE  0.0707 		//!< turn rate low limit
 
-#if OLD_FORMAT == 1
-#define ALTI_DIFF 0.136 // antenna height difference D-KCOM
-#else
-#define ALTI_DIFF 0.0f
-#endif
-
 /**
  * @brief initial attitude setup from observables
 */
@@ -191,7 +185,7 @@ void AHRS_type::update_diff_GNSS(
 {
 	  float3vector nav_acceleration = body2nav * acc;
 
-	  float heading_gnss_work = GNSS_heading + ALTI_DIFF * sinf (euler.r); // todo config parameter individuell
+	  float heading_gnss_work = GNSS_heading + ALTI_DIFF * sinf (euler.r);
 	  heading_gnss_work = heading_gnss_work - euler.y;
 
 	  if( heading_gnss_work > M_PI) // map into { -PI PI}
