@@ -2,7 +2,7 @@
 #include "main.h"
 #include "FreeRTOS_wrapper.h"
 
-#define WATCHDOG_STATISTICS 0
+#define WATCHDOG_STATISTICS 1
 
 static COMMON WWDG_HandleTypeDef WwdgHandle;
 

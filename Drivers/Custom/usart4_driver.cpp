@@ -51,7 +51,7 @@ static inline void MX_USART4_UART_Init (void)
     __HAL_LINKDMA( &huart4, hdmarx, hdma_uart4_rx);
 
     huart4.Instance = UART4;
-    huart4.Init.BaudRate = 115200 * 2; // second channel high speed !
+    huart4.Init.BaudRate = 115200;
     huart4.Init.WordLength = UART_WORDLENGTH_8B;
     huart4.Init.StopBits = UART_STOPBITS_1;
     huart4.Init.Parity = UART_PARITY_NONE;
@@ -131,8 +131,18 @@ static void D_GNSS_runnable (void*)
 	  delay( 150); // uBlox sends every 200ms for 3ms
 	  continue;
 	}
+#if D_GNSS_LED_STATUS
       if(  result == GNSS_HAVE_FIX)
-    	  update_system_state_set( D_GNSS_AVAILABLE);
+	{
+	update_system_state_set( D_GNSS_AVAILABLE);
+	HAL_GPIO_TogglePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin);
+	}
+	else
+	  HAL_GPIO_WritePin (LED_STATUS3_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
+#else
+      if(  result == GNSS_HAVE_FIX)
+	update_system_state_set( D_GNSS_AVAILABLE);
+#endif
 
 #if UART4_LED_STATUS
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
