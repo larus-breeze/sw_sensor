@@ -63,6 +63,7 @@ typedef struct
   float effective_vertical_acceleration;
   float turn_rate;
   float slip_angle;
+  float nick_angle;
 
   float3vector nav_acceleration_mag;
   float3vector nav_induction_mag;

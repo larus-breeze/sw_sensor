@@ -6,7 +6,7 @@
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
-#define ACTIVATE_WATCHDOG	1
+#define ACTIVATE_WATCHDOG	0
 
 #define USE_GNSS_VARIO		1 	// else pressure-vario
 

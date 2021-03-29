@@ -125,9 +125,20 @@ public:
 	  return circle_state;
 	}
 
+  float
+  getSlipAngle () const
+  {
+    return slip_angle;
+  }
+
+  float
+  getNickAngle () const
+  {
+    return nick_angle;
+  }
+
 	quaternion<ftype>attitude;
 	float turn_rate;
-	float slip_angle;
 private:
 	circle_state_t circle_state;
 	circle_state_t update_circling_state( const float3vector &gyro);
@@ -144,6 +155,8 @@ private:
 	ftype Ts;
 	ftype Ts_div_2;
 	unsigned circling_counter;
+	float slip_angle;
+	float nick_angle;
 };
 
 #endif /* AHRS_H_ */

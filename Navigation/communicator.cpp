@@ -18,6 +18,15 @@
 COMMON output_data_t __ALIGNED(1024) output_data =  { 0 };
 COMMON GNSS_type GNSS (output_data.c);
 
+#if 0 // todo for future use
+ROM float3matrix SENSOR_ALIGNMENT =
+    {
+	-1.0f, +0.0f, +0.0f,
+	+0.0f, +1.0f, +0.0f,
+	+0.0f, +0.0f, -1.0f
+    };
+#endif
+
 void
 communicator_runnable (void*)
 {

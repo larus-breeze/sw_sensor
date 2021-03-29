@@ -117,9 +117,10 @@ void CAN_output ( const output_data_t &x)
   CAN_driver.send(p, 1);
 
   p.id=c_CAN_Id_TurnCoord;				// 0x10c
-  p.dlc=4;
+  p.dlc=6;
   p.data_sh[0] = x.slip_angle * 1000.0f;	// mm/s^2
-  p.data_sh[1] = x.turn_rate * 1000.0f; 	// mm/s^2
+  p.data_sh[1] = x.turn_rate  * 1000.0f; 	// mm/s^2
+  p.data_sh[2] = x.nick_angle * 1000.0f;	// mm/s^2
   if( CAN_driver.send(p, 1)) // check CAN for timeout this time
 	system_state |= CAN_OUTPUT_ACTIVE;
 

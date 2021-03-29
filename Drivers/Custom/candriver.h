@@ -19,7 +19,7 @@
 typedef struct
 {
   uint16_t id; 	//!< identifier
-  uint16_t dlc; 	//!< data length code
+  uint16_t dlc; //!< data length code
   union
   {
 		uint8_t  data_b[8]; 	//!< data seen as 8 times uint8_t

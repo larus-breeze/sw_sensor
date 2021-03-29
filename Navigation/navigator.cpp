@@ -101,5 +101,6 @@ void navigator_t::report_data(output_data_t &d)
     d.nav_induction_mag 	= ins.get_nav_induction();
 
     d.turn_rate			= ins.turn_rate;
-    d.slip_angle		= ins.slip_angle;
+    d.slip_angle		= ins.getSlipAngle();
+    d.nick_angle		= ins.getNickAngle();
 }

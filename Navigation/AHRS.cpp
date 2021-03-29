@@ -104,7 +104,8 @@ void AHRS_type::update( const float3vector &acc, const float3vector &gyro, const
 	nav_rotation = body2nav * gyro;
 	turn_rate = nav_rotation[DOWN];
 
-	slip_angle = my_atan2f( -acc.e[RIGHT], -acc.e[DOWN]);
+	slip_angle = my_atan2f( -acc.e[RIGHT], -acc.e[DOWN]); // todo needs to be smoothed using AHRS
+	nick_angle = my_atan2f(  acc.e[FRONT],  acc.e[DOWN]); // todo SIGN = ? + needs to be smoothed using AHRS
 }
 
 /**

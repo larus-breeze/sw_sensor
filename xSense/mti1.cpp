@@ -24,9 +24,9 @@
 #define M_OFF_Y 0.0f
 #define M_OFF_Z 0.0f
 
-#define M_GAIN_X 1.0f
-#define M_GAIN_Y 1.0f
-#define M_GAIN_Z 1.0f
+#define M_GAIN_X -1.0f
+#define M_GAIN_Y -1.0f
+#define M_GAIN_Z +1.0f
 #endif
 
 #define IMU_PSEL0  GPIO_PIN_10
@@ -109,18 +109,18 @@ void readDataFrom_MTI( MtsspInterface* device, uint8_t * buf)
 		{
 			float_word x;
 			x.u = __REV( *(uint32_t*)(buf+0x07+0));
-			output_data.m.acc[0]=x.f;
+			output_data.m.acc[0]=x.f * -1.0f;
 			x.u = __REV( *(uint32_t*)(buf+0x07+4));
-			output_data.m.acc[1]=x.f * -1.0f;		// negate y,z axes to get
-			x.u = __REV( *(uint32_t*)(buf+0x07+8)); // front right down coordinates
-			output_data.m.acc[2]=x.f * -1.0f;
+			output_data.m.acc[1]=x.f * -1.0f;
+			x.u = __REV( *(uint32_t*)(buf+0x07+8));
+			output_data.m.acc[2]=x.f;
 
 			x.u = __REV( *(uint32_t*)(buf+0x16+0));
-			output_data.m.gyro[0]=x.f;
+			output_data.m.gyro[0]=x.f * -1.0f;
 			x.u = __REV( *(uint32_t*)(buf+0x16+4));
 			output_data.m.gyro[1]=x.f * -1.0f;
 			x.u = __REV( *(uint32_t*)(buf+0x16+8));
-			output_data.m.gyro[2]=x.f * -1.0f;
+			output_data.m.gyro[2]=x.f * 1.0f;
 
 			x.u = __REV( *(uint32_t*)(buf+0x25+0));
 			output_data.m.mag[0]=(x.f - M_OFF_X) * M_GAIN_X;
