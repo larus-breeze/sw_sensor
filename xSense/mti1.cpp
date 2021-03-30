@@ -19,7 +19,21 @@
 #define M_GAIN_X -1.087f
 #define M_GAIN_Y +1.0132f
 #define M_GAIN_Z +1.0152f
-#else
+#endif
+
+#if 0 // D-KCOM settings 
+#define A_OFF_X 0.0f
+#define A_OFF_Y 0.0f
+#define A_OFF_Z 0.0f
+
+#define A_GAIN_X -1.0f
+#define A_GAIN_Y -1.0f
+#define A_GAIN_Z +1.0f
+
+#define G_GAIN_X -1.0f
+#define G_GAIN_Y -1.0f
+#define G_GAIN_Z +1.0f
+
 #define M_OFF_X 0.0f
 #define M_OFF_Y 0.0f
 #define M_OFF_Z 0.0f
@@ -27,6 +41,27 @@
 #define M_GAIN_X -1.0f
 #define M_GAIN_Y -1.0f
 #define M_GAIN_Z +1.0f
+#endif
+#if 1 //standard settings 
+#define A_OFF_X 0.0f
+#define A_OFF_Y 0.0f
+#define A_OFF_Z 0.0f
+
+#define A_GAIN_X +1.0f
+#define A_GAIN_Y -1.0f
+#define A_GAIN_Z -1.0f
+
+#define G_GAIN_X +1.0f
+#define G_GAIN_Y -1.0f
+#define G_GAIN_Z -1.0f
+
+#define M_OFF_X 0.0f
+#define M_OFF_Y 0.0f
+#define M_OFF_Z 0.0f
+
+#define M_GAIN_X +1.0f
+#define M_GAIN_Y -1.0f
+#define M_GAIN_Z -1.0f
 #endif
 
 #define IMU_PSEL0  GPIO_PIN_10
@@ -36,13 +71,13 @@
 #define IMU_PORT   GPIOD
 
 COMMON Semaphore MTi_ready;
-COMMON traceString chn;
 
 void sync_communicator(void);
 
 extern RestrictedTask mti_driver;
 
 #if TRACE_ISR == 1
+COMMON traceString chn;
 COMMON traceHandle EXTI15_10_Handle;
 #endif
 
@@ -109,18 +144,18 @@ void readDataFrom_MTI( MtsspInterface* device, uint8_t * buf)
 		{
 			float_word x;
 			x.u = __REV( *(uint32_t*)(buf+0x07+0));
-			output_data.m.acc[0]=x.f * -1.0f;
+			output_data.m.acc[0]=(x.f - A_OFF_X) * A_GAIN_X;
 			x.u = __REV( *(uint32_t*)(buf+0x07+4));
-			output_data.m.acc[1]=x.f * -1.0f;
+			output_data.m.acc[1]=(x.f - A_OFF_Y) * A_GAIN_Y;
 			x.u = __REV( *(uint32_t*)(buf+0x07+8));
-			output_data.m.acc[2]=x.f;
+			output_data.m.acc[2]=(x.f - A_OFF_Z) * A_GAIN_Z;
 
 			x.u = __REV( *(uint32_t*)(buf+0x16+0));
-			output_data.m.gyro[0]=x.f * -1.0f;
+			output_data.m.gyro[0]=x.f * G_GAIN_X;
 			x.u = __REV( *(uint32_t*)(buf+0x16+4));
-			output_data.m.gyro[1]=x.f * -1.0f;
+			output_data.m.gyro[1]=x.f * G_GAIN_Y;
 			x.u = __REV( *(uint32_t*)(buf+0x16+8));
-			output_data.m.gyro[2]=x.f * 1.0f;
+			output_data.m.gyro[2]=x.f * G_GAIN_Z;
 
 			x.u = __REV( *(uint32_t*)(buf+0x25+0));
 			output_data.m.mag[0]=(x.f - M_OFF_X) * M_GAIN_X;

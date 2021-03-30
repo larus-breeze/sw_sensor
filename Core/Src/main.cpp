@@ -74,10 +74,12 @@ static void MX_ADC1_Init(void);
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
-  /* Configure the system clock */
   SystemClock_Config();
   SystemCoreClockUpdate();
+
+  // precise error vectors
+  SCB->SHCSR |= (SCB_SHCSR_BUSFAULTENA_Msk | SCB_SHCSR_MEMFAULTENA_Msk
+      | SCB_SHCSR_USGFAULTENA_Msk);
 
 #if 1
   uint32_t fpscr = __get_FPSCR(); // set FPU flush to zero mode

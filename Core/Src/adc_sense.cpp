@@ -1,5 +1,6 @@
 #include "FreeRTOS_wrapper.h"
 #include "ascii_support.h"
+#include "stm32f4xx_hal.h"
 
 extern ADC_HandleTypeDef hadc1;
 

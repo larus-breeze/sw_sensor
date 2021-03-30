@@ -38,6 +38,7 @@ char * format_integer( uint32_t value, char *s)
       s = format_integer( value / 10, s);
       s = format_integer( value % 10, s);
     }
+  return s;
 }
 
 char * integer_to_ascii_2_decimals( int32_t number, char *s)
@@ -358,7 +359,7 @@ ROM char POV[]="$POV,S,";
 char *format_POV( float TAS, float pabs, float pitot, float TEK_vario, char *p)
 {
   p = append_string( p, POV);
-  p = integer_to_ascii_2_decimals( (int)(TAS * 100.0f), p);
+  p = integer_to_ascii_2_decimals( (int)(TAS * 360.0f), p); // m/s -> 1/100 km/h
 
   p = append_string( p, ",P,");
   p = integer_to_ascii_2_decimals( (int)pabs, p); // pressure already in Pa = 100 hPa

@@ -18,17 +18,7 @@
 COMMON output_data_t __ALIGNED(1024) output_data =  { 0 };
 COMMON GNSS_type GNSS (output_data.c);
 
-#if 0 // todo for future use
-ROM float3matrix SENSOR_ALIGNMENT =
-    {
-	-1.0f, +0.0f, +0.0f,
-	+0.0f, +1.0f, +0.0f,
-	+0.0f, +0.0f, -1.0f
-    };
-#endif
-
-void
-communicator_runnable (void*)
+void communicator_runnable (void*)
 {
   navigator_t navigator;
 
@@ -43,6 +33,9 @@ communicator_runnable (void*)
     delay(100);
 
   GNSS_new_data_ready = false;
+  navigator.ins.set_from_euler(0.0f, 0.0f, 0.0f); // todo implement correct attitude setup
+  navigator.ins_magnetic.set_from_euler(0.0f, 0.0f, 0.0f); // todo implement correct setup
+
   navigator.update_GNSS( GNSS.coordinates);
 
   navigator.update_pabs (output_data.m.static_pressure);
