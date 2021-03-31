@@ -18,9 +18,34 @@
 COMMON output_data_t __ALIGNED(1024) output_data =  { 0 };
 COMMON GNSS_type GNSS (output_data.c);
 
+#ifdef DKCOM
+ROM float SENSOR_MAPPING_MATRIX[] =
+{
+	-1.0f, +0.0f, +0.0f,
+	+0.0f, -1.0f, +0.0f,
+	+0.0f, +0.0f, +1.0f
+    };
+#else
+ROM float SENSOR_MAPPING_MATRIX[] =
+{
+	+1.0f, +0.0f, +0.0f,
+	+0.0f, -1.0f, +0.0f,
+	+0.0f, +0.0f, -1.0f
+    };
+#endif
+
+ROM float ACC_OFFSET_INIT[] = { 0.0f, 0.0f, 0.0f,};
+
+ROM float MAG_OFFSET_INIT[] = { 0.0f, 0.0f, 0.0f,};
+
+
 void communicator_runnable (void*)
 {
   navigator_t navigator;
+  float3matrix SENSOR_MAPPING = (float *)SENSOR_MAPPING_MATRIX;
+  float3vector acc, mag, gyro;
+  float3vector ACC_OFFSET = ACC_OFFSET_INIT;
+  float3vector MAG_OFFSET = MAG_OFFSET_INIT;
 
 #if RUN_CAN_OUTPUT == 1
   uint8_t count_10Hz = 1; // de-synchronize CAN output by 1 cycle
@@ -46,15 +71,19 @@ void communicator_runnable (void*)
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
 
       navigator.update_pabs (output_data.m.static_pressure);
-      navigator.update_pitot (output_data.m.pitot_pressure);
+      navigator.update_pitot(output_data.m.pitot_pressure);
 
       if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
 	{
 	  GNSS_new_data_ready = false;
 	  navigator.update_GNSS( GNSS.coordinates);
 	}
+      // rotate sensor coordinates into airframe coordinates
+      acc  = SENSOR_MAPPING * ( output_data.m.acc - ACC_OFFSET);
+      mag  = SENSOR_MAPPING * ( output_data.m.mag - MAG_OFFSET);
+      gyro = SENSOR_MAPPING *   output_data.m.gyro; // offset auto-compensated by AHRS
 
-      navigator.update_IMU (output_data.m.acc, output_data.m.mag, output_data.m.gyro);
+      navigator.update_IMU ( acc, mag, gyro);
 
       navigator.report_data (output_data);
 

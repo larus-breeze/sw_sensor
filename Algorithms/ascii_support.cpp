@@ -99,7 +99,7 @@ void lutox(uint64_t value, char* result)
              unsigned int    mantissa_hi : 7;
              unsigned int     exponent : 8;
              unsigned int     sign : 1;
-         };
+         }bits;
      } helper;
 
      unsigned long mantissa;
@@ -110,12 +110,12 @@ void lutox(uint64_t value, char* result)
 
      helper.f = Value;
      //mantissa is LS 23 bits
-     mantissa = helper.mantissa_lo;
-     mantissa += ((unsigned long) helper.mantissa_hi << 16);
+     mantissa = helper.bits.mantissa_lo;
+     mantissa += ((unsigned long) helper.bits.mantissa_hi << 16);
      //add the 24th bit to get 1.mmmm^eeee format
      mantissa += 0x00800000;
      //exponent is biased by 127
-     exponent = (signed char) helper.exponent - 127;
+     exponent = (signed char) helper.bits.exponent - 127;
 
      //too big to shove into 8 chars
      if (exponent > 18)
@@ -138,7 +138,7 @@ void lutox(uint64_t value, char* result)
      count = 0;
 
      //add negative sign (if applicable)
-     if (helper.sign)
+     if (helper.bits.sign)
      {
          Buffer[0] = '-';
          count++;

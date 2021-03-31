@@ -72,8 +72,8 @@ void CAN_output ( const output_data_t &x)
 
   p.id=c_CAN_Id_GPS_LatLon;		// 0x105
   p.dlc=8;
-  p.data_sw[0] = x.c.latitude * 1e7d;
-  p.data_sw[1] = x.c.longitude * 1e7d;  //
+  p.data_sw[0] = x.c.latitude * (double)1e7;
+  p.data_sw[1] = x.c.longitude * (double)1e7;  //
   CAN_driver.send(p, 1);
 
   p.id=c_CAN_Id_GPS_Alt;		// 0x106

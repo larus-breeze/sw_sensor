@@ -6,14 +6,26 @@
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
-#define ACTIVATE_WATCHDOG	0
+#define DKCOM 1
 
-#define USE_GNSS_VARIO		1 	// else pressure-vario
-
+#ifdef DKCOM
+#define USE_DIFF_GNSS		1
 #define ALTI_DIFF 		0.136 	// antenna height difference compensation
 					// front lower for D-KCOM
-
 #define BLUETOOTH_NAME		"AT+NAMED-KCOM"
+#define ACTIVATE_USB_NMEA	1
+
+#else // **************************************************************************
+
+#define USE_DIFF_GNSS		0
+#define ALTI_DIFF 		0.0 	// antenna height difference compensation
+#define BLUETOOTH_NAME		"AT+NAMESOAR"
+#define ACTIVATE_USB_NMEA	0
+#endif
+
+#define ACTIVATE_WATCHDOG	1
+
+#define USE_GNSS_VARIO		1 	// else pressure-vario
 
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
@@ -22,13 +34,11 @@
 #define RUN_PITOT_MODULE 	1
 #define RUN_CAN_TESTER		0
 
-#define ACTIVATE_USB_NMEA	1
 #define ACTIVATE_BLUETOOTH_NMEA	1
 
 #define ACTIVATE_USB_TEST	0
 #define ACTIVATE_BLUETOOTH_TEST	0
 
-#define USE_DIFF_GNSS		1
 #define UART3_LED_STATUS	0
 #define UART4_LED_STATUS	0
 #define D_GNSS_LED_STATUS	1

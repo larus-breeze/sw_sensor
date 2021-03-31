@@ -9,7 +9,7 @@ COMMON bool D_GNSS_new_data_ready;
 #define SCALE_MM 0.001
 #define SCALE_MM_NEG -0.001
 #define DEG_2_METER 111111.111e-7 // (10000 / 90) m / degree on great circle
-#define ANGLE_SCALE 1e-7d
+#define ANGLE_SCALE (double)1e-7
 
 GNSS_type::GNSS_type( coordinates_t & coo) :
 		fix_type(FIX_none),
