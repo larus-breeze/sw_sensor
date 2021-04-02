@@ -186,7 +186,7 @@ void AHRS_type::update_diff_GNSS(
 {
 	  float3vector nav_acceleration = body2nav * acc;
 
-	  float heading_gnss_work = GNSS_heading + ALTI_DIFF * sinf (euler.r);
+	  float heading_gnss_work = GNSS_heading + ALTI_DIFF * sinf (euler.r) - HORIZ_DIFF;
 	  heading_gnss_work = heading_gnss_work - euler.y;
 
 	  if( heading_gnss_work > M_PI) // map into { -PI PI}

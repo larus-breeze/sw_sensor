@@ -56,7 +56,7 @@ static void runnable( void *)
 		{
 			ASSERT(( data[0] & 0xC0)==0); 			// no error flags !
 			uint16_t raw_data = (data[0] << 8) | data[1];
-			output_data.m.pitot_pressure = (float)( raw_data - OFFSET) * SPAN; // todo implement sensor inidvid. calib.
+			output_data.m.pitot_pressure = ((float)( raw_data - OFFSET) * SPAN + 7.5f)*1.031f ; // todo implement sensor inidvid. calib.
 		}
 		else
 		{
