@@ -15,9 +15,15 @@ typedef float ftype;
 #include "float3matrix.h"
 #include "integrator.h"
 
+#define SQR(x) ((x)*(x))
+#define SIN(x) sinf(x)
+#include "pt2.h"
+
 enum { ROLL, NICK, YAW};
 enum { FRONT, RIGHT, BOTTOM};
 typedef enum  { STRAIGHT_FLIGHT, TRANSITION, CIRCLING} circle_state_t;
+
+#define ANGLE_F_BY_FS ( 1.0 / 0.5f / 100.0f)      // 0.5s
 
 typedef integrator<float, float3vector> vector3integrator;
 
@@ -30,7 +36,9 @@ public:
 		  Ts(sampling_time),
 		  Ts_div_2 (sampling_time / 2.0),
 		  gyro_integrator({0}),
-		  circling_counter(0)
+		  circling_counter(0),
+		  slip_angle_averager( ANGLE_F_BY_FS),
+		  nick_angle_averager( ANGLE_F_BY_FS)
 		  {
 		  }
 	void attitude_setup( const float3vector & acceleration, const float3vector & induction);
@@ -128,13 +136,13 @@ public:
   float
   getSlipAngle () const
   {
-    return slip_angle;
+    return slip_angle_averager.get_output();
   }
 
   float
   getNickAngle () const
   {
-    return nick_angle;
+    return nick_angle_averager.get_output();
   }
 
 	quaternion<ftype>attitude;
@@ -155,8 +163,8 @@ private:
 	ftype Ts;
 	ftype Ts_div_2;
 	unsigned circling_counter;
-	float slip_angle;
-	float nick_angle;
+	pt2<float,float> slip_angle_averager;
+	pt2<float,float> nick_angle_averager;
 };
 
 #endif /* AHRS_H_ */

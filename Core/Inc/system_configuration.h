@@ -10,9 +10,13 @@
 
 #ifdef DKCOM
 #define USE_DIFF_GNSS		1
+
 #define ALTI_DIFF 		0.136f 	// antenna height difference compensation
 					// front lower for D-KCOM
 #define HORIZ_DIFF		(-0.06f/2.03f)
+#define DGNSS_SETUP_RAW		{ 2.03f, -0.06f, 0.136f} // slave antenna position
+#define DGNSS_SETUP_NORMALIZED	{ 0.9973f, -0.0295f, 0.0668} // slave antenna position norm.
+
 #define BLUETOOTH_NAME		"AT+NAMED-KCOM"
 #define ACTIVATE_USB_NMEA	1
 
