@@ -76,6 +76,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+#include "common.h"
 
 /** @addtogroup STM32F4xx_HAL_Driver
   * @{
@@ -103,7 +104,7 @@
   * @{
   */
 /* Variable used for Erase sectors under interruption */
-FLASH_ProcessTypeDef pFlash;
+COMMON FLASH_ProcessTypeDef pFlash;
 /**
   * @}
   */
