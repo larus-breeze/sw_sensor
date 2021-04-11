@@ -84,7 +84,7 @@ void HAL_MspInit(void)
 
 	/* System interrupt init*/
 	/* PendSV_IRQn interrupt configuration */
-	HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0);
+//	HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0); done by FreeRTOS
 
 	/* USER CODE BEGIN MspInit 1 */
 
@@ -317,9 +317,9 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
 		/* Peripheral clock enable */
 		__HAL_RCC_I2C1_CLK_ENABLE();
 		/* I2C1 interrupt Init */
-		HAL_NVIC_SetPriority(I2C1_EV_IRQn, 5, 0);
+		HAL_NVIC_SetPriority(I2C1_EV_IRQn, STANDARD_ISR_PRIORITY, 0);
 		HAL_NVIC_EnableIRQ(I2C1_EV_IRQn);
-		HAL_NVIC_SetPriority(I2C1_ER_IRQn, 5, 0);
+		HAL_NVIC_SetPriority(I2C1_ER_IRQn, STANDARD_ISR_PRIORITY, 0);
 		HAL_NVIC_EnableIRQ(I2C1_ER_IRQn);
 		/* USER CODE BEGIN I2C1_MspInit 1 */
 
@@ -346,9 +346,9 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
 		/* Peripheral clock enable */
 		__HAL_RCC_I2C2_CLK_ENABLE();
 		/* I2C2 interrupt Init */
-		HAL_NVIC_SetPriority(I2C2_EV_IRQn, 5, 0);
+		HAL_NVIC_SetPriority(I2C2_EV_IRQn, STANDARD_ISR_PRIORITY, 0);
 		HAL_NVIC_EnableIRQ(I2C2_EV_IRQn);
-		HAL_NVIC_SetPriority(I2C2_ER_IRQn, 5, 0);
+		HAL_NVIC_SetPriority(I2C2_ER_IRQn, STANDARD_ISR_PRIORITY, 0);
 		HAL_NVIC_EnableIRQ(I2C2_ER_IRQn);
 		/* USER CODE BEGIN I2C2_MspInit 1 */
 
@@ -506,7 +506,7 @@ void HAL_SD_MspInit(SD_HandleTypeDef* hsd)
 		__HAL_LINKDMA(hsd,hdmatx,hdma_sdio_tx);
 
 		/* SDIO interrupt Init */
-		HAL_NVIC_SetPriority(SDIO_IRQn, 7, 0);
+		HAL_NVIC_SetPriority(SDIO_IRQn, SDIO_ISR_PRIORITY, 0);
 		HAL_NVIC_EnableIRQ(SDIO_IRQn);
 		/* USER CODE BEGIN SDIO_MspInit 1 */
 
@@ -893,7 +893,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 		__HAL_LINKDMA(huart,hdmatx,hdma_usart6_tx);
 
 		/* USART6 interrupt Init */
-		HAL_NVIC_SetPriority(USART6_IRQn, 5, 0);
+		HAL_NVIC_SetPriority(USART6_IRQn, STANDARD_ISR_PRIORITY, 0);
 		HAL_NVIC_EnableIRQ(USART6_IRQn);
 		/* USER CODE BEGIN USART6_MspInit 1 */
 

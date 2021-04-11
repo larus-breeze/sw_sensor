@@ -58,7 +58,7 @@ init_ports_and_reset_mti (void) // GPIO stuff
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   HAL_GPIO_Init (IMU_PORT, &GPIO_InitStruct);
 
-  HAL_NVIC_SetPriority (EXTI15_10_IRQn, 15, 0);
+  HAL_NVIC_SetPriority (EXTI15_10_IRQn, STANDARD_ISR_PRIORITY, 0);
   HAL_NVIC_EnableIRQ (EXTI15_10_IRQn);
 
   HAL_GPIO_WritePin ( IMU_PORT, IMU_NRST, GPIO_PIN_RESET);

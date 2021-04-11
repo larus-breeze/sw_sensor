@@ -185,10 +185,10 @@ can_driver_t::can_driver_t () :
   uint32_t prioritygroup = NVIC_GetPriorityGrouping ();
 
   NVIC_SetPriority ((IRQn_Type) CAN1_RX0_IRQn,
-		    NVIC_EncodePriority (prioritygroup, 15, 0));
+		    NVIC_EncodePriority (prioritygroup, STANDARD_ISR_PRIORITY, 0));
   NVIC_EnableIRQ ((IRQn_Type) CAN1_RX0_IRQn);
   NVIC_SetPriority ((IRQn_Type) CAN1_TX_IRQn,
-		    NVIC_EncodePriority (prioritygroup, 15, 0));
+		    NVIC_EncodePriority (prioritygroup, STANDARD_ISR_PRIORITY, 0));
   NVIC_EnableIRQ ((IRQn_Type) CAN1_TX_IRQn);
 
   CANx->IER |= CAN_IT_RX_FIFO0_MSG_PENDING; // enable CANx FIFO 0 RX interrupt

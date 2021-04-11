@@ -61,7 +61,7 @@ static inline void MX_USART4_UART_Init (void)
     if (HAL_UART_Init(&huart4) != HAL_OK)
       ASSERT(0);
 
-    HAL_NVIC_SetPriority (DMA1_Stream2_IRQn, 5, 0);
+    HAL_NVIC_SetPriority (DMA1_Stream2_IRQn, STANDARD_ISR_PRIORITY, 0);
     HAL_NVIC_EnableIRQ (DMA1_Stream2_IRQn);
 }
 

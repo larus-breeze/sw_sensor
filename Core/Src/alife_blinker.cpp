@@ -34,9 +34,7 @@ blink (void*)
   WwdgHandle.Init.Counter = 127;
   WwdgHandle.Init.EWIMode=WWDG_EWI_ENABLE;
 
-  uint32_t prioritygroup = NVIC_GetPriorityGrouping ();
-  NVIC_SetPriority ((IRQn_Type) WWDG_IRQn,
-		    NVIC_EncodePriority (prioritygroup, 15, 0));
+  NVIC_SetPriority ((IRQn_Type) WWDG_IRQn, STANDARD_ISR_PRIORITY);
   NVIC_EnableIRQ ((IRQn_Type) WWDG_IRQn);
 
   if (HAL_WWDG_Init (&WwdgHandle) != HAL_OK)
