@@ -23,7 +23,7 @@ private:
   float sector_averages[N_SECTORS];
   uint32_t used_sectors;
   pt2<float,float> integrator_averager;
-  circle_state_t present_state;
+  circle_state_t active_state;
 };
 
 #endif /* VARIOINTEGRATOR_H_ */

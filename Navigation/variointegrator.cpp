@@ -12,33 +12,33 @@
 
 vario_integrator_t::vario_integrator_t (void)
   : integrator_averager( AVG_VARIO_F_BY_FS),
-    present_state( STRAIGHT_FLIGHT),
+    active_state( STRAIGHT_FLIGHT),
     used_sectors(0)
 {
   integrator_averager.settle(0.0f);
 }
 
-void vario_integrator_t::update (float vario, float heading, circle_state_t state)
+void vario_integrator_t::update (float vario, float heading, circle_state_t new_state)
 {
   if( heading < 0.0f)
     heading += 2.0f * M_PI;
 
-  switch( present_state)
+  switch( active_state)
   {
     case STRAIGHT_FLIGHT:
-      if( state == CIRCLING)
+      if( new_state == CIRCLING)
 	{
 	  used_sectors=0;
-	  present_state = CIRCLING;
+	  active_state = CIRCLING;
 	}
       else
 	  integrator_averager.respond( vario);
     break;
     case CIRCLING:
-      if( state == STRAIGHT_FLIGHT)
+      if( new_state == STRAIGHT_FLIGHT)
 	{
 	  integrator_averager.settle(vario);
-	  present_state = STRAIGHT_FLIGHT;
+	  active_state = STRAIGHT_FLIGHT;
 	}
       else
 	{
@@ -55,7 +55,7 @@ void vario_integrator_t::update (float vario, float heading, circle_state_t stat
 
 float vario_integrator_t::get_value (void) const
 {
-  if( present_state == STRAIGHT_FLIGHT)
+  if( active_state == STRAIGHT_FLIGHT)
       return integrator_averager.get_output();
   else
       {
