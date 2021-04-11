@@ -75,26 +75,20 @@ namespace CAN_driver_ISR
     msg.data_w[0] = CANx->sFIFOMailBox[0].RDLR;
     msg.data_w[1] = CANx->sFIFOMailBox[0].RDHR;
 
-    BaseType_t xHigherPriorityTaskWoken = false;
     bool result = CAN_driver.RX_queue.send_from_ISR (msg);
 #if CAN_RX_ERROR_REPORT
     ASSERT(result == true); // trap for RX queue overrun
 #endif
     CANx->RF0R |= CAN_RF0R_RFOM0; // release FIFO 0
-
-    portEND_SWITCHING_ISR (xHigherPriorityTaskWoken);
   }
 
   extern "C" void CAN1_TX_IRQHandler (void)
   {
     CANpacket msg;
-    BaseType_t xHigherPriorityTaskWoken = false;
     if (CAN_driver.TX_queue.receive_from_ISR (msg))
       CAN_driver.send_can_packet (msg);
     else
       CANx->IER &= ~CAN_IT_TX_MAILBOX_EMPTY; // interrupt off, no more work to do
-
-    portEND_SWITCHING_ISR (xHigherPriorityTaskWoken);
   }
 
 } // namespace CAN_driver_ISR
