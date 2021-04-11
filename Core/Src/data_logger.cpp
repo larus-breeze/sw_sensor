@@ -123,6 +123,8 @@ data_logger_runnable (void*)
   if (fresult != FR_OK)
     suspend (); // give up, logger can not work
 
+  int32_t sync_counter=0;
+
   // logging loop @ 100 Hz
   for (synchronous_timer t (10); true; t.sync ())
     {
@@ -150,11 +152,16 @@ data_logger_runnable (void*)
       memcpy (buffer, buffer + BUFSIZE, rest);
       buf_ptr = buffer + rest;
 
-      f_sync (&fp);
+      if( ++sync_counter >= 16)
+	{
+	      f_sync (&fp);
+	      sync_counter = 0;
 #if uSD_LED_STATUS
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, led_state);
       led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
 #endif
+	}
+
     }
 }
 
