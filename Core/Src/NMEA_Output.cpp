@@ -56,5 +56,5 @@ static void runnable (void*)
     }
 }
 
-RestrictedTask NMEA_task( runnable, "NMEA", 256, 0, STANDARD_TASK_PRIORITY | portPRIVILEGE_BIT);
+RestrictedTask NMEA_task( runnable, "NMEA", 256, 0, NMEA_USB_PRIORITY | portPRIVILEGE_BIT);
 

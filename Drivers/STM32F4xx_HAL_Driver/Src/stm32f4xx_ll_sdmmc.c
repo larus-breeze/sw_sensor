@@ -157,6 +157,19 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+#include "my_assert.h"
+
+#if 0
+void vTaskDelay( uint32_t);
+volatile uint32_t NICE()
+{
+  ASSERT( __get_IPSR() == 0);
+  vTaskDelay(1);
+  return 1;
+}
+#else
+#define NICE() 1
+#endif
 
 #if defined(SDIO)
 
@@ -1182,7 +1195,7 @@ static uint32_t SDMMC_GetCmdResp1(SDIO_TypeDef *SDIOx, uint8_t SD_CMD, uint32_t 
     }
     sta_reg = SDIOx->STA;
   }while(((sta_reg & (SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND | SDIO_FLAG_CTIMEOUT)) == 0U) ||
-         ((sta_reg & SDIO_FLAG_CMDACT) != 0U ));
+         ((sta_reg & SDIO_FLAG_CMDACT) != 0U ) & NICE());
     
   if(__SDIO_GET_FLAG(SDIOx, SDIO_FLAG_CTIMEOUT))
   {
@@ -1315,7 +1328,7 @@ static uint32_t SDMMC_GetCmdResp2(SDIO_TypeDef *SDIOx)
     }
     sta_reg = SDIOx->STA;
   }while(((sta_reg & (SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND | SDIO_FLAG_CTIMEOUT)) == 0U) ||
-         ((sta_reg & SDIO_FLAG_CMDACT) != 0U ));
+         ((sta_reg & SDIO_FLAG_CMDACT) != 0U ) & NICE());
     
   if (__SDIO_GET_FLAG(SDIOx, SDIO_FLAG_CTIMEOUT))
   {
@@ -1359,7 +1372,7 @@ static uint32_t SDMMC_GetCmdResp3(SDIO_TypeDef *SDIOx)
     }
     sta_reg = SDIOx->STA;
   }while(((sta_reg & (SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND | SDIO_FLAG_CTIMEOUT)) == 0U) ||
-         ((sta_reg & SDIO_FLAG_CMDACT) != 0U ));
+         ((sta_reg & SDIO_FLAG_CMDACT) != 0U ) & NICE());
     
   if(__SDIO_GET_FLAG(SDIOx, SDIO_FLAG_CTIMEOUT))
   {
@@ -1401,7 +1414,7 @@ static uint32_t SDMMC_GetCmdResp6(SDIO_TypeDef *SDIOx, uint8_t SD_CMD, uint16_t 
     }
     sta_reg = SDIOx->STA;
   }while(((sta_reg & (SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND | SDIO_FLAG_CTIMEOUT)) == 0U) ||
-         ((sta_reg & SDIO_FLAG_CMDACT) != 0U ));
+         ((sta_reg & SDIO_FLAG_CMDACT) != 0U )& NICE());
     
   if(__SDIO_GET_FLAG(SDIOx, SDIO_FLAG_CTIMEOUT))
   {
@@ -1472,7 +1485,7 @@ static uint32_t SDMMC_GetCmdResp7(SDIO_TypeDef *SDIOx)
     }
     sta_reg = SDIOx->STA;
   }while(((sta_reg & (SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND | SDIO_FLAG_CTIMEOUT)) == 0U) ||
-         ((sta_reg & SDIO_FLAG_CMDACT) != 0U ));
+         ((sta_reg & SDIO_FLAG_CMDACT) != 0U ) & NICE());
     
   if(__SDIO_GET_FLAG(SDIOx, SDIO_FLAG_CTIMEOUT))
   {

@@ -9,7 +9,7 @@
 #define DKCOM 1
 
 #ifdef DKCOM
-#define USE_DIFF_GNSS		1
+#define USE_DIFF_GNSS		0
 
 #define ALTI_DIFF 		0.136f 	// antenna height difference compensation
 					// front lower for D-KCOM
@@ -73,6 +73,7 @@
 
 #define COMMUNICATOR_PRIORITY	STANDARD_TASK_PRIORITY + 1
 
+#define NMEA_USB_PRIORITY	STANDARD_TASK_PRIORITY + 2
 #define BLUETOOTH_PRIORITY	STANDARD_TASK_PRIORITY
 #define LOGGER_PRIORITY		STANDARD_TASK_PRIORITY
 #define CAN_PRIORITY		STANDARD_TASK_PRIORITY
