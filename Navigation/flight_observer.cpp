@@ -7,7 +7,7 @@
 #include "flight_observer.h"
 
 #define SQR(x) ((x)*(x))
-#define SIN(x) sinf(x)
+#define SIN(x) arm_sin_f32(x)
 
 #define ONE_DIV_BY_GRAVITY_TIMES_2 0.0509684f
 #define RECIP_GRAVITY 0.1094f
@@ -17,6 +17,7 @@ void flight_observer_t::update (
     const float3vector &gnss_acceleration,
     const float3vector &ahrs_acceleration,
     const float3vector &air_velocity,
+    const float3vector &observed_wind,
     float GNSS_altitude,
     float pressure_altitude,
     float TAS
@@ -44,8 +45,8 @@ void flight_observer_t::update (
   float acc_east  = gnss_acceleration.e[EAST]; //acceleration_averager_EAST.respond(gnss_acceleration.e[EAST]);
   speed_compensation_GNSS =
 		  (
-		      (gnss_velocity.e[NORTH] - windspeed.e[NORTH]) * acc_north +
-		      (gnss_velocity.e[EAST]  - windspeed.e[EAST])  * acc_east +
+		      (gnss_velocity.e[NORTH] - observed_wind.e[NORTH]) * acc_north +
+		      (gnss_velocity.e[EAST]  - observed_wind.e[EAST])  * acc_east +
 		      KalmanVario_GNSS.get_x(KalmanVario_t::VARIO) * KalmanVario_GNSS.get_x(KalmanVario_t::ACCELERATION_OBSERVED)
 		   ) * RECIP_GRAVITY;
 

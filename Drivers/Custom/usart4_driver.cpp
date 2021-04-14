@@ -9,7 +9,7 @@
 #include "stm32f4xx_hal.h"
 #include "GNSS.h"
 
-#if USE_DIFF_GNSS == 1
+#if RUN_GNSS_HEADING
 
 COMMON UART_HandleTypeDef huart4;
 COMMON DMA_HandleTypeDef hdma_uart4_rx;

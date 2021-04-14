@@ -29,7 +29,7 @@ void
 data_logger_runnable (void*)
 {
   HAL_SD_DeInit (&hsd);
-  delay (2000); //TODO: Quick consecutive resets cause SD Card to hang. This improved but does not fix the situation. Migh requre switching sd card power
+  delay (2000); //TODO: Quick consecutive resets cause SD Card to hang. This improved but does not fix the situation. Might require switching sd card power
 
   FRESULT fresult;
   FIL fp;
@@ -46,6 +46,19 @@ data_logger_runnable (void*)
   if (fresult != FR_OK)
     suspend (); // give up, logger can not work
 
+#ifdef INFILE // SIL simulation requested
+
+  strcpy( filename, "simout.f94");
+
+  FIL infile;
+
+  fresult = f_open(&infile, INFILE, FA_READ);
+  if (fresult != FR_OK)
+  {
+	    asm("bkpt 0");
+  }
+
+#else
   // wait until a GNSS timestamp is available.
   while (output_data.c.year == 0)
     {
@@ -114,6 +127,8 @@ data_logger_runnable (void*)
   itoa (sizeof(output_data_t) / sizeof(float), filename + idx + 2, 10);
 #endif
 
+#endif // simulation requested
+
   GPIO_PinState led_state = GPIO_PIN_RESET;
 
   uint32_t writtenBytes = 0;
@@ -128,6 +143,17 @@ data_logger_runnable (void*)
   // logging loop @ 100 Hz
   for (synchronous_timer t (10); true; t.sync ())
     {
+#ifdef INFILE // simulation
+      UINT bytesread;
+      fresult = f_read(&infile, (void *)&output_data, sizeof(output_data), &bytesread);
+      ASSERT( (fresult == FR_OK) && (bytesread == sizeof(output_data)));
+
+      void sync_communicator (void);
+      sync_communicator (); // comes from the sensors if not simulated
+      delay( 3);
+
+#endif
+
 #if LOG_OBSERVATIONS
       memcpy (buf_ptr, (uint8_t*) &output_data.m, sizeof(measurement_data_t));
       buf_ptr += sizeof(measurement_data_t);

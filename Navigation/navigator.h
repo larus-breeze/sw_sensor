@@ -6,10 +6,11 @@
 #ifndef NAVIGATORT_H_
 #define NAVIGATORT_H_
 
+#include <system_configuration.h>
 #include <AHRS.h>
 #include "GNSS.h"
 #include "differentiator.h"
-#include "variointegrator.h"
+#include "smart_averager.h"
 #include "atmosphere.h"
 #include "flight_observer.h"
 #include "data_structures.h"
@@ -18,9 +19,11 @@ class navigator_t
 {
 public:
   navigator_t (void)
-	:ins (0.01),
-	 ins_magnetic (0.01),
-	 atmosphere (101325.0f)
+	:ins (0.01f),
+	 ins_magnetic (0.01f),
+	 atmosphere (101325.0f),
+	 vario_integrator( AVG_VARIO_F_BY_FS),
+	 wind_observer( WIND_AVG_F_BY_FS)
   {};
 
   void report_data( output_data_t &d);
@@ -87,8 +90,10 @@ private:
   float 		GNSS_heading;
   float 		GNSS_altitude;
   float3vector 		true_airspeed;
+
   flight_observer_t 	flight_observer;
-  vario_integrator_t 	vario_integrator;
+  smart_averager< float> 	vario_integrator;
+  smart_averager< float3vector> wind_observer;
 };
 
 #endif /* NAVIGATORT_H_ */

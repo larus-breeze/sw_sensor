@@ -9,18 +9,32 @@
 #define DKCOM 1
 
 #ifdef DKCOM
-#define USE_DIFF_GNSS		0
+
+#define AVG_VARIO_F_BY_FS ( 0.5f / 30.0f / 10.0f) 	// assuming 10 Hz update
+#define WIND_AVG_F_BY_FS ( 0.5f / 30.0f / 10.0f) 	// assuming 10 Hz update
+
+#define WINDSPEED_F_BY_FS ( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
+#define ACCELERATION_F_BY_FS ( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
+#define VARIO_F_BY_FS ( 1.0f / 2.0f / 100.0f)      	// 2s @ 100Hz
+
+#define USE_DIFF_GNSS		1
 
 #define ALTI_DIFF 		0.136f 	// antenna height difference compensation
 					// front lower for D-KCOM
 #define HORIZ_DIFF		(-0.06f/2.03f)
 #define DGNSS_SETUP_RAW		{ 2.03f, -0.06f, 0.136f} // slave antenna position
-#define DGNSS_SETUP_NORMALIZED	{ 0.9973f, -0.0295f, 0.0668} // slave antenna position norm.
+#define DGNSS_SETUP_NORMALIZED	{ 0.9973f, -0.0295f, 0.0668f} // slave antenna position norm.
 
 #define BLUETOOTH_NAME		"AT+NAMED-KCOM"
 #define ACTIVATE_USB_NMEA	1
 
 #else // **************************************************************************
+
+#define AVG_VARIO_F_BY_FS ( 0.5f / 30.0f / 10.0f) // assuming 10 Hz update
+#define WIND_AVG_F_BY_FS ( 0.5f / 30.0f / 10.0f) // assuming 10 Hz update
+#define WINDSPEED_F_BY_FS ( 1.0f / 5.0f / 100.0f) 	// 5s
+#define ACCELERATION_F_BY_FS ( 1.0f / 5.0f / 100.0f) 	// 5s
+#define VARIO_F_BY_FS ( 1.0 / 2.0f / 100.0f)      	// 2s
 
 #define USE_DIFF_GNSS		0
 #define ALTI_DIFF 		0.0 	// antenna height difference compensation
@@ -32,11 +46,28 @@
 
 #define USE_GNSS_VARIO		1 	// else pressure-vario
 
+#define RUN_OFFLINE_CALCULATION 0 // offline test mode, deprecated
+
+#define INFILE "simin.f94"
+
+#ifdef INFILE
+#define RUN_GNSS		0
+#define RUN_GNSS_HEADING	0
+#define RUN_MTi_1_MODULE 	0
+#define RUN_MS5611_MODULE 	0
+#define RUN_L3GD20 		0
+#define RUN_FXOS8700		0
+#define RUN_PITOT_MODULE 	0
+#else
+#define RUN_GNSS		1
+#define RUN_GNSS_HEADING	1
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
 #define RUN_L3GD20 		1
 #define RUN_FXOS8700		1
 #define RUN_PITOT_MODULE 	1
+#endif
+
 #define RUN_CAN_TESTER		0
 #define TEST_EEPROM		0
 
@@ -51,7 +82,6 @@
 #define uSD_LED_STATUS		1
 #define RUN_GNSS_UPDATE_WITHOUT_FIX 0
 
-#define RUN_OFFLINE_CALCULATION 0 // offline test mode
 #define RUN_COMMUNICATOR	1 // normal mode
 #define RUN_CAN_OUTPUT		1
 

@@ -30,6 +30,7 @@ void navigator_t::update_IMU (
       GNSS_acceleration,
       ins.get_nav_acceleration (),
       true_airspeed,
+      wind_observer.get_value(),
       GNSS_altitude,
       atmosphere.get_altitude(),
       TAS);
@@ -46,7 +47,11 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
   GNSS_altitude 	= coordinates.position.e[DOWN]; // negative altitude
   GNSS_speed 		= coordinates.speed_motion;
 
-  vario_integrator.update (flight_observer.get_vario_GNSS(),
+  wind_observer.update( flight_observer.get_wind(), // do this here because of the update rate 10Hz
+			ins.get_euler ().y,
+			ins.get_circling_state ());
+
+  vario_integrator.update (flight_observer.get_vario_GNSS(), // here because of the update rate 10Hz
 			   ins.get_euler ().y,
 			   ins.get_circling_state ());
 }
@@ -86,7 +91,7 @@ void navigator_t::report_data(output_data_t &d)
     d.integrator_vario		= vario_integrator.get_value();
     d.vario_uncompensated 	= flight_observer.get_vario_uncompensated_GNSS();
 
-    d.wind			= flight_observer.get_wind();
+    d.wind			= wind_observer.get_value();
 
     d.speed_compensation_TAS 	= flight_observer.get_speed_compensation_TAS();
     d.speed_compensation_INS 	= flight_observer.get_speed_compensation_INS();
@@ -96,9 +101,9 @@ void navigator_t::report_data(output_data_t &d)
     d.circle_mode 		= ins.get_circling_state();
     d.gyro_correction		= ins.get_gyro_correction();
     d.nav_acceleration_gnss 	= ins.get_nav_acceleration();
-    d.nav_acceleration_mag 	= ins.get_nav_acceleration();
+    d.nav_acceleration_mag 	= ins_magnetic.get_nav_acceleration();
     d.nav_induction_gnss 	= ins.get_nav_induction();
-    d.nav_induction_mag 	= ins.get_nav_induction();
+    d.nav_induction_mag 	= ins_magnetic.get_nav_induction();
 
     d.turn_rate			= ins.turn_rate;
     d.slip_angle		= ins.getSlipAngle();

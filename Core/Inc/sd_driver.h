@@ -19,7 +19,7 @@ public:
 	SD_driver_t( void)
 	: SDPath({0})
 	{
-	wipe( SDFatFs);
+	SDFatFs={0};
 	if( ! (
 		(FATFS_LinkDriver(&SD_Driver, SDPath) == 0)
 		&&
@@ -56,7 +56,7 @@ public:
 			return false;
 		if( f_open(&MyFile, filename, FA_CREATE_NEW | FA_WRITE) != FR_OK)
 		{
-			wipe( MyFile);
+			MyFile={0};
 			return false;
 		}
 		open=true;

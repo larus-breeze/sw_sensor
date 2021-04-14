@@ -62,7 +62,7 @@ private:
             index += size;
         return index;
     }
-    void setValueAt(unsigned point, datatype value)
+    void setValueAt(unsigned point, const datatype &value)
     {
         values[map(point)] = value;
     }

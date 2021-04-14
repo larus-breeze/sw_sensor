@@ -6,17 +6,14 @@
 #ifndef FLIGHT_OBSERVER_H_
 #define FLIGHT_OBSERVER_H_
 
+#include "system_configuration.h"
 #include "GNSS.h"
 #include <differentiator.h>
 #include "KalmanVario.h"
 
 #define SQR(x) ((x)*(x))
-#define SIN(x) sinf(x)
+#define SIN(x) arm_sin_f32(x)
 #include "pt2.h"
-
-#define WINDSPEED_F_BY_FS ( 1.0f / 30.0f / 100.0f) // 30s
-#define ACCELERATION_F_BY_FS ( 1.0f / 5.0f / 100.0f) // 5s
-#define VARIO_F_BY_FS ( 1.0 / 2.0f / 100.0f)      // 2s
 
 class flight_observer_t
 {
@@ -40,6 +37,7 @@ public:
 	    const float3vector &gnss_acceleration,
 	    const float3vector &ahrs_acceleration,
 	    const float3vector &air_velocity,
+	    const float3vector &observed_wind,
 	    float GNSS_altitude,
 	    float pressure_altitude,
 	    float TAS

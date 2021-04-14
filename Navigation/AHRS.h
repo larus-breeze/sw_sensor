@@ -16,7 +16,7 @@ typedef float ftype;
 #include "integrator.h"
 
 #define SQR(x) ((x)*(x))
-#define SIN(x) sinf(x)
+#define SIN(x) arm_sin_f32(x)
 #include "pt2.h"
 
 enum { ROLL, NICK, YAW};

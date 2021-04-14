@@ -46,10 +46,12 @@ void communicator_runnable (void*)
   float3vector acc, mag, gyro;
   float3vector ACC_OFFSET = ACC_OFFSET_INIT;
   float3vector MAG_OFFSET = MAG_OFFSET_INIT;
-
 #if RUN_CAN_OUTPUT == 1
   uint8_t count_10Hz = 1; // de-synchronize CAN output by 1 cycle
 #endif
+
+#ifndef INFILE // not in sim mode
+
 
   for( unsigned i=0; i < 200; ++i) // wait 200 IMU loops
     notify_take (true);
@@ -65,6 +67,9 @@ void communicator_runnable (void*)
 
   navigator.update_pabs (output_data.m.static_pressure);
   navigator.reset_altitude();
+#else
+  uint32_t GNSS_sim=0;
+#endif
 
   while (true)
     {
@@ -73,9 +78,16 @@ void communicator_runnable (void*)
       navigator.update_pabs (output_data.m.static_pressure);
       navigator.update_pitot(output_data.m.pitot_pressure);
 
+#ifndef INFILE // not in sim mode
       if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
 	{
 	  GNSS_new_data_ready = false;
+#else
+      if( ++GNSS_sim >=10)
+	{
+	  GNSS_sim=0;
+	  GNSS.fix_type=FIX_3d; // not recorded
+#endif
 	  navigator.update_GNSS( GNSS.coordinates);
 	}
       // rotate sensor coordinates into airframe coordinates
@@ -117,8 +129,7 @@ static TaskParameters_t p =
 
 COMMON RestrictedTask communicator_task (p);
 
-void
-sync_communicator (void)
+void sync_communicator (void)
 {
   communicator_task.notify_give ();
 }
