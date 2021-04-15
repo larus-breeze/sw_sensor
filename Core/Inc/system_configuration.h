@@ -42,6 +42,9 @@
 #define ACTIVATE_USB_NMEA	0
 #endif
 
+#define STABLE_CIRCLING_LIMIT	(30 * 100) // seconds @ 100 Hz for MAG auto calibration
+#define STABLE_CIRCLING_MIN_DURATION (STABLE_CIRCLING_LIMIT + 60 * 100)
+
 #define ACTIVATE_WATCHDOG	1
 
 #define USE_GNSS_VARIO		1 	// else pressure-vario

@@ -8,6 +8,7 @@
 
 #include <system_configuration.h>
 #include <AHRS.h>
+#include <AHRS_compass.h>
 #include "GNSS.h"
 #include "differentiator.h"
 #include "smart_averager.h"
@@ -77,7 +78,7 @@ public:
     }
 
   AHRS_type 		ins;
-  AHRS_type 		ins_magnetic;
+  AHRS_compass_type	ins_magnetic;
 
 private:
   atmosphere_t 		atmosphere;

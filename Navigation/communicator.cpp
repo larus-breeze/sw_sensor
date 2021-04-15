@@ -109,7 +109,7 @@ void communicator_runnable (void*)
     }
 }
 
-#define STACKSIZE 512 // in 32bit words
+#define STACKSIZE 1024 // in 32bit words
 static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 
 static TaskParameters_t p =
