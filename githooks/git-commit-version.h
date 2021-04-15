@@ -1,1 +1,0 @@
-#define GIT_COMMIT_HASH "KSC_DUMMY_2"
