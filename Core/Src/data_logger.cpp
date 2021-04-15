@@ -141,7 +141,8 @@ data_logger_runnable (void*)
   int32_t sync_counter=0;
 
   // logging loop @ 100 Hz
-  for (synchronous_timer t (10); true; t.sync ())
+  while(true)
+//  for (synchronous_timer t (10); true; t.sync ())
     {
 #ifdef INFILE // simulation
       UINT bytesread;
