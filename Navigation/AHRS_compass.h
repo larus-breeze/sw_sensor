@@ -20,7 +20,7 @@ typedef float ftype;
 #define SIN(x) arm_sin_f32(x)
 #include "pt2.h"
 
-typedef enum {VIRGIN, ACQUIRING, CALIBRATED} compass_status_t;
+typedef enum {VIRGIN, ACQUIRING, CALIBRATED, RE_ACQUIRING} compass_status_t;
 
 #define ANGLE_F_BY_FS ( 1.0 / 0.5f / 100.0f)      // 0.5s
 
@@ -145,7 +145,6 @@ public:
 	float turn_rate;
 private:
 	circle_state_t circle_state;
-	unsigned circling_delay_counter;
 	compass_status_t compass_status;
 	linear_least_square_fit<float> mag_calibrator[3];
 	circle_state_t update_circling_state( const float3vector &gyro);

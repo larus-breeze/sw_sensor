@@ -46,6 +46,10 @@ public:
 		variance_a = Vyx * (inv_n + (sum_xx * inv_n) * (sum_xx * inv_n) * invQx);
 		variance_b = Vyx * invQx;
 	}
+	unsigned get_count(void) const
+	{
+	  return (unsigned) n;
+	}
 private:
 	type sum_x;
 	type sum_y;

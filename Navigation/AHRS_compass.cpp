@@ -17,11 +17,10 @@
 #define M_H_GAIN -10.0f			//!< Attitude controller: horizontal gain magnetic
 #define CROSS_GAIN 0.05f		//!< Attitude controller: cross-product gain
 
-#define CIRCLE_LIMIT 200 		//!< 20 s hysteresis / delay
 #define HIGH_TURN_RATE 0.15 		//!< turn rate high limit
 #define LOW_TURN_RATE  0.0707 		//!< turn rate low limit
 
-ROM float NAV_INDUCTION[3] = { 0.9998f, 1.84e-5f, 0.0201034f};
+ROM float NAV_INDUCTION[3] = { 0.407, 0.021f, 0.9135f};
     // inklin   = 66; deklin   = 3;
     // N=cos( inklin * pi/180)
     // E=sin( deklin * pi/180) * sin( inklin * pi/180)
@@ -71,12 +70,10 @@ circle_state_t AHRS_compass_type::update_circling_state( const float3vector &gyr
 {
 	float turn_rate_abs=abs( turn_rate);
 
-	if( circling_counter < CIRCLE_LIMIT)
-	  if( turn_rate_abs > HIGH_TURN_RATE)
+	if( (circling_counter < CIRCLE_LIMIT) && ( turn_rate_abs > HIGH_TURN_RATE))
 	    ++circling_counter;
 
-	if( circling_counter > 0)
-	  if( turn_rate_abs < LOW_TURN_RATE)
+	if(( circling_counter > 0) && ( turn_rate_abs < LOW_TURN_RATE))
 	    --circling_counter;
 
 	if( circling_counter == 0)
@@ -125,12 +122,13 @@ void AHRS_compass_type::update_compass(
 		const float3vector &gyro,
 		const float3vector &acc,
 		const float3vector &_mag,
-	    const float3vector &GNSS_acceleration
+	   	const float3vector &GNSS_acceleration
 		)
 {
-	  float3vector mag = _mag;
+	  float3vector mag = _mag; // make it mutable
 
-	  if( compass_status == CALIBRATED)
+	  // if we have a valid calibration: apply it
+	  if( ( compass_status == CALIBRATED) || ( compass_status == RE_ACQUIRING))
 	    {
 
 	      for( unsigned i=0; i < 3; ++i)
@@ -140,70 +138,118 @@ void AHRS_compass_type::update_compass(
 	  float3vector nav_acceleration = body2nav * acc;
 	  float3vector nav_induction    = body2nav * mag;
 
-	  // projection on a horizontal plane
+	  // MAG vector projected on a normalized horizontal plane and normalized
 	  nav_induction[DOWN] = 0;
 	  nav_induction.normalize();
 
+	  // calculate horizontal leveling error
 	  nav_correction[NORTH] = - nav_acceleration.e[EAST]  + GNSS_acceleration.e[EAST];
 	  nav_correction[EAST]  = + nav_acceleration.e[NORTH] - GNSS_acceleration.e[NORTH];
 
-	  // do the compass correction depending on the circling state
-	  switch( update_circling_state (gyro))
+	  // *******************************************************************************************************
+	  // calculate heading error depending on the present circling state
+	  // on state changes handle MAG auto calibration
+	  circle_state_t new_state = update_circling_state (gyro);
+	  switch( new_state)
 	  {
 	    case STRAIGHT_FLIGHT:
 	    {
-	      circling_delay_counter = 0;
-	      nav_correction[DOWN]  =   nav_induction[EAST] * M_H_GAIN; // todo hier fehlt magnet-modell erde
+	      // if we have collected enough samples while circling
+	      if(( (compass_status == ACQUIRING) || (compass_status == RE_ACQUIRING))
+		  &&
+		  mag_calibrator[FRONT].get_count() > MINIMUM_MAG_CALIBRATION_SAMPLES)
+		{
+		  if( compass_status == RE_ACQUIRING) // we already have old calibration data
+		    {
+		      float new_calibration[3][4];
+		      for( unsigned i=0; i<3; ++i)
+			{
+			  mag_calibrator[i].evaluate(
+			      new_calibration[i][0],new_calibration[i][1],
+			      new_calibration[i][2],new_calibration[i][3]);
+			}
 
+		    // check if new claibration data is more precise
+		    float old_variance=0.0f;
+		    float new_variance=0.0f;
+		    for( unsigned i=0; i<3; ++i)
+		      {
+			    new_variance += new_calibration[i][2] + new_calibration[i][3];
+			    old_variance += calibration[i][2] + calibration[i][3];
+		      }
+
+		    if( new_variance < old_variance)  // new calibration data variance is smaller than old one
+		      memcpy( calibration, new_calibration, sizeof(calibration));
+
+		    }
+		  else // first calibration result available now
+		    {
+		    for( unsigned i=0; i<3; ++i)
+		      {
+			mag_calibrator[i].evaluate(
+			    calibration[i][0],calibration[i][1],calibration[i][2],calibration[i][3]);
+		      }
+		    }
+
+		  compass_status = CALIBRATED; // at least one calibration done now
+
+		}
+
+	      nav_correction[DOWN] = nav_induction[EAST] * M_H_GAIN; // todo hier fehlt magnet-modell erde
 	      gyro_correction = nav2body * nav_correction;
-
 	      gyro_correction *= P_GAIN;
-	      gyro_integrator += gyro_correction; // update integrator and use it
+
+	      // update integrator and use it
+	      gyro_integrator += gyro_correction;
 	      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
 	    }
 	    break;
+	    // *******************************************************************************************************
 	    case CIRCLING:
 	    {
-
-              float cross_correction = // kreuzprodukt aus GSNN-acc und INS-acc -> Korrektur heading
+	      float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
         	    nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
 		  - nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
 
-              nav_correction[DOWN]  =   cross_correction * CROSS_GAIN; // no MAG use here
+              nav_correction[DOWN]  =   cross_correction * CROSS_GAIN; // no MAG use here !
 	      gyro_correction = nav2body * nav_correction;
 
 	      // don't update integrator but use it
 	      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
 	      gyro_correction *= P_GAIN;
 
-	      if( ++circling_delay_counter == STABLE_CIRCLING_LIMIT) // assuming no overflow @ 32 bits
+	      if( // start compass calibration if circling state stable
+		  ( compass_status != ACQUIRING)
+		  &&
+		  ( compass_status != RE_ACQUIRING)
+		)
 		{
-		    compass_status = ACQUIRING;
 		    for( unsigned i=0; i<3; ++i)
-		      mag_calibrator[i].reset();
+		      mag_calibrator[i].reset(); // reset mag calibration algorithm
+		    switch( compass_status)
+		    {
+		      case VIRGIN:
+			      compass_status = ACQUIRING;
+		      break;
+		      case CALIBRATED:
+			      compass_status = RE_ACQUIRING;
+		      break;
+		    }
 		}
-	      else if( ++circling_delay_counter > STABLE_CIRCLING_LIMIT) // assuming no overflow @ 32 bits
-		{
-		    float3vector expected_induction = nav2body * NAV_INDUCTION;
 
-		    for( unsigned i=0; i<3; ++i)
-		      mag_calibrator[i].add_value( expected_induction.e[i], _mag.e[i]);
+	      if( (compass_status == ACQUIRING) || (compass_status == RE_ACQUIRING))
+		{
+		float3vector expected_induction = nav2body * NAV_INDUCTION;
+
+		for( unsigned i=0; i<3; ++i)
+		  mag_calibrator[i].add_value( expected_induction.e[i], _mag.e[i]);
 		}
 	    }
 	    break;
+	    // *******************************************************************************************************
 	    case TRANSITION:
 	    {
-	      // if we have collected enough samples
-	      if( circling_delay_counter > STABLE_CIRCLING_MIN_DURATION)
-		{
-		  circling_delay_counter = 0; // do this only once
-		  for( unsigned i=0; i<3; ++i)
-		      mag_calibrator[i].evaluate(
-			  calibration[i][0],calibration[i][1],calibration[i][2],calibration[i][3]);
-		  compass_status = CALIBRATED;
-		}
-
-	      nav_correction[DOWN]  =   nav_induction[EAST] * M_H_GAIN;
+	      nav_correction[DOWN] = nav_induction[EAST] * M_H_GAIN;
 
 	      gyro_correction = nav2body * nav_correction;
 	      gyro_correction *= P_GAIN;
@@ -217,5 +263,7 @@ void AHRS_compass_type::update_compass(
 	    break;
 	  }
 
+	  // feed quaternion update with corrected sensor readings
 	  update (acc, gyro + gyro_correction, mag);
 }
+

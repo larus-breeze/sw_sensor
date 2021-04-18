@@ -15,7 +15,6 @@
 #define M_H_GAIN -10.0f			//!< Attitude controller: horizontal gain magnetic
 #define CROSS_GAIN 0.05f		//!< Attitude controller: cross-product gain
 
-#define CIRCLE_LIMIT 200 		//!< 20 s hysteresis / delay
 #define HIGH_TURN_RATE 0.15 		//!< turn rate high limit
 #define LOW_TURN_RATE  0.0707 		//!< turn rate low limit
 

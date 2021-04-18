@@ -42,8 +42,9 @@
 #define ACTIVATE_USB_NMEA	0
 #endif
 
+#define CIRCLE_LIMIT 		(10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 #define STABLE_CIRCLING_LIMIT	(30 * 100) // seconds @ 100 Hz for MAG auto calibration
-#define STABLE_CIRCLING_MIN_DURATION (STABLE_CIRCLING_LIMIT + 60 * 100)
+#define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
 
 #define ACTIVATE_WATCHDOG	1
 
