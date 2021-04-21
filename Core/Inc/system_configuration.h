@@ -6,6 +6,7 @@
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
+#define INFILE "simin.f94"
 #define DKCOM 1
 
 #define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
@@ -47,8 +48,6 @@
 #define ACTIVATE_WATCHDOG	1
 
 #define RUN_OFFLINE_CALCULATION 0 // offline test mode, deprecated
-
-//#define INFILE "simin.f94"
 
 #ifdef INFILE
 #define RUN_GNSS		0

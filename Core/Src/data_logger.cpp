@@ -144,8 +144,8 @@ data_logger_runnable (void*)
   while(true)
     {
       UINT bytesread;
-      fresult = f_read(&infile, (void *)&output_data, sizeof(output_data), &bytesread);
-      ASSERT( (fresult == FR_OK) && (bytesread == sizeof(output_data)));
+      fresult = f_read(&infile, (void *)&output_data, sizeof(output_data) -12, &bytesread); // todo PATCH
+      ASSERT( (fresult == FR_OK) && (bytesread == sizeof(output_data) - 12));
 
       void sync_communicator (void);
       sync_communicator (); // comes from the sensors if not simulated
