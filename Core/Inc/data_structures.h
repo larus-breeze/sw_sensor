@@ -53,6 +53,7 @@ typedef struct
   float speed_compensation_INS;
   float integrator_vario;
   float3vector wind;
+  float3vector wind_average;
   uint32_t circle_mode;
   float3vector nav_acceleration_gnss;
   float3vector nav_induction_gnss;

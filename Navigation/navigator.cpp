@@ -91,7 +91,8 @@ void navigator_t::report_data(output_data_t &d)
     d.integrator_vario		= vario_integrator.get_value();
     d.vario_uncompensated 	= flight_observer.get_vario_uncompensated_GNSS();
 
-    d.wind			= wind_observer.get_value();
+    d.wind			= flight_observer.get_wind(); // short-term avg
+    d.wind_average		= wind_observer.get_value();  // smart long-term avg
 
     d.speed_compensation_TAS 	= flight_observer.get_speed_compensation_TAS();
     d.speed_compensation_INS 	= flight_observer.get_speed_compensation_INS();
