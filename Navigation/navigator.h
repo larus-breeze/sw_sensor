@@ -72,7 +72,7 @@ public:
   /**
    * @brief return aggregate flight observer
    */
-  flight_observer_t &get_flight_observer( void)
+  const flight_observer_t &get_flight_observer( void) const
     {
     return flight_observer;
     }

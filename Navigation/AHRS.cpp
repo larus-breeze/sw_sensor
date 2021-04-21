@@ -104,7 +104,8 @@ void AHRS_type::update( const float3vector &acc, const float3vector &gyro, const
 	turn_rate = nav_rotation[DOWN];
 
 	slip_angle_averager.respond( my_atan2f( -acc.e[RIGHT], -acc.e[DOWN]));
-	nick_angle_averager.respond( my_atan2f(  acc.e[FRONT],  acc.e[DOWN]));
+	// todo keine ahnung warum da PI dazu muß !
+	nick_angle_averager.respond( my_atan2f(  acc.e[FRONT],  acc.e[DOWN]) - 3.1416f);
 }
 
 /**

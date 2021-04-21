@@ -21,10 +21,16 @@ COMMON GNSS_type GNSS (output_data.c);
 #ifdef DKCOM
 ROM float SENSOR_MAPPING_MATRIX[] =
 {
-	-1.0f, +0.0f, +0.0f,
+#if 0
+	-0.9914f, +0.0f, -0.13f,
+	+0.0f,  -1.0f,   +0.0f,
+	-0.13f, +0.0f,   +.9914f
+#else
+	-1.0f, +0.0f, -0.0f,
 	+0.0f, -1.0f, +0.0f,
-	+0.0f, +0.0f, +1.0f
-    };
+	-0.0f, +0.0f, +1.0f
+#endif
+};
 #else
 ROM float SENSOR_MAPPING_MATRIX[] =
 {

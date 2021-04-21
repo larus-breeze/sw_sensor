@@ -31,7 +31,6 @@ volatile uint32_t idle_counter;
 
 extern "C" void vApplicationIdleHook( void)
 {
-//	*(uint32_t *)0x40022018=0x020000;
 	++idle_counter;
 	__WFI();
 }

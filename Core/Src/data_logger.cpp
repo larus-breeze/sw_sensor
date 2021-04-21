@@ -140,19 +140,20 @@ data_logger_runnable (void*)
 
   int32_t sync_counter=0;
 
-  // logging loop @ 100 Hz
+#ifdef INFILE // simulation at max speed
   while(true)
-//  for (synchronous_timer t (10); true; t.sync ())
     {
-#ifdef INFILE // simulation
       UINT bytesread;
       fresult = f_read(&infile, (void *)&output_data, sizeof(output_data), &bytesread);
       ASSERT( (fresult == FR_OK) && (bytesread == sizeof(output_data)));
 
       void sync_communicator (void);
       sync_communicator (); // comes from the sensors if not simulated
-      delay( 3);
-
+      delay( 1);
+#else
+      // logging loop @ 100 Hz
+   for (synchronous_timer t (10); true; t.sync ())
+    {
 #endif
 
 #if LOG_OBSERVATIONS

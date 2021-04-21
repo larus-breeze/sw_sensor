@@ -8,14 +8,20 @@
 
 #define DKCOM 1
 
-#ifdef DKCOM
+#define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
+#define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
 
-#define AVG_VARIO_F_BY_FS ( 0.5f / 30.0f / 10.0f) 	// assuming 10 Hz update
-#define WIND_AVG_F_BY_FS ( 0.5f / 30.0f / 10.0f) 	// assuming 10 Hz update
+#define WIND_SHORTTERM_F_BY_FS 	( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
+//#define ACCELERATION_F_BY_FS   	( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
+#define VARIO_F_BY_FS          	( 1.0f / 2.0f / 100.0f)      	// 2s @ 100Hz
 
-#define WINDSPEED_F_BY_FS ( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
-#define ACCELERATION_F_BY_FS ( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
-#define VARIO_F_BY_FS ( 1.0f / 2.0f / 100.0f)      	// 2s @ 100Hz
+#define CIRCLE_LIMIT 		(10 * 100) //!< 10 * 1/100 s delay into / out of circling state
+#define STABLE_CIRCLING_LIMIT	(30 * 100) // seconds @ 100 Hz for MAG auto calibration
+#define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
+
+#define USE_GNSS_VARIO		1 // else pressure-vario
+
+#if DKCOM == 1 // *******************************************************************
 
 #define USE_DIFF_GNSS		1
 
@@ -30,29 +36,19 @@
 
 #else // **************************************************************************
 
-#define AVG_VARIO_F_BY_FS ( 0.5f / 30.0f / 10.0f) // assuming 10 Hz update
-#define WIND_AVG_F_BY_FS ( 0.5f / 30.0f / 10.0f) // assuming 10 Hz update
-#define WINDSPEED_F_BY_FS ( 1.0f / 5.0f / 100.0f) 	// 5s
-#define ACCELERATION_F_BY_FS ( 1.0f / 5.0f / 100.0f) 	// 5s
-#define VARIO_F_BY_FS ( 1.0 / 2.0f / 100.0f)      	// 2s
-
 #define USE_DIFF_GNSS		0
-#define ALTI_DIFF 		0.0 	// antenna height difference compensation
+#define ALTI_DIFF 		0.0f 	// antenna height difference compensation
+#define HORIZ_DIFF		0.0f
 #define BLUETOOTH_NAME		"AT+NAMESOAR"
-#define ACTIVATE_USB_NMEA	0
-#endif
+#define ACTIVATE_USB_NMEA	1
 
-#define CIRCLE_LIMIT 		(10 * 100) //!< 10 * 1/100 s delay into / out of circling state
-#define STABLE_CIRCLING_LIMIT	(30 * 100) // seconds @ 100 Hz for MAG auto calibration
-#define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
+#endif // **************************************************************************
 
 #define ACTIVATE_WATCHDOG	1
 
-#define USE_GNSS_VARIO		1 	// else pressure-vario
-
 #define RUN_OFFLINE_CALCULATION 0 // offline test mode, deprecated
 
-#define INFILE "simin.f94"
+//#define INFILE "simin.f94"
 
 #ifdef INFILE
 #define RUN_GNSS		0
@@ -63,7 +59,7 @@
 #define RUN_FXOS8700		0
 #define RUN_PITOT_MODULE 	0
 #else
-#define RUN_GNSS		1
+#define RUN_GNSS			1
 #define RUN_GNSS_HEADING	1
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
