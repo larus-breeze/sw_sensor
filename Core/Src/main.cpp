@@ -81,17 +81,18 @@ int main(void)
   SCB->SHCSR |= (SCB_SHCSR_BUSFAULTENA_Msk | SCB_SHCSR_MEMFAULTENA_Msk
       | SCB_SHCSR_USGFAULTENA_Msk);
 
-#if 1
+#if SET_FPU_FLUSH_TO_ZERO
   uint32_t fpscr = __get_FPSCR(); // set FPU flush to zero mode
   fpscr |= FPU_FPDSCR_FZ_Msk;	  // NANs will become 0.0f
   __set_FPSCR(fpscr);
 #endif
 
+#if ACTIVATE_FPU_EXCEPTION_TRAP
   // enable floating-point exception
   uint32_t prioritygroup = NVIC_GetPriorityGrouping ();
-  NVIC_SetPriority ((IRQn_Type) FPU_IRQn,
-		    NVIC_EncodePriority (prioritygroup, STANDARD_ISR_PRIORITY, 0));
+  NVIC_SetPriority ((IRQn_Type) FPU_IRQn, STANDARD_ISR_PRIORITY+2);
   NVIC_EnableIRQ ((IRQn_Type) FPU_IRQn);
+#endif
 
 #if 0 // test FPU exception
   volatile float test = 0.0f;

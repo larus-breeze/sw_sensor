@@ -15,6 +15,8 @@
 #include "common.h"
 #include "CAN_output.h"
 
+void sync_logger(void);
+
 COMMON output_data_t __ALIGNED(1024) output_data =  { 0 };
 COMMON GNSS_type GNSS (output_data.c);
 
@@ -112,6 +114,11 @@ void communicator_runnable (void*)
 	  trigger_CAN (); // todo alle abtastraten checken !
 	}
 #endif
+
+#ifdef INFILE // in sim mode: logger: continue
+      sync_logger();
+#endif
+
     }
 }
 

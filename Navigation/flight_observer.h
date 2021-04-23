@@ -10,6 +10,7 @@
 #include "GNSS.h"
 #include <differentiator.h>
 #include "KalmanVario.h"
+#include "delay_line.h"
 
 #define SQR(x) ((x)*(x))
 #define SIN(x) arm_sin_f32(x)
@@ -96,6 +97,9 @@ private:
 	float speed_compensation_GNSS;
 	float vario_uncompensated_GNSS;
 	float vario_uncompensated_pressure;
+
+	delay_line<float, SAT_DELAY_FOR_WIND> GNSS_velocity_delay_N;
+	delay_line<float, SAT_DELAY_FOR_WIND> GNSS_velocity_delay_E;
 
 	KalmanVario_t KalmanVario_GNSS;
 	KalmanVario_t KalmanVario_pressure;

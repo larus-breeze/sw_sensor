@@ -6,7 +6,8 @@
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
-#define INFILE "simin.f94"
+#define INFILE "simin.f94" // switches on offline calculation and defines filename
+
 #define DKCOM 1
 
 #define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
@@ -19,6 +20,8 @@
 #define CIRCLE_LIMIT 		(10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 #define STABLE_CIRCLING_LIMIT	(30 * 100) // seconds @ 100 Hz for MAG auto calibration
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
+
+#define SAT_DELAY_FOR_WIND	25 // ms optimized empirically
 
 #define USE_GNSS_VARIO		1 // else pressure-vario
 
@@ -46,8 +49,6 @@
 #endif // **************************************************************************
 
 #define ACTIVATE_WATCHDOG	1
-
-#define RUN_OFFLINE_CALCULATION 0 // offline test mode, deprecated
 
 #ifdef INFILE
 #define RUN_GNSS		0
@@ -85,9 +86,9 @@
 #define RUN_CAN_OUTPUT		1
 
 #define RUN_DATA_LOGGER		1
-#define LOG_OBSERVATIONS	0 // log IMU + pressure data
-#define LOG_COORDINATES		0 // log GNSS data
-#define LOG_OUTPUT_DATA		1 // logging all inclusive
+#define LOG_OBSERVATIONS	1 // log IMU + pressure data
+#define LOG_COORDINATES		1 // log GNSS data
+#define LOG_OUTPUT_DATA		0 // logging all inclusive
 #define OLD_FORMAT 		0 // for year 2020 old data without cheap sensor info
 				  // and without GNSS speed information
 
@@ -112,7 +113,10 @@
 #define SDIO_ISR_PRIORITY	14
 #define STANDARD_ISR_PRIORITY	15 // lowest priority
 
-#define NMEA_REPORTING_PERIOD	250 // clock ticks
+#define NMEA_REPORTING_PERIOD	250 // period in clock ticks for NMEA output
+
+#define ACTIVATE_FPU_EXCEPTION_TRAP 	1
+#define SET_FPU_FLUSH_TO_ZERO		1
 
 enum
 {

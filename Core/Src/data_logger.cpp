@@ -48,7 +48,7 @@ data_logger_runnable (void*)
 
 #ifdef INFILE // SIL simulation requested
 
-  strcpy( filename, "simout.f94");
+  strcpy( filename, "simout.f97");
 
   FIL infile;
 
@@ -149,7 +149,8 @@ data_logger_runnable (void*)
 
       void sync_communicator (void);
       sync_communicator (); // comes from the sensors if not simulated
-      delay( 1);
+      notify_take (true); // wait for synchronization by from communicator
+
 #else
       // logging loop @ 100 Hz
    for (synchronous_timer t (10); true; t.sync ())
@@ -193,6 +194,7 @@ data_logger_runnable (void*)
     }
 }
 
+
 #define STACKSIZE 1024
 static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 
@@ -205,6 +207,11 @@ static TaskParameters_t p =
       { 0, 0, 0 },
       { 0, 0, 0 } } };
 
-RestrictedTask data_logger (p);
+COMMON RestrictedTask data_logger (p);
+
+void sync_logger(void)
+  {
+    data_logger.notify_give ();
+  }
 
 #endif
