@@ -6,6 +6,8 @@
 
 #include <navigator.h>
 
+ROM float NAV_INDUCTION[3] = { 0.407, 0.021f, 0.9135f};
+
 // to be called at 100 Hz
 void navigator_t::update_IMU (
     const float3vector &acc,
@@ -36,6 +38,13 @@ void navigator_t::update_IMU (
       TAS);
 }
 #if 1
+
+//! check compass calibrator state and eventually update calibration
+void navigator_t::calibrate_compass (void)
+{
+
+}
+
 // to be called at 10 Hz
 void navigator_t::update_GNSS (const coordinates_t &coordinates)
 {

@@ -29,7 +29,7 @@ public:
 	{
 		sum_x=sum_xx=sum_y=sum_yy=sum_xy=n=0.0;
 	}
-	void evaluate( type & a, type & b, type & variance_a, type & variance_b )
+	void evaluate( type & a, type & b, type & variance_a, type & variance_b ) const
 	{
 		type inv_n = 1.0 / n;
 

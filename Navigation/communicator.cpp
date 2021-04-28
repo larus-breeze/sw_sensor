@@ -23,7 +23,7 @@ COMMON GNSS_type GNSS (output_data.c);
 #ifdef DKCOM
 ROM float SENSOR_MAPPING_MATRIX[] =
 {
-#if 0
+#if 1
 	-0.9914f, +0.0f, -0.13f,
 	+0.0f,  -1.0f,   +0.0f,
 	-0.13f, +0.0f,   +.9914f
@@ -58,20 +58,20 @@ void communicator_runnable (void*)
   uint8_t count_10Hz = 1; // de-synchronize CAN output by 1 cycle
 #endif
 
-#ifndef INFILE // not in sim mode
-
+#ifndef INFILE // if NOT in simulation mode
 
   for( unsigned i=0; i < 200; ++i) // wait 200 IMU loops
     notify_take (true);
 
   while( ! GNSS_new_data_ready) // another lousy spinlock !
     delay(100);
-
-  GNSS_new_data_ready = false;
-  navigator.ins.set_from_euler(0.0f, 0.0f, 0.0f); // todo implement correct attitude setup
-  navigator.ins_magnetic.set_from_euler(0.0f, 0.0f, 0.0f); // todo implement correct setup
-
   navigator.update_GNSS( GNSS.coordinates);
+  GNSS_new_data_ready = false;
+
+  float present_heading=0.0f;
+  if( D_GNSS_new_data_ready)
+      present_heading = output_data.c.relPosHeading;
+  navigator.set_attitude(0.0f, 0.0f, present_heading);
 
   navigator.update_pabs (output_data.m.static_pressure);
   navigator.reset_altitude();
@@ -86,7 +86,7 @@ void communicator_runnable (void*)
       navigator.update_pabs (output_data.m.static_pressure);
       navigator.update_pitot(output_data.m.pitot_pressure);
 
-#ifndef INFILE // not in sim mode
+#ifndef INFILE // if not in sim mode
       if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
 	{
 	  GNSS_new_data_ready = false;
@@ -94,7 +94,7 @@ void communicator_runnable (void*)
       if( ++GNSS_sim >=10)
 	{
 	  GNSS_sim=0;
-	  GNSS.fix_type=FIX_3d; // not recorded
+	  GNSS.fix_type=FIX_3d; // has not been recorded ...
 #endif
 	  navigator.update_GNSS( GNSS.coordinates);
 	}

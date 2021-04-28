@@ -20,13 +20,12 @@
 #define HIGH_TURN_RATE 0.15 		//!< turn rate high limit
 #define LOW_TURN_RATE  0.0707 		//!< turn rate low limit
 
-ROM float NAV_INDUCTION[3] = { 0.407, 0.021f, 0.9135f};
     // inklin   = 66; deklin   = 3;
     // N=cos( inklin * pi/180)
     // E=sin( deklin * pi/180) * sin( inklin * pi/180)
     // D=sin( inklin * pi/180)];
 
-COMMON float calibration[3][4];
+extern compass_calibration_t *p_compass_calibration;
 
 /**
  * @brief initial attitude setup from observables
@@ -125,15 +124,13 @@ void AHRS_compass_type::update_compass(
 	   	const float3vector &GNSS_acceleration
 		)
 {
-	  float3vector mag = _mag; // make it mutable
-
-	  // if we have a valid calibration: apply it
-	  if( ( compass_status == CALIBRATED) || ( compass_status == RE_ACQUIRING))
+	  float3vector mag;
+	  if( p_compass_calibration) // use calibration if available
 	    {
-
-	      for( unsigned i=0; i < 3; ++i)
-		  mag.e[i] = (mag.e[i] - calibration[i][0]) / calibration[i][1];
+	      mag = p_compass_calibration->calibrate(_mag);
 	    }
+	  else
+	    mag = _mag;
 
 	  float3vector nav_acceleration = body2nav * acc;
 	  float3vector nav_induction    = body2nav * mag;
@@ -154,47 +151,6 @@ void AHRS_compass_type::update_compass(
 	  {
 	    case STRAIGHT_FLIGHT:
 	    {
-	      // if we have collected enough samples while circling
-	      if(( (compass_status == ACQUIRING) || (compass_status == RE_ACQUIRING))
-		  &&
-		  mag_calibrator[FRONT].get_count() > MINIMUM_MAG_CALIBRATION_SAMPLES)
-		{
-		  if( compass_status == RE_ACQUIRING) // we already have old calibration data
-		    {
-		      float new_calibration[3][4];
-		      for( unsigned i=0; i<3; ++i)
-			{
-			  mag_calibrator[i].evaluate(
-			      new_calibration[i][0],new_calibration[i][1],
-			      new_calibration[i][2],new_calibration[i][3]);
-			}
-
-		    // check if new claibration data is more precise
-		    float old_variance=0.0f;
-		    float new_variance=0.0f;
-		    for( unsigned i=0; i<3; ++i)
-		      {
-			    new_variance += new_calibration[i][2] + new_calibration[i][3];
-			    old_variance += calibration[i][2] + calibration[i][3];
-		      }
-
-		    if( new_variance < old_variance)  // new calibration data variance is smaller than old one
-		      memcpy( calibration, new_calibration, sizeof(calibration));
-
-		    }
-		  else // first calibration result available now
-		    {
-		    for( unsigned i=0; i<3; ++i)
-		      {
-			mag_calibrator[i].evaluate(
-			    calibration[i][0],calibration[i][1],calibration[i][2],calibration[i][3]);
-		      }
-		    }
-
-		  compass_status = CALIBRATED; // at least one calibration done now
-
-		}
-
 	      nav_correction[DOWN] = nav_induction[EAST] * M_H_GAIN; // todo hier fehlt magnet-modell erde
 	      gyro_correction = nav2body * nav_correction;
 	      gyro_correction *= P_GAIN;
@@ -217,33 +173,6 @@ void AHRS_compass_type::update_compass(
 	      // don't update integrator but use it
 	      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
 	      gyro_correction *= P_GAIN;
-
-	      if( // start compass calibration if circling state stable
-		  ( compass_status != ACQUIRING)
-		  &&
-		  ( compass_status != RE_ACQUIRING)
-		)
-		{
-		    for( unsigned i=0; i<3; ++i)
-		      mag_calibrator[i].reset(); // reset mag calibration algorithm
-		    switch( compass_status)
-		    {
-		      case VIRGIN:
-			      compass_status = ACQUIRING;
-		      break;
-		      case CALIBRATED:
-			      compass_status = RE_ACQUIRING;
-		      break;
-		    }
-		}
-
-	      if( (compass_status == ACQUIRING) || (compass_status == RE_ACQUIRING))
-		{
-		float3vector expected_induction = nav2body * NAV_INDUCTION;
-
-		for( unsigned i=0; i<3; ++i)
-		  mag_calibrator[i].add_value( expected_induction.e[i], _mag.e[i]);
-		}
 	    }
 	    break;
 	    // *******************************************************************************************************

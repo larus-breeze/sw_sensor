@@ -6,7 +6,8 @@
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
-#define INFILE "simin.f94" // switches on offline calculation and defines filename
+#define INFILE "simin210404.f94" // switches on offline calculation and defines filename
+#define OUTFILE "simout210404.f97"
 
 #define DKCOM 1
 
@@ -14,14 +15,14 @@
 #define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
 
 #define WIND_SHORTTERM_F_BY_FS 	( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
-//#define ACCELERATION_F_BY_FS   	( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
 #define VARIO_F_BY_FS          	( 1.0f / 2.0f / 100.0f)      	// 2s @ 100Hz
 
 #define CIRCLE_LIMIT 		(10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 #define STABLE_CIRCLING_LIMIT	(30 * 100) // seconds @ 100 Hz for MAG auto calibration
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
+#define MAG_CALIB_LETHARGY	0.8f // percentage of remaining old calibration info
 
-#define SAT_DELAY_FOR_WIND	25 // ms optimized empirically
+#define SAT_DELAY_FOR_WIND	25 // cycles = 1ms, optimized empirically
 
 #define USE_GNSS_VARIO		1 // else pressure-vario
 
@@ -86,9 +87,9 @@
 #define RUN_CAN_OUTPUT		1
 
 #define RUN_DATA_LOGGER		1
-#define LOG_OBSERVATIONS	1 // log IMU + pressure data
-#define LOG_COORDINATES		1 // log GNSS data
-#define LOG_OUTPUT_DATA		0 // logging all inclusive
+#define LOG_OBSERVATIONS	0 // log IMU + pressure data
+#define LOG_COORDINATES		0 // log GNSS data
+#define LOG_OUTPUT_DATA		1 // logging all inclusive
 #define OLD_FORMAT 		0 // for year 2020 old data without cheap sensor info
 				  // and without GNSS speed information
 
@@ -115,7 +116,7 @@
 
 #define NMEA_REPORTING_PERIOD	250 // period in clock ticks for NMEA output
 
-#define ACTIVATE_FPU_EXCEPTION_TRAP 	1
+#define ACTIVATE_FPU_EXCEPTION_TRAP 	0 // todo I want to be SET !
 #define SET_FPU_FLUSH_TO_ZERO		1
 
 enum

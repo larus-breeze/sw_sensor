@@ -77,10 +77,18 @@ public:
     return flight_observer;
     }
 
+  void set_attitude( float roll, float nick, float yaw)
+  {
+    ins.set_from_euler(roll, nick, yaw);
+    ins_magnetic.set_from_euler(roll, nick, yaw);
+  }
+
+private:
   AHRS_type 		ins;
   AHRS_compass_type	ins_magnetic;
 
-private:
+  void calibrate_compass( void);
+
   atmosphere_t 		atmosphere;
   float 		pitot_pressure;
   float 		TAS;

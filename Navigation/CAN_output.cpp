@@ -139,6 +139,7 @@ void CAN_output ( const output_data_t &x)
 
 void CAN_task_runnable( void *)
 {
+  delay(5000); // allow data aquisition setup
   while( true)
     {
       notify_take();

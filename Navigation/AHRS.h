@@ -14,10 +14,13 @@ typedef float ftype;
 #include "float3vector.h"
 #include "float3matrix.h"
 #include "integrator.h"
+#include "compass_calibration.h"
 
 #define SQR(x) ((x)*(x))
 #define SIN(x) arm_sin_f32(x)
 #include "pt2.h"
+
+extern const float NAV_INDUCTION[3];
 
 enum { ROLL, NICK, YAW};
 enum { FRONT, RIGHT, BOTTOM};
@@ -42,10 +45,6 @@ public:
 		  {
 		  }
 	void attitude_setup( const float3vector & acceleration, const float3vector & induction);
-
-	void update_compass(
-			const float3vector &gyro, const float3vector &acc, const float3vector &mag,
-			const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
 
 	void update_diff_GNSS( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		const float3vector &GNSS_acceleration,
@@ -145,9 +144,14 @@ public:
     return nick_angle_averager.get_output();
   }
 
+  const linear_least_square_fit<float> * get_magnetic_calibrator(void) const
+  {
+    return mag_calibrator;
+  }
 	quaternion<ftype>attitude;
 	float turn_rate;
 private:
+	void feed_compass_calibration(const float3vector &mag);
 	circle_state_t circle_state;
 	circle_state_t update_circling_state( const float3vector &gyro);
 	void update( const float3vector &acc, const float3vector &gyro, const float3vector &mag);
@@ -165,6 +169,8 @@ private:
 	unsigned circling_counter;
 	pt2<float,float> slip_angle_averager;
 	pt2<float,float> nick_angle_averager;
+	linear_least_square_fit<float> mag_calibrator[3];
+	compass_calibration_t compass_calibration;
 };
 
 #endif /* AHRS_H_ */

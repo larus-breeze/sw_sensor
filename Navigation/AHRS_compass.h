@@ -14,13 +14,11 @@ typedef float ftype;
 #include "float3vector.h"
 #include "float3matrix.h"
 #include "integrator.h"
-#include "Linear_Least_Square_Fit.h"
+#include "compass_calibration.h"
 
 #define SQR(x) ((x)*(x))
 #define SIN(x) arm_sin_f32(x)
 #include "pt2.h"
-
-typedef enum {VIRGIN, ACQUIRING, CALIBRATED, RE_ACQUIRING} compass_status_t;
 
 #define ANGLE_F_BY_FS ( 1.0 / 0.5f / 100.0f)      // 0.5s
 
@@ -32,7 +30,6 @@ class AHRS_compass_type
 public:
 	AHRS_compass_type(float sampling_time)
 		:
-		  compass_status( VIRGIN),
 		  Ts(sampling_time),
 		  Ts_div_2 (sampling_time / 2.0),
 		  gyro_integrator({0}),
@@ -145,8 +142,6 @@ public:
 	float turn_rate;
 private:
 	circle_state_t circle_state;
-	compass_status_t compass_status;
-	linear_least_square_fit<float> mag_calibrator[3];
 	circle_state_t update_circling_state( const float3vector &gyro);
 	void update( const float3vector &acc, const float3vector &gyro, const float3vector &mag);
 	float3vector nav_correction;
