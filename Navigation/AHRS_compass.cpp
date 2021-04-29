@@ -25,7 +25,14 @@
     // E=sin( deklin * pi/180) * sin( inklin * pi/180)
     // D=sin( inklin * pi/180)];
 
-extern compass_calibration_t *p_compass_calibration;
+void AHRS_compass_type::feed_compass_calibration (const float3vector &mag)
+{
+  float3vector expected_induction = nav2body * NAV_INDUCTION;
+
+  for (unsigned i = 0; i < 3; ++i)
+    mag_calibrator[i].add_value (expected_induction.e[i], mag.e[i]);
+}
+
 
 /**
  * @brief initial attitude setup from observables
@@ -120,17 +127,17 @@ void AHRS_compass_type::update( const float3vector &acc, const float3vector &gyr
 void AHRS_compass_type::update_compass(
 		const float3vector &gyro,
 		const float3vector &acc,
-		const float3vector &_mag,
+		const float3vector &mag_sensor,
 	   	const float3vector &GNSS_acceleration
 		)
 {
 	  float3vector mag;
-	  if( p_compass_calibration) // use calibration if available
+	  if( compass_calibration.isCalibrationDone()) // use calibration if available
 	    {
-	      mag = p_compass_calibration->calibrate(_mag);
+	      mag = compass_calibration.calibrate(mag_sensor);
 	    }
 	  else
-	    mag = _mag;
+	    mag = mag_sensor;
 
 	  float3vector nav_acceleration = body2nav * acc;
 	  float3vector nav_induction    = body2nav * mag;
@@ -146,8 +153,11 @@ void AHRS_compass_type::update_compass(
 	  // *******************************************************************************************************
 	  // calculate heading error depending on the present circling state
 	  // on state changes handle MAG auto calibration
-	  circle_state_t new_state = update_circling_state (gyro);
-	  switch( new_state)
+
+	  circle_state_t old_circle_state = circle_state;
+	  circle_state_t new_circle_state = update_circling_state (gyro);
+
+	  switch( new_circle_state)
 	  {
 	    case STRAIGHT_FLIGHT:
 	    {
@@ -167,8 +177,10 @@ void AHRS_compass_type::update_compass(
         	    nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
 		  - nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
 
-              nav_correction[DOWN]  =   cross_correction * CROSS_GAIN; // no MAG use here !
-              nav_correction[DOWN] = 0.5f * (nav_correction[DOWN] + nav_induction[EAST] * M_H_GAIN);
+	      if( ! compass_calibration.isCalibrationDone())
+		nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG use here !
+	      else // also use mag if it has been calibrated
+		nav_correction[DOWN] = 0.5f * (cross_correction * CROSS_GAIN + nav_induction[EAST] * M_H_GAIN);
 
 	      gyro_correction = nav2body * nav_correction;
 
@@ -196,5 +208,19 @@ void AHRS_compass_type::update_compass(
 
 	  // feed quaternion update with corrected sensor readings
 	  update (acc, gyro + gyro_correction, mag);
+
+	  if (new_circle_state == CIRCLING) // only here we get fresh magnetic information
+	    {
+	      if( old_circle_state == TRANSITION)
+		  for (unsigned i = 0; i < 3; ++i)
+		      mag_calibrator[i].reset();
+
+	      feed_compass_calibration (mag_sensor);
+	    }
+	  else if (old_circle_state == CIRCLING) // coming out of circling
+	    {
+	      compass_calibration.set_calibration( mag_calibrator);
+	    }
+
 }
 

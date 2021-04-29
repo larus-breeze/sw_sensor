@@ -19,10 +19,13 @@ public:
     scale( 1.0f / slope),
     variance ( 1.0e10f)
   {}
-
+  bool is_initialized( void) const
+  {
+    return variance < 1.0e9f;
+  }
   void refresh ( float _offset, float slope, float _variance)
     {
-      if( variance > 1.0e9f) // first calibration coming in
+    if( ! is_initialized()) // first calibration coming in
 	{
 	  offset = _offset;
 	  scale = 1.0f / slope;
@@ -96,6 +99,11 @@ public:
       }
 
     calibration_done = true; // at least one calibration done now
+  }
+
+  bool isCalibrationDone () const
+  {
+    return calibration_done;
   }
 
 private:

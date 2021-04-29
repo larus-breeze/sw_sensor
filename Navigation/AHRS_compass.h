@@ -141,6 +141,7 @@ public:
 	quaternion<ftype>attitude;
 	float turn_rate;
 private:
+	void feed_compass_calibration(const float3vector &mag);
 	circle_state_t circle_state;
 	circle_state_t update_circling_state( const float3vector &gyro);
 	void update( const float3vector &acc, const float3vector &gyro, const float3vector &mag);
@@ -158,6 +159,8 @@ private:
 	unsigned circling_counter;
 	pt2<float,float> slip_angle_averager;
 	pt2<float,float> nick_angle_averager;
+	linear_least_square_fit<float> mag_calibrator[3];
+	compass_calibration_t compass_calibration;
 };
 
 #endif /* AHRS_COMPASS_H_ */

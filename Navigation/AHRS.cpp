@@ -19,8 +19,6 @@
 #define HIGH_TURN_RATE 0.15 		//!< turn rate high limit
 #define LOW_TURN_RATE  0.0707 		//!< turn rate low limit
 
-COMMON compass_calibration_t *p_compass_calibration=0;
-
 /**
  * @brief initial attitude setup from observables
  */
@@ -169,7 +167,6 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro, const float3vector &acc,
 
   update (acc, gyro + gyro_correction, mag);
 
-
   if (circle_state == CIRCLING) // only here we get fresh magnetic information
     {
       if( old_circle_state == TRANSITION)
@@ -181,7 +178,6 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro, const float3vector &acc,
   else if (old_circle_state == CIRCLING) // coming out of circling
     {
       compass_calibration.set_calibration( mag_calibrator);
-      p_compass_calibration = &compass_calibration;
     }
 }
 
