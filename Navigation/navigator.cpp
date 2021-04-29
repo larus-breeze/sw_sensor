@@ -6,7 +6,7 @@
 
 #include <navigator.h>
 
-ROM float NAV_INDUCTION[3] = { 0.407, 0.021f, 0.9135f};
+ROM float NAV_INDUCTION[3] = { 0.407, -0.021f, 0.9135f};
 
 // to be called at 100 Hz
 void navigator_t::update_IMU (

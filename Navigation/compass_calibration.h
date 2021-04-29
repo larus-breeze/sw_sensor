@@ -22,7 +22,7 @@ public:
 
   void refresh ( float _offset, float slope, float _variance)
     {
-      if( variance < 1.0e9f) // first calibration coming in
+      if( variance > 1.0e9f) // first calibration coming in
 	{
 	  offset = _offset;
 	  scale = 1.0f / slope;

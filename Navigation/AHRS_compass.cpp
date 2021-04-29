@@ -168,6 +168,8 @@ void AHRS_compass_type::update_compass(
 		  - nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
 
               nav_correction[DOWN]  =   cross_correction * CROSS_GAIN; // no MAG use here !
+              nav_correction[DOWN] = 0.5f * (nav_correction[DOWN] + nav_induction[EAST] * M_H_GAIN);
+
 	      gyro_correction = nav2body * nav_correction;
 
 	      // don't update integrator but use it
