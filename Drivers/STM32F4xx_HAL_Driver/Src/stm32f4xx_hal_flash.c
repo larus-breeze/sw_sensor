@@ -76,7 +76,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
-#include "common.h"
+#include "embedded_memory.h"
 
 /** @addtogroup STM32F4xx_HAL_Driver
   * @{

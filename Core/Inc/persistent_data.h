@@ -2,6 +2,7 @@
 #define INC_PERSISTENT_DATA_H_
 
 #include "stdint.h"
+
 typedef union
   {
     uint16_t u16;
@@ -17,7 +18,7 @@ public:
   EEPROM_data_t value;
 };
 
-typedef enum EEPROM_PARAMETER_ID
+enum EEPROM_PARAMETER_ID
 {
   BOARD_ID = 0,
 
@@ -51,6 +52,6 @@ typedef enum EEPROM_PARAMETER_ID
   EEPROM_PARAMETER_ID_END // 1 behind last parameter ID
 };
 
-float EEPROM_to_value( EEPROM_PARAMETER_ID id, EEPROM_data_t value);
+bool read_persistent_value( EEPROM_PARAMETER_ID id, float &value);
 
 #endif /* INC_PERSISTENT_DATA_H_ */

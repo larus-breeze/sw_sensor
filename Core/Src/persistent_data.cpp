@@ -1,6 +1,7 @@
-#include "persistent_data.h"
-#include "embedded_memory.h"
+#include "system_configuration.h"
 #include "my_assert.h"
+#include "eeprom.h"
+#include "embedded_memory.h"
 #include "persistent_data.h"
 
 #define M_PI 3.14159265358979323846f
@@ -37,53 +38,104 @@ ROM persistent_data_t persistent_data[]=
 	{ANT_RIGHT,	"ANT_RIGHT", 0},	//! Slave DGNSS antenna right angle  signed / ( pi / 32768)
     };
 
-float EEPROM_to_value( EEPROM_PARAMETER_ID id, EEPROM_data_t value)
+#define READ true
+#define WRITE false
+
+bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float & value , bool read )
 {
   switch(id)
   {
     case BOARD_ID:
-	return (float)value.u16;
+      if( read)
+	value = (float)EEPROM_value.u16;
+      else
+	EEPROM_value.u16 = (uint16_t)value;
       break;
     case SENS_TILT_ROLL:
     case SENS_TILT_NICK:
     case SENS_TILT_YAW:
-	return (float)value.i16 / 32768.0f;
+      if( read)
+	value = (float)EEPROM_value.i16 / 32768.0f;
+      else
+	EEPROM_value.i16 = (int16_t)(value * 32768.0f);
       break;
     case QNH_DELTA:
     case PITOT_OFFSET:
-	return ( float)value.i16;
+      if( read)
+	value = ( float)EEPROM_value.i16;
+      else
+	EEPROM_value.i16 = (int16_t)value;
       break;
     case PITOT_SPAN:
     case MAG_X_GAIN:
     case MAG_Y_GAIN:
     case MAG_Z_GAIN:
-	return ( (float)value.i16 / 32768.0f) + 1.0f;
+      if( read)
+	value = ( (float)EEPROM_value.i16 / 32768.0f) + 1.0f;
+      else
+	EEPROM_value.i16 = (int16_t)((value - 1.0f) * 32768.0f);
       break;
     case MAG_VARIANCE:
-	return (float)value.u16 / 65536.0f * 1e-5f;
+      if( read)
+	value = (float)EEPROM_value.u16 / 65536.0f * 1e-5f;
+      else
+	EEPROM_value.u16 = (uint16_t)(value * 1e5f * 65536.0f);
       break;
     case MAG_X_OFF:
     case MAG_Y_OFF:
     case MAG_Z_OFF:
-	return ( (float)value.i16 / 3276.8f) + 1.0f;
+      if( read)
+	value = ( (float)EEPROM_value.i16 / 3276.8f) + 1.0f;
+      else
+	EEPROM_value.i16 = (uint16_t)(value - 1.0f * 3276.8f);
       break;
     case DEKLINATION:
     case INKLINATION:
     case ANT_DOWN:
     case ANT_RIGHT:
-	return ( (float)value.i16 / 32768.0f) * M_PI;
+      if( read)
+	value = ( (float)EEPROM_value.i16 / 32768.0f) * M_PI;
+      else
+	EEPROM_value.i16 = (int16_t)(value / M_PI * 32768.0f);
       break;
     case VARIO_TC:
     case VARIO_INT_TC:
     case WIND_TC:
     case MEAN_WIND_TC:
-	return (float)value.u16 / 655.36f;
+      if( read)
+	value = (float)EEPROM_value.u16 / 655.36f;
+      else
+	EEPROM_value.u16 = (uint16_t)(value * 655.36f);
       break;
+    case EEPROM_PARAMETER_ID_END:
     default:
-	ASSERT(0);
-	return 0;
+	return true; // error
       break;
   }
+  return false; // OK
 }
 
+bool lock_EEPROM( bool lockit)
+{
+  if( lockit)
+    return HAL_FLASH_Lock();
 
+  HAL_FLASH_Unlock();
+  return (EE_Init());
+}
+
+bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float &value)
+{
+  EEPROM_data_t EEPROM_value;
+  if( EEPROM_convert( id, EEPROM_value, value , WRITE))
+      return true; // error
+  return EE_WriteVariable( id, EEPROM_value.u16);
+}
+
+bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value)
+{
+  uint16_t data;
+  if( 0 == EE_ReadVariable( id, (uint16_t*)&data))
+    return false;
+  return ( EEPROM_convert( id, (EEPROM_data_t &)data, value , READ));
+}

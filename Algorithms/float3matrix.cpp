@@ -38,3 +38,17 @@ float3vector float3matrix::operator *( const float3vector& right) const
 	return ret;
 }
 
+float3matrix float3matrix::operator *( const float3matrix& right) const
+{
+	float3matrix ret;
+	arm_matrix_instance_f32 ret_ami;
+	ret_ami.numCols=3;
+	ret_ami.numRows=3;
+	ret_ami.pData=(float32_t *)(ret.e);
+	arm_matrix_instance_f32 input;
+	input.numCols=3;
+	input.numRows=3;
+	input.pData=(float *)(right.e);
+	(void)arm_mat_mult_f32( &ami, &input, &ret_ami);
+	return ret;
+}

@@ -12,7 +12,7 @@
 #include "matrix.h"
 #include "float3vector.h"
 
-//! matrix of 3 float values
+//! matrix of 3 * 3 float values
 class float3matrix: public matrix<float, 3>
 {
 //friend class float3vector;
@@ -26,6 +26,7 @@ public:
 		}
 	void transpose( float3matrix &result);
 	float3vector operator *( const float3vector& right) const;
+	float3matrix operator *( const float3matrix& right) const;
 private:
 	arm_matrix_instance_f32 ami;
 };

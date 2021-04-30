@@ -17,24 +17,18 @@
 
 void sync_logger(void);
 
-COMMON output_data_t __ALIGNED(1024) output_data =  { 0 };
+COMMON output_data_t __ALIGNED(1024) output_data =  {{0}};
 COMMON GNSS_type GNSS (output_data.c);
 
 #ifdef DKCOM
 ROM float SENSOR_MAPPING_MATRIX[] =
 {
-#if 1
 	-0.9914f, +0.0f, -0.13f,
 	+0.0f,  -1.0f,   +0.0f,
 	-0.13f, +0.0f,   +.9914f
-#else
-	-1.0f, +0.0f, -0.0f,
-	+0.0f, -1.0f, +0.0f,
-	-0.0f, +0.0f, +1.0f
-#endif
 };
 #else
-ROM float SENSOR_MAPPING_MATRIX[] =
+ROM float SENSOR_MAPPING_MATRIX[] = // mapping front left up into front right down
 {
 	+1.0f, +0.0f, +0.0f,
 	+0.0f, -1.0f, +0.0f,
@@ -42,18 +36,12 @@ ROM float SENSOR_MAPPING_MATRIX[] =
     };
 #endif
 
-ROM float ACC_OFFSET_INIT[] = { 0.0f, 0.0f, 0.0f,};
-
-ROM float MAG_OFFSET_INIT[] = { 0.0f, 0.0f, 0.0f,};
-
-
 void communicator_runnable (void*)
 {
   navigator_t navigator;
-  float3matrix SENSOR_MAPPING = (float *)SENSOR_MAPPING_MATRIX;
+  float3matrix sensor_mapping = (float *)SENSOR_MAPPING_MATRIX;
   float3vector acc, mag, gyro;
-  float3vector ACC_OFFSET = ACC_OFFSET_INIT;
-  float3vector MAG_OFFSET = MAG_OFFSET_INIT;
+
 #if RUN_CAN_OUTPUT == 1
   uint8_t count_10Hz = 1; // de-synchronize CAN output by 1 cycle
 #endif
@@ -98,10 +86,11 @@ void communicator_runnable (void*)
 #endif
 	  navigator.update_GNSS( GNSS.coordinates);
 	}
+
       // rotate sensor coordinates into airframe coordinates
-      acc  = SENSOR_MAPPING * ( output_data.m.acc - ACC_OFFSET);
-      mag  = SENSOR_MAPPING * ( output_data.m.mag - MAG_OFFSET);
-      gyro = SENSOR_MAPPING *   output_data.m.gyro; // offset auto-compensated by AHRS
+      acc  = sensor_mapping * output_data.m.acc;
+      mag  = sensor_mapping * output_data.m.mag;
+      gyro = sensor_mapping * output_data.m.gyro;
 
       navigator.update_IMU ( acc, mag, gyro);
 
@@ -135,7 +124,7 @@ static TaskParameters_t p =
       stack_buffer,
     {
       { COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
-      { 0, 0, 0 },
+      { (void *)0x80f8000, 0x10000, portMPU_REGION_READ_WRITE }, // EEPROM access
       { 0, 0, 0 }
     }
   };
