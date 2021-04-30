@@ -26,7 +26,7 @@ public:
   windspeed_averager_NORTH( WIND_SHORTTERM_F_BY_FS),
   windspeed_averager_EAST( WIND_SHORTTERM_F_BY_FS),
   kinetic_energy_differentiator( 1.0f, 1.0f / 100.0f),
-  KalmanVario_GNSS( 0.0f, 0.0f,0.0f, -9.81f),
+  KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, -9.81f),
   KalmanVario_pressure( 0.0f, 0.0f, 0.0f, -9.81f)
   {
   };
