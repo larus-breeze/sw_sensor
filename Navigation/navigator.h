@@ -87,8 +87,6 @@ private:
   AHRS_type 		ins;
   AHRS_compass_type	ins_magnetic;
 
-  void calibrate_compass( void);
-
   atmosphere_t 		atmosphere;
   float 		pitot_pressure;
   float 		TAS;

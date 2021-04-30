@@ -6,7 +6,8 @@
 
 #include <navigator.h>
 
-ROM float NAV_INDUCTION[3] = { 0.407, -0.021f, 0.9135f};
+ROM float NAV_INDUCTION_INIT[3]={ 0.407f, -0.021f, 0.9135f};
+COMMON float3vector nav_induction(NAV_INDUCTION_INIT);
 
 // to be called at 100 Hz
 void navigator_t::update_IMU (
@@ -37,13 +38,6 @@ void navigator_t::update_IMU (
       atmosphere.get_altitude(),
       TAS);
 }
-#if 1
-
-//! check compass calibrator state and eventually update calibration
-void navigator_t::calibrate_compass (void)
-{
-
-}
 
 // to be called at 10 Hz
 void navigator_t::update_GNSS (const coordinates_t &coordinates)
@@ -64,21 +58,6 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
 			   ins.get_euler ().y,
 			   ins.get_circling_state ());
 }
-#else
-// to be called at 10 Hz
-void navigator_t::update_GNSS_old (const coordinates_t &coordinates, float3vector acceleration)
-{
-  GNSS_velocity 	= coordinates.velocity;
-  GNSS_acceleration	= acceleration;
-  GNSS_heading 		= coordinates.relPosHeading;
-  GNSS_altitude 	= coordinates.position.e[DOWN]; // negative altitude
-  GNSS_speed 		= coordinates.speed_motion;
-
-  vario_integrator.update (flight_observer.get_vario_GNSS(),
-			   ins.get_euler ().y,
-			   ins.get_circling_state ());
-}
-#endif
 
 void navigator_t::report_data(output_data_t &d)
 {

@@ -27,7 +27,7 @@
 
 void AHRS_compass_type::feed_compass_calibration (const float3vector &mag)
 {
-  float3vector expected_induction = nav2body * NAV_INDUCTION;
+  float3vector expected_induction = nav2body * nav_induction;
 
   for (unsigned i = 0; i < 3; ++i)
     mag_calibrator[i].add_value (expected_induction.e[i], mag.e[i]);
@@ -55,7 +55,7 @@ void AHRS_compass_type::attitude_setup( const float3vector & acceleration, const
 	north.normalize();
 
 	// create rotation matrix from unity direction vectors
-	float fcoordinates[]=
+	float fcoordinates[3][3]=
 	{
 			north.e[0], north.e[1], north.e[2],
 			 east.e[0],  east.e[1],  east.e[2],

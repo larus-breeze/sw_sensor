@@ -36,11 +36,26 @@ ROM float SENSOR_MAPPING_MATRIX[] = // mapping front left up into front right do
     };
 #endif
 
+ROM float UNITY_MATRIX[3][3]=
+{
+  {1.0f, 0.0f, 0.0f},
+  {0.0f, 1.0f, 0.0f},
+  {0.0f, 0.0f, 1.0f}
+};
+
 void communicator_runnable (void*)
 {
   navigator_t navigator;
-  float3matrix sensor_mapping = (float *)SENSOR_MAPPING_MATRIX;
+  float3matrix sensor_mapping;
   float3vector acc, mag, gyro;
+
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic push
+  {
+    float3matrix right; // start with unity matrix;
+    float3matrix rotation( UNITY_MATRIX);
+  }
+#pragma GCC diagnostic pop
 
 #if RUN_CAN_OUTPUT == 1
   uint8_t count_10Hz = 1; // de-synchronize CAN output by 1 cycle

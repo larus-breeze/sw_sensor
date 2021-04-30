@@ -17,9 +17,12 @@ template <class datatype, int size> class matrix
 public:
 //! default constructor creates unity matrix
    matrix();
-//! constructor from array data
-//! elements are assumed to come line by line
-   matrix( datatype * data);
+   //! constructor from array data
+   //! elements are assumed to come line by line
+   matrix( const datatype *data=0);
+      //! constructor from array data
+      //! elements are assumed to come line by line
+   matrix( const datatype data[size][size]);
 //! copy constructor
    matrix( const matrix & right);
 
@@ -47,14 +50,26 @@ template <class datatype, int size> matrix <datatype, size>::matrix()
          e[i][k]=(i==k) ? 1.0 : 0.0;
    }
 
-template <class datatype, int size> matrix <datatype, size>::matrix( datatype * data)
-   {
-	if( data ==0)
-		return; // dangerous: matrix will NOT be initialized!
-	for( int k=0; k<size; ++k)
-      for( int i=0; i<size; ++i)
-         e[k][i]=*data++;
-   }
+template<class datatype, int size>
+  matrix<datatype, size>::matrix (const datatype data[size][size])
+  {
+  for (int k = 0; k < size; ++k)
+    for (int i = 0; i < size; ++i)
+      e[k][i] = data[k][i];
+  }
+
+template<class datatype, int size>
+  matrix<datatype, size>::matrix (const datatype *data)
+  {
+    if (data == 0) // create unity matrix if no initialization
+      for (int k = 0; k < size; ++k)
+        for (int i = 0; i < size; ++i)
+  	e[k][i] = i==k ? 1.0 : 0.0;
+    else
+      for (int k = 0; k < size; ++k)
+	for (int i = 0; i < size; ++i)
+	  e[k][i] = *data++;
+  }
    
 // copy constructor
 template <class datatype, int size> matrix <datatype, size>::matrix( const matrix <datatype, size> & right)

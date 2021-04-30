@@ -20,7 +20,7 @@ typedef float ftype;
 #define SIN(x) arm_sin_f32(x)
 #include "pt2.h"
 
-extern const float NAV_INDUCTION[3];
+extern float3vector nav_induction;
 
 enum { ROLL, NICK, YAW};
 enum { FRONT, RIGHT, BOTTOM};

@@ -82,7 +82,7 @@ AHRS_type::update_circling_state (const float3vector &gyro)
 void
 AHRS_type::feed_compass_calibration (const float3vector &mag)
 {
-  float3vector expected_induction = nav2body * NAV_INDUCTION;
+  float3vector expected_induction = nav2body * nav_induction;
 
   for (unsigned i = 0; i < 3; ++i)
     mag_calibrator[i].add_value (expected_induction.e[i], mag.e[i]);

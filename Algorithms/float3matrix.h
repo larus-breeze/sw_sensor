@@ -17,7 +17,14 @@ class float3matrix: public matrix<float, 3>
 {
 //friend class float3vector;
 public:
-	float3matrix( float *init=0):
+	float3matrix( const float *init=0):
+		matrix<float, 3>( init)
+		{
+			ami.numCols=3;
+			ami.numRows=3;
+			ami.pData=(float*)matrix<float, 3>::e;
+		}
+	float3matrix( const float init[3][3]):
 		matrix<float, 3>( init)
 		{
 			ami.numCols=3;
