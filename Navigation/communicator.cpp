@@ -17,45 +17,24 @@
 
 void sync_logger(void);
 
-COMMON output_data_t __ALIGNED(1024) output_data =  {{0}};
+COMMON output_data_t __ALIGNED(1024) output_data =  {0};
 COMMON GNSS_type GNSS (output_data.c);
-
-#ifdef DKCOM
-ROM float SENSOR_MAPPING_MATRIX[] =
-{
-	-0.9914f, +0.0f, -0.13f,
-	+0.0f,  -1.0f,   +0.0f,
-	-0.13f, +0.0f,   +.9914f
-};
-#else
-ROM float SENSOR_MAPPING_MATRIX[] = // mapping front left up into front right down
-{
-	+1.0f, +0.0f, +0.0f,
-	+0.0f, -1.0f, +0.0f,
-	+0.0f, +0.0f, -1.0f
-    };
-#endif
-
-ROM float UNITY_MATRIX[3][3]=
-{
-  {1.0f, 0.0f, 0.0f},
-  {0.0f, 1.0f, 0.0f},
-  {0.0f, 0.0f, 1.0f}
-};
 
 void communicator_runnable (void*)
 {
   navigator_t navigator;
-  float3matrix sensor_mapping;
   float3vector acc, mag, gyro;
 
-#pragma GCC diagnostic ignored "-Wpedantic"
-#pragma GCC diagnostic push
+  float3matrix sensor_mapping;
   {
-    float3matrix right; // start with unity matrix;
-    float3matrix rotation( UNITY_MATRIX);
+  quaternion<float> q;
+#ifdef DKCOM
+  q.from_euler(0.0f, -0.13f, 3.14159265f);
+#else
+  q.from_euler(3.14159265f, 0.0f, 0.0f); // todo assuming sensor looking x forward
+#endif
+  q.get_rotation_matrix(sensor_mapping);
   }
-#pragma GCC diagnostic pop
 
 #if RUN_CAN_OUTPUT == 1
   uint8_t count_10Hz = 1; // de-synchronize CAN output by 1 cycle

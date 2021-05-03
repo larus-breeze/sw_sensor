@@ -35,18 +35,14 @@ public:
 	//! normalize quaternion absolute value to 1.0
 	inline void normalize(void)
 	{
-		datatype tmp = vector<datatype, 4>::e[0] * vector<datatype, 4>::e[0]
-		             + vector<datatype, 4>::e[1] * vector<datatype, 4>::e[1]
-		             + vector<datatype, 4>::e[2] * vector<datatype, 4>::e[2]
-		             + vector<datatype, 4>::e[3] * vector<datatype, 4>::e[3] ;
-#if QUATERNION_NORMALIZE_FAST == 1
-		tmp = 1.0 - ((tmp - 1.0) / 2.0);
-#else
-		tmp = 1 / tmp;
-		tmp = VSQRTF( tmp);
-#endif
-		for( int i = 0; i < 4; ++i)
-			vector<datatype, 4>::e[i] *= tmp;
+	  datatype tmp = vector<datatype, 4>::e[0] * vector<datatype, 4>::e[0]
+		       + vector<datatype, 4>::e[1] * vector<datatype, 4>::e[1]
+		       + vector<datatype, 4>::e[2] * vector<datatype, 4>::e[2]
+		       + vector<datatype, 4>::e[3] * vector<datatype, 4>::e[3] ;
+	  tmp = 1.0 / tmp;
+	  tmp = VSQRTF( tmp);
+	  for( int i = 0; i < 4; ++i)
+		  vector<datatype, 4>::e[i] *= tmp;
 	};
 
 	//! quaternion -> euler angle transformation

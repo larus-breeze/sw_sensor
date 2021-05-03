@@ -143,8 +143,8 @@ data_logger_runnable (void*)
   while(true)
     {
       UINT bytesread;
-      fresult = f_read(&infile, (void *)&output_data, 94*4, &bytesread); // todo PATCH
-      if( ! (fresult == FR_OK) && (bytesread == 94*4)) // probably end of file
+      fresult = f_read(&infile, (void *)&output_data, 46*4, &bytesread); // todo PATCH
+      if( ! (fresult == FR_OK) && (bytesread == 46*4)) // probably end of file
 	{
 	      f_close(&fp);
 	      suspend();

@@ -6,8 +6,8 @@
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
-#define INFILE "simin210404.f94" // switches on offline calculation and defines filename
-#define OUTFILE "simout210404.f97"
+#define INFILE "20210502.f46" // switches on offline calculation and defines filename
+#define OUTFILE "simout210502.f97"
 
 #define DKCOM 1
 
