@@ -27,13 +27,9 @@ void communicator_runnable (void*)
 
   float3matrix sensor_mapping;
   {
-  quaternion<float> q;
-#ifdef DKCOM
-  q.from_euler(0.0f, -0.13f, 3.14159265f);
-#else
-  q.from_euler(3.14159265f, 0.0f, 0.0f); // todo assuming sensor looking x forward
-#endif
-  q.get_rotation_matrix(sensor_mapping);
+    quaternion<float> q;
+    q.from_euler( configuration( SENS_TILT_ROLL), configuration( SENS_TILT_NICK), configuration( SENS_TILT_YAW));
+    q.get_rotation_matrix(sensor_mapping);
   }
 
 #if RUN_CAN_OUTPUT == 1

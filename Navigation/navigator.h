@@ -23,8 +23,8 @@ public:
 	:ins (0.01f),
 	 ins_magnetic (0.01f),
 	 atmosphere (101325.0f),
-	 vario_integrator( AVG_VARIO_F_BY_FS),
-	 wind_observer( WIND_AVG_F_BY_FS)
+	 vario_integrator( configuration( VARIO_INT_TC)),
+	 wind_observer( configuration( MEAN_WIND_TC))
   {};
 
   void report_data( output_data_t &d);

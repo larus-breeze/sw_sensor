@@ -129,24 +129,25 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro, const float3vector &acc,
 {
   float3vector nav_acceleration = body2nav * acc;
 
-  float heading_gnss_work = GNSS_heading
-      + ALTI_DIFF * sinf (euler.r) - HORIZ_DIFF;
-  heading_gnss_work = heading_gnss_work - euler.y;
+  float heading_gnss_work = GNSS_heading	// correct for antenna alignment
+      + antenna_DOWN_correction  * sinf (euler.r)
+      - antenna_RIGHT_correction * cosf (euler.r);
 
-  if (heading_gnss_work > M_PI) // map into { -PI PI}
-    heading_gnss_work -= 2 * M_PI;
-  if (heading_gnss_work < -M_PI)
-    heading_gnss_work += 2 * M_PI;
+  heading_gnss_work = heading_gnss_work - euler.y; // = heading difference D-GNSS - AHRS
 
-  if (heading_gnss_work > 1.0) // limit to +/- 1.0
-    heading_gnss_work = 1.0;
-  else if (heading_gnss_work < -1.0)
-    heading_gnss_work = -1.0;
+  if (heading_gnss_work > M_PI_F) // map into { -PI PI}
+    heading_gnss_work -= 2.0f * M_PI_F;
+  if (heading_gnss_work < -M_PI_F)
+    heading_gnss_work += 2.0f * M_PI_F;
 
-  nav_correction[NORTH] = -nav_acceleration.e[EAST] + GNSS_acceleration.e[EAST];
-  nav_correction[EAST] = +nav_acceleration.e[NORTH]
-      - GNSS_acceleration.e[NORTH];
-  nav_correction[DOWN] = heading_gnss_work * H_GAIN;
+  if (heading_gnss_work > 1.0f) // limit to +/- 1.0
+    heading_gnss_work = 1.0f;
+  else if (heading_gnss_work < -1.0f)
+    heading_gnss_work = -1.0f;
+
+  nav_correction[NORTH] = - nav_acceleration.e[EAST]  + GNSS_acceleration.e[EAST];
+  nav_correction[EAST]  = + nav_acceleration.e[NORTH] - GNSS_acceleration.e[NORTH];
+  nav_correction[DOWN]  =   heading_gnss_work * H_GAIN;
 
   gyro_correction = nav2body * nav_correction;
   gyro_correction *= P_GAIN;

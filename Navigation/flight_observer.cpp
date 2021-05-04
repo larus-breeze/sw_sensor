@@ -23,12 +23,16 @@ void flight_observer_t::update (
     float TAS
   )
 {
+#if USE_DELAY_FOR_WIND_MEASUREMENT
   float gnss_velocity_delayed_N = GNSS_velocity_delay_N.respond(gnss_velocity.e[NORTH]);
   float gnss_velocity_delayed_E = GNSS_velocity_delay_E.respond(gnss_velocity.e[EAST]);
 
   windspeed_averager_NORTH.respond( gnss_velocity_delayed_N - air_velocity.e[NORTH]);
   windspeed_averager_EAST .respond( gnss_velocity_delayed_E - air_velocity.e[EAST]);
-
+#else
+  windspeed_averager_NORTH.respond( gnss_velocity.e[NORTH] - air_velocity.e[NORTH]);
+  windspeed_averager_EAST .respond( gnss_velocity.e[EAST] - air_velocity.e[EAST]);
+#endif
   // non TEC compensated vario, negative if *climbing* !
   vario_uncompensated_GNSS = KalmanVario_GNSS.update ( GNSS_altitude, ahrs_acceleration.e[DOWN]);
   vario_uncompensated_pressure = KalmanVario_pressure.update ( pressure_altitude, ahrs_acceleration.e[DOWN]);

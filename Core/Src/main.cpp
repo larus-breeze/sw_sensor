@@ -117,6 +117,11 @@ int main(void)
   MX_FATFS_Init();
   MX_ADC1_Init();
 
+#if WRITE_EEPROM_DEFAULTS
+  void write_EEPROM_defaults( void);
+  write_EEPROM_defaults();
+#endif
+
   asm("b vTaskStartScheduler"); // point of no return
 }
 

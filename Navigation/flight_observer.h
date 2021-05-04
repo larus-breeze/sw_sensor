@@ -21,10 +21,10 @@ class flight_observer_t
 public:
   flight_observer_t( void)
   :
-  vario_averager_pressure( VARIO_F_BY_FS),
-  vario_averager_GNSS( VARIO_F_BY_FS),
-  windspeed_averager_NORTH( WIND_SHORTTERM_F_BY_FS),
-  windspeed_averager_EAST( WIND_SHORTTERM_F_BY_FS),
+  vario_averager_pressure( configuration( VARIO_TC)),
+  vario_averager_GNSS( configuration( VARIO_TC)),
+  windspeed_averager_NORTH( configuration( WIND_TC)),
+  windspeed_averager_EAST( configuration( WIND_TC)),
   kinetic_energy_differentiator( 1.0f, 1.0f / 100.0f),
   KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, -9.81f),
   KalmanVario_pressure( 0.0f, 0.0f, 0.0f, -9.81f)
@@ -98,9 +98,10 @@ private:
 	float vario_uncompensated_GNSS;
 	float vario_uncompensated_pressure;
 
+#if USE_DELAY_FOR_WIND_MEASUREMENT
 	delay_line<float, SAT_DELAY_FOR_WIND> GNSS_velocity_delay_N;
 	delay_line<float, SAT_DELAY_FOR_WIND> GNSS_velocity_delay_E;
-
+#endif
 	KalmanVario_t KalmanVario_GNSS;
 	KalmanVario_t KalmanVario_pressure;
 };

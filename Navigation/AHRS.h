@@ -16,6 +16,8 @@ typedef float ftype;
 #include "integrator.h"
 #include "compass_calibration.h"
 
+#define M_PI_F 3.14159265358979323846f
+
 #define SQR(x) ((x)*(x))
 #define SIN(x) arm_sin_f32(x)
 #include "pt2.h"
@@ -41,7 +43,9 @@ public:
 		  gyro_integrator({0}),
 		  circling_counter(0),
 		  slip_angle_averager( ANGLE_F_BY_FS),
-		  nick_angle_averager( ANGLE_F_BY_FS)
+		  nick_angle_averager( ANGLE_F_BY_FS),
+		  antenna_DOWN_correction(  configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH)),
+		  antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH))
 		  {
 		  }
 	void attitude_setup( const float3vector & acceleration, const float3vector & induction);
@@ -171,6 +175,8 @@ private:
 	pt2<float,float> nick_angle_averager;
 	linear_least_square_fit<float> mag_calibrator[3];
 	compass_calibration_t compass_calibration;
+	float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
+	float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
 };
 
 #endif /* AHRS_H_ */

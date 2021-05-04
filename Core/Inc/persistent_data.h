@@ -3,6 +3,8 @@
 
 #include "stdint.h"
 
+#ifdef __cplusplus
+
 typedef union
   {
     uint16_t u16;
@@ -46,12 +48,19 @@ enum EEPROM_PARAMETER_ID
   WIND_TC,
   MEAN_WIND_TC,
 
-  ANT_DOWN=40,
-  ANT_RIGHT,
+  ANT_BASELENGTH=40,
+  ANT_SLAVE_DOWN,
+  ANT_SLAVE_RIGHT,
 
   EEPROM_PARAMETER_ID_END // 1 behind last parameter ID
 };
 
-bool read_persistent_value( EEPROM_PARAMETER_ID id, float &value);
+// standard function to read configratin data rem EEPROM
+float configuration( EEPROM_PARAMETER_ID id);
+bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value);
+bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value);
+bool lock_EEPROM( bool lockit);
+
+#endif ///#ifdef __cplusplus
 
 #endif /* INC_PERSISTENT_DATA_H_ */

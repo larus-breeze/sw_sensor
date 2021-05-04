@@ -4,7 +4,7 @@
 #include "embedded_memory.h"
 #include "persistent_data.h"
 
-#define M_PI 3.14159265358979323846f
+#define M_PI_F 3.14159265358979323846f
 
 ROM persistent_data_t persistent_data[]=
     {
@@ -34,8 +34,9 @@ ROM persistent_data_t persistent_data[]=
 	{WIND_TC,	"Wind_TC", 0},	 	//! Wind fast time constant unsigned s / ( 100.0f / 65536 )
 	{MEAN_WIND_TC,	"Mean_Wind_TC", 0},	//! Wind slow time constant unsigned s / ( 100.0f / 65536 )
 
-	{ANT_DOWN,	"ANT_DOWN", 0},		//! Slave DGNSS antenna down angle signed / ( pi / 32768)
-	{ANT_RIGHT,	"ANT_RIGHT", 0},	//! Slave DGNSS antenna right angle  signed / ( pi / 32768)
+	{ANT_BASELENGTH, "ANT_BASELEN", 0},	//! Slave DGNSS antenna baselength / mm
+	{ANT_SLAVE_DOWN, "ANT_SLAVE_DOWN", 0},	//! Slave DGNSS antenna lower / mm
+	{ANT_SLAVE_RIGHT,"ANT_SLAVE_RIGHT", 0},	//! Slave DGNSS antenna more right /mm
     };
 
 #define READ true
@@ -50,14 +51,6 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	value = (float)EEPROM_value.u16;
       else
 	EEPROM_value.u16 = (uint16_t)value;
-      break;
-    case SENS_TILT_ROLL:
-    case SENS_TILT_NICK:
-    case SENS_TILT_YAW:
-      if( read)
-	value = (float)EEPROM_value.i16 / 32768.0f;
-      else
-	EEPROM_value.i16 = (int16_t)(value * 32768.0f);
       break;
     case QNH_DELTA:
     case PITOT_OFFSET:
@@ -89,14 +82,24 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       else
 	EEPROM_value.i16 = (uint16_t)(value - 1.0f * 3276.8f);
       break;
+    case ANT_BASELENGTH: // max +/- 32.768 m
+    case ANT_SLAVE_DOWN:
+    case ANT_SLAVE_RIGHT:
+      if( read)
+	value = (float)EEPROM_value.i16 * 0.001f;
+      else
+	EEPROM_value.i16 = (int16_t)(value * 1000.0f);
+      break;
+      break;
     case DEKLINATION:
     case INKLINATION:
-    case ANT_DOWN:
-    case ANT_RIGHT:
+    case SENS_TILT_ROLL:
+    case SENS_TILT_NICK:
+    case SENS_TILT_YAW:
       if( read)
-	value = ( (float)EEPROM_value.i16 / 32768.0f) * M_PI;
+	value = (float)EEPROM_value.i16 / 32768.0f * M_PI_F;
       else
-	EEPROM_value.i16 = (int16_t)(value / M_PI * 32768.0f);
+	EEPROM_value.i16 = (int16_t)(value * 32768.0f / M_PI_F);
       break;
     case VARIO_TC:
     case VARIO_INT_TC:
@@ -124,18 +127,30 @@ bool lock_EEPROM( bool lockit)
   return (EE_Init());
 }
 
-bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float &value)
+bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value)
 {
   EEPROM_data_t EEPROM_value;
   if( EEPROM_convert( id, EEPROM_value, value , WRITE))
       return true; // error
+
+  EEPROM_data_t read_value;
+  if( HAL_OK == EE_ReadVariable( id, &read_value.u16) && (read_value.u16 == EEPROM_value.u16))
+    return HAL_OK;
   return EE_WriteVariable( id, EEPROM_value.u16);
 }
 
 bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value)
 {
   uint16_t data;
-  if( 0 == EE_ReadVariable( id, (uint16_t*)&data))
-    return false;
+  if( HAL_OK != EE_ReadVariable( id, (uint16_t*)&data))
+    return true;
   return ( EEPROM_convert( id, (EEPROM_data_t &)data, value , READ));
+}
+
+float configuration( EEPROM_PARAMETER_ID id)
+{
+  float value;
+  bool result = read_EEPROM_value( id, value);
+  ASSERT( result == false);
+  return value;
 }
