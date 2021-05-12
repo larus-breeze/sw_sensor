@@ -9,7 +9,7 @@
 #define PT2_H_
 
 #include <ringbuffer.h>
-#define M_PI 3.14159265358979323846
+#include "embedded_math.h"
 
 // butterworth filter prototype parameters at Fcutoff/Fsampling = 0.25
 // B coefficients -> nominator

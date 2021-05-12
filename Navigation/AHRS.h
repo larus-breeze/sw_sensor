@@ -15,11 +15,8 @@ typedef float ftype;
 #include "float3matrix.h"
 #include "integrator.h"
 #include "compass_calibration.h"
+#include "embedded_math.h"
 
-#define M_PI_F 3.14159265358979323846f
-
-#define SQR(x) ((x)*(x))
-#define SIN(x) arm_sin_f32(x)
 #include "pt2.h"
 
 extern float3vector nav_induction;

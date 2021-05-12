@@ -91,7 +91,7 @@ AHRS_type::feed_compass_calibration (const float3vector &mag)
 AHRS_type::AHRS_type (float sampling_time)
 :
   Ts(sampling_time),
-  Ts_div_2 (sampling_time / 2.0),
+  Ts_div_2 (sampling_time / 2.0f),
   gyro_integrator({0}),
   circling_counter(0),
   slip_angle_averager( ANGLE_F_BY_FS),
@@ -101,9 +101,9 @@ AHRS_type::AHRS_type (float sampling_time)
 {
   float inclination=configuration(INCLINATION);
   float declination=configuration(DECLINATION);
-  induction_nav_frame[NORTH]=sinf( inclination);
-  induction_nav_frame[EAST]=cosf( inclination) * sinf( declination);
-  induction_nav_frame[DOWN]=cosf( inclination);
+  induction_nav_frame[NORTH]=SIN( inclination);
+  induction_nav_frame[EAST]=COS( inclination) * SIN( declination);
+  induction_nav_frame[DOWN]=COS( inclination);
 }
 
 /**
@@ -131,9 +131,9 @@ AHRS_type::update (const float3vector &acc, const float3vector &gyro,
   nav_rotation = body2nav * gyro;
   turn_rate = nav_rotation[DOWN];
 
-  slip_angle_averager.respond (my_atan2f (-acc.e[RIGHT], -acc.e[DOWN]));
+  slip_angle_averager.respond (ATAN2 (-acc.e[RIGHT], -acc.e[DOWN]));
   // todo keine ahnung warum da PI dazu muß !
-  nick_angle_averager.respond (my_atan2f (acc.e[FRONT], acc.e[DOWN]) - 3.1416f);
+  nick_angle_averager.respond (ATAN2 (acc.e[FRONT], acc.e[DOWN]) - M_PI_F);
 }
 
 /**
@@ -148,8 +148,8 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro, const float3vector &acc,
   float3vector nav_acceleration = body2nav * acc;
 
   float heading_gnss_work = GNSS_heading	// correct for antenna alignment
-      + antenna_DOWN_correction  * sinf (euler.r)
-      - antenna_RIGHT_correction * cosf (euler.r);
+      + antenna_DOWN_correction  * SIN (euler.r)
+      - antenna_RIGHT_correction * COS (euler.r);
 
   heading_gnss_work = heading_gnss_work - euler.y; // = heading difference D-GNSS - AHRS
 

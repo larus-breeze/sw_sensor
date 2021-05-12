@@ -103,9 +103,9 @@ AHRS_compass_type::AHRS_compass_type (float sampling_time)
   {
     float inclination=configuration(INCLINATION);
     float declination=configuration(DECLINATION);
-    induction_nav_frame[NORTH]=sinf( inclination);
-    induction_nav_frame[EAST]=cosf( inclination) * sinf( declination);
-    induction_nav_frame[DOWN]=cosf( inclination);
+    induction_nav_frame[NORTH]=SIN( inclination);
+    induction_nav_frame[EAST]=COS( inclination) * SIN( declination);
+    induction_nav_frame[DOWN]=COS( inclination);
   }
 
 /**
@@ -133,8 +133,8 @@ void AHRS_compass_type::update( const float3vector &acc, const float3vector &gyr
 	nav_rotation = body2nav * gyro;
 	turn_rate = nav_rotation[DOWN];
 
-	slip_angle_averager.respond( my_atan2f( -acc.e[RIGHT], -acc.e[DOWN]));
-	nick_angle_averager.respond( my_atan2f(  acc.e[FRONT],  acc.e[DOWN]));
+	slip_angle_averager.respond( ATAN2( -acc.e[RIGHT], -acc.e[DOWN]));
+	nick_angle_averager.respond( ATAN2(  acc.e[FRONT],  acc.e[DOWN]));
 }
 
 /**

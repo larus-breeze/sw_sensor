@@ -56,8 +56,7 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	{
 		latitude_reference = p->latitude;
 		longitude_reference = p->longitude;
-		latitude_scale =
-				cosf((float) (p->latitude) * ANGLE_SCALE) * DEG_2_METER;
+		latitude_scale = COS((float) (p->latitude) * ANGLE_SCALE) * DEG_2_METER;
 	}
 
 	unsigned lat_raw=p->latitude;

@@ -7,8 +7,7 @@
 
 #define ROM const __attribute__ ((section (".rodata")))
 
-#include "vsqrtf.h"
-#include "asin_atan.h"
+#include "embedded_math.h"
 
 #define ANGLE_SCALE 1e-7
 #define MPS_TO_NMPH 1.944 // 90 * 60 NM / 10000km * 3600 s/h
@@ -157,7 +156,7 @@ char *format_RMC (const GNSS_type &gnss, char *p)
 
 #if 0
   float true_track =
-      my_atan2f( gnss.coordinates.velocity.e[EAST], gnss.coordinates.velocity.e[NORTH]);
+      ATAN2( gnss.coordinates.velocity.e[EAST], gnss.coordinates.velocity.e[NORTH]);
 #else
   float true_track = gnss.coordinates.heading_motion;
 #endif
@@ -269,7 +268,7 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
     ++p;
 
   float direction =
-      my_atan2f( -wind_east, -wind_north);
+      ATAN2( -wind_east, -wind_north);
 
   int angle_10 = direction * RAD_TO_DEGREE_10 + 0.5;
   if( angle_10 < 0)

@@ -7,6 +7,7 @@
 #ifndef QUATERNION_H
 #define QUATERNION_H
 
+#include "embedded_math.h"
 #include "vector.h"
 #include "float3matrix.h"
 #include "float3vector.h"
@@ -141,12 +142,12 @@ public:
 	void from_euler( datatype p, datatype q, datatype r)
 	{
 		p *= 0.5; q *= 0.5; r *= 0.5;
-		register datatype sinphi   = sinf( p);
-		register datatype cosphi   = cosf( p);
-		register datatype sintheta = sinf( q);
-		register datatype costheta = cosf( q);
-		register datatype sinpsi   = sinf( r);
-		register datatype cospsi   = cosf( r);
+		register datatype sinphi   = SIN( p);
+		register datatype cosphi   = COS( p);
+		register datatype sintheta = SIN( q);
+		register datatype costheta = COS( q);
+		register datatype sinpsi   = SIN( r);
+		register datatype cospsi   = COS( r);
 
 		vector<datatype, 4>::e[0] = cosphi*costheta*cospsi + sinphi*sintheta*sinpsi;
 		vector<datatype, 4>::e[1] = sinphi*costheta*cospsi + cosphi*sintheta*sinpsi;
