@@ -20,7 +20,7 @@ private:
   // constants
   enum
   {
-    N = 4,  //!< size of state vector x = { altitude, vario, vertical_acceleration }
+    N = 4,  //!< size of state vector x = { altitude, vario, vertical-acceleration, acceleration-offset }
     L = 2  //!< number of measurement channels = { altitude, vertical_acceleration_measurement }
   };
   static constexpr float Ta = 0.01f; 			//!< sampling rate

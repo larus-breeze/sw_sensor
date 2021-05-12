@@ -36,18 +36,7 @@ typedef integrator<float, float3vector> vector3integrator;
 class AHRS_type
 {
 public:
-	AHRS_type(float sampling_time)
-		:
-		  Ts(sampling_time),
-		  Ts_div_2 (sampling_time / 2.0),
-		  gyro_integrator({0}),
-		  circling_counter(0),
-		  slip_angle_averager( ANGLE_F_BY_FS),
-		  nick_angle_averager( ANGLE_F_BY_FS),
-		  antenna_DOWN_correction(  configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH)),
-		  antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH))
-		  {
-		  }
+	AHRS_type(float sampling_time);
 	void attitude_setup( const float3vector & acceleration, const float3vector & induction);
 
 	void update_diff_GNSS( const float3vector &gyro, const float3vector &acc, const float3vector &mag,

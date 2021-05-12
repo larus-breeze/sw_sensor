@@ -6,9 +6,6 @@
 
 #include <navigator.h>
 
-ROM float NAV_INDUCTION_INIT[3]={ 0.407f, -0.021f, 0.9135f};
-COMMON float3vector nav_induction(NAV_INDUCTION_INIT);
-
 // to be called at 100 Hz
 void navigator_t::update_IMU (
     const float3vector &acc,

@@ -3,6 +3,8 @@
 
 #include "stdint.h"
 
+#define M_PI_F 3.14159265358979323846f // todo find correct placing
+
 #ifdef __cplusplus
 
 typedef union
@@ -30,7 +32,7 @@ enum EEPROM_PARAMETER_ID
 
   PITOT_OFFSET=4,
   PITOT_SPAN,
-  QNH_DELTA,
+  QNH_OFFSET,
 
   MAG_X_OFF=10,
   MAG_X_GAIN,
@@ -40,8 +42,8 @@ enum EEPROM_PARAMETER_ID
   MAG_Z_GAIN,
   MAG_VARIANCE,
 
-  DEKLINATION=20,
-  INKLINATION,
+  DECLINATION=20,
+  INCLINATION,
 
   VARIO_TC=30,
   VARIO_INT_TC,

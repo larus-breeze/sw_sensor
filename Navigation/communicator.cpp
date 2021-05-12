@@ -25,6 +25,10 @@ void communicator_runnable (void*)
   navigator_t navigator;
   float3vector acc, mag, gyro;
 
+  float pitot_offset = configuration( PITOT_OFFSET);
+  float pitot_span   = configuration( PITOT_SPAN);
+  float QNH_offset    = configuration( QNH_OFFSET);
+
   float3matrix sensor_mapping;
   {
     quaternion<float> q;
@@ -61,8 +65,13 @@ void communicator_runnable (void*)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
 
+#ifdef INFILE // we presently run HIL/SIL
       navigator.update_pabs (output_data.m.static_pressure);
-      navigator.update_pitot(output_data.m.pitot_pressure);
+      navigator.update_pitot( output_data.m.pitot_pressure);
+#else // apply EEPROM configuration data
+      navigator.update_pabs (output_data.m.static_pressure - QNH_offset);
+      navigator.update_pitot( (output_data.m.pitot_pressure - pitot_offset) * pitot_span);
+#endif
 
 #ifndef INFILE // if not in sim mode
       if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS

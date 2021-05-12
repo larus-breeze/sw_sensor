@@ -4,8 +4,6 @@
 #include "embedded_memory.h"
 #include "persistent_data.h"
 
-#define M_PI_F 3.14159265358979323846f
-
 ROM persistent_data_t persistent_data[]=
     {
 	{BOARD_ID, 	"Board_ID", 0},	 	//! Board ID Hash to avoid board confusion
@@ -16,7 +14,7 @@ ROM persistent_data_t persistent_data[]=
 
 	{PITOT_OFFSET,	"Pitot_Offest", 0},	//! Pitot offset signed / ( ADC readings )
 	{PITOT_SPAN, 	"Pitot_Span", 0},	//! Pitot Span signed ( scale-factor  = value / 32768 + 1.0f)
-	{QNH_DELTA, 	"QNH-delta", 0},	//! Absolute pressure sensor offset signed / Pa
+	{QNH_OFFSET, 	"QNH-delta", 0},	//! Absolute pressure sensor offset signed / Pa
 
 	{MAG_X_OFF,	"Mag_X_Off", 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
 	{MAG_X_GAIN,	"Mag_X_Gain", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
@@ -26,8 +24,8 @@ ROM persistent_data_t persistent_data[]=
 	{MAG_Z_GAIN,	"Mag_Z_Gain", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
 	{MAG_VARIANCE,	"Mag_Calib_Var", 0}, 	//! Magnetic calibration variance unsigned / ( 1e-5f / 65536 )
 
-	{DEKLINATION,	"Mag_Declination", 0}, 	//! Magnetic declination (east positive) signed / ( 180° / 32768)
-	{INKLINATION,	"Mag_Inclination", 0}, 	//! Magnetic inclination (down positive) signed / ( 180° / 32768)
+	{DECLINATION,	"Mag_Declination", 0}, 	//! Magnetic declination (east positive) signed / ( 180° / 32768)
+	{INCLINATION,	"Mag_Inclination", 0}, 	//! Magnetic inclination (down positive) signed / ( 180° / 32768)
 
 	{VARIO_TC,	"Vario_TC", 0},	 	//! Vario time constant unsigned s / ( 100.0f / 65536 )
 	{VARIO_INT_TC,	"Vario_Int_TC", 0},	//! Vario integrator time constant unsigned s / ( 100.0f / 65536 )
@@ -52,7 +50,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       else
 	EEPROM_value.u16 = (uint16_t)value;
       break;
-    case QNH_DELTA:
+    case QNH_OFFSET:
     case PITOT_OFFSET:
       if( read)
 	value = ( float)EEPROM_value.i16;
@@ -91,8 +89,8 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	EEPROM_value.i16 = (int16_t)(value * 1000.0f);
       break;
       break;
-    case DEKLINATION:
-    case INKLINATION:
+    case DECLINATION:
+    case INCLINATION:
     case SENS_TILT_ROLL:
     case SENS_TILT_NICK:
     case SENS_TILT_YAW:

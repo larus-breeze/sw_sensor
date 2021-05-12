@@ -82,10 +82,28 @@ AHRS_type::update_circling_state (const float3vector &gyro)
 void
 AHRS_type::feed_compass_calibration (const float3vector &mag)
 {
-  float3vector expected_induction = nav2body * nav_induction;
+  float3vector expected_induction = nav2body * induction_nav_frame;
 
   for (unsigned i = 0; i < 3; ++i)
     mag_calibrator[i].add_value (expected_induction.e[i], mag.e[i]);
+}
+
+AHRS_type::AHRS_type (float sampling_time)
+:
+  Ts(sampling_time),
+  Ts_div_2 (sampling_time / 2.0),
+  gyro_integrator({0}),
+  circling_counter(0),
+  slip_angle_averager( ANGLE_F_BY_FS),
+  nick_angle_averager( ANGLE_F_BY_FS),
+  antenna_DOWN_correction(  configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH)),
+  antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH))
+{
+  float inclination=configuration(INCLINATION);
+  float declination=configuration(DECLINATION);
+  induction_nav_frame[NORTH]=sinf( inclination);
+  induction_nav_frame[EAST]=cosf( inclination) * sinf( declination);
+  induction_nav_frame[DOWN]=cosf( inclination);
 }
 
 /**
@@ -168,7 +186,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro, const float3vector &acc,
 
   update (acc, gyro + gyro_correction, mag);
 
-  if (circle_state == CIRCLING) // only here we get fresh magnetic information
+  if (circle_state == CIRCLING) // only here we get fresh magnetic entropy
     {
       if( old_circle_state == TRANSITION)
 	  for (unsigned i = 0; i < 3; ++i)

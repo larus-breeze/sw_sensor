@@ -15,12 +15,11 @@ typedef float ftype;
 #include "float3matrix.h"
 #include "integrator.h"
 #include "compass_calibration.h"
+#include "GNSS.h" // for NORTH...
 
 #define SQR(x) ((x)*(x))
 #define SIN(x) arm_sin_f32(x)
 #include "pt2.h"
-
-#define ANGLE_F_BY_FS ( 1.0 / 0.5f / 100.0f)      // 0.5s
 
 typedef integrator<float, float3vector> vector3integrator;
 
@@ -28,16 +27,7 @@ typedef integrator<float, float3vector> vector3integrator;
 class AHRS_compass_type
 {
 public:
-	AHRS_compass_type(float sampling_time)
-		:
-		  Ts(sampling_time),
-		  Ts_div_2 (sampling_time / 2.0),
-		  gyro_integrator({0}),
-		  circling_counter(0),
-		  slip_angle_averager( ANGLE_F_BY_FS),
-		  nick_angle_averager( ANGLE_F_BY_FS)
-		  {
-		  }
+	AHRS_compass_type(float sampling_time);
 	void attitude_setup( const float3vector & acceleration, const float3vector & induction);
 
 	void update_compass(
@@ -149,7 +139,8 @@ private:
 	float3vector gyro_correction;
 	float3vector gyro_integrator;
 	float3vector acceleration_nav_frame;
-	float3vector induction_nav_frame;
+	float3vector induction_nav_frame;	//!< expected induction from EEPROM
+	float3vector nav_induction;		//!< observed induction
 	float3matrix body2nav;
 	float3matrix nav2body;
 	eulerangle<ftype> euler;

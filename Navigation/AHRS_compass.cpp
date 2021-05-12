@@ -27,7 +27,7 @@
 
 void AHRS_compass_type::feed_compass_calibration (const float3vector &mag)
 {
-  float3vector expected_induction = nav2body * nav_induction;
+  float3vector expected_induction = nav2body * induction_nav_frame;
 
   for (unsigned i = 0; i < 3; ++i)
     mag_calibrator[i].add_value (expected_induction.e[i], mag.e[i]);
@@ -91,6 +91,22 @@ circle_state_t AHRS_compass_type::update_circling_state( const float3vector &gyr
 
 	return circle_state;
 }
+
+AHRS_compass_type::AHRS_compass_type (float sampling_time)
+:
+  Ts(sampling_time),
+  Ts_div_2 (sampling_time / 2.0f),
+  gyro_integrator({0}),
+  circling_counter(0),
+  slip_angle_averager( ANGLE_F_BY_FS),
+  nick_angle_averager( ANGLE_F_BY_FS)
+  {
+    float inclination=configuration(INCLINATION);
+    float declination=configuration(DECLINATION);
+    induction_nav_frame[NORTH]=sinf( inclination);
+    induction_nav_frame[EAST]=cosf( inclination) * sinf( declination);
+    induction_nav_frame[DOWN]=cosf( inclination);
+  }
 
 /**
  * @brief  generic update of AHRS
