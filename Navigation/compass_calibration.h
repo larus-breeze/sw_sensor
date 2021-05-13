@@ -9,7 +9,10 @@
 #define COMPASS_CALIBRATION_H_
 
 #include "system_configuration.h"
+#include "FreeRTOS_wrapper.h"
 #include "Linear_Least_Square_Fit.h"
+
+extern Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue;
 
 class calibration_t
 {
@@ -23,19 +26,20 @@ public:
   {
     return variance < 1.0e9f;
   }
-  void refresh ( float _offset, float slope, float _variance)
+  void refresh ( linear_least_square_result<float> &result)
     {
     if( ! is_initialized()) // first calibration coming in
 	{
-	  offset = _offset;
-	  scale = 1.0f / slope;
-	  variance = _variance;
+	  offset = result.a;
+	  scale = 1.0f / result.b;
+	  variance = result.var_a + result.var_b;
 	}
       else
 	{
-	  offset   = offset   * MAG_CALIB_LETHARGY + ( _offset        * (1.0f - MAG_CALIB_LETHARGY));
-	  scale    = scale    * MAG_CALIB_LETHARGY + ( (1.0f / slope) * (1.0f - MAG_CALIB_LETHARGY)) ;
-	  variance = variance * MAG_CALIB_LETHARGY + ( _variance      * (1.0f - MAG_CALIB_LETHARGY));
+	  offset   = offset   * MAG_CALIB_LETHARGY + ( result.a          * (1.0f - MAG_CALIB_LETHARGY));
+	  scale    = scale    * MAG_CALIB_LETHARGY + ( (1.0f / result.b) * (1.0f - MAG_CALIB_LETHARGY)) ;
+	  variance = variance * MAG_CALIB_LETHARGY + ( (result.var_a + result.var_b)
+									 * (1.0f - MAG_CALIB_LETHARGY));
 	}
     }
 
@@ -44,22 +48,9 @@ public:
     return (sensor_reading - offset) * scale;
   }
 
-  float
-  getVariance () const
-  {
-    return variance;
-  }
-
-  void
-  setVariance (float variance)
-  {
-    this->variance = variance;
-  }
-
-private:
-  float offset; // in sensor units
-  float scale; // convert sensor-units into SI-data
-  float variance; // measure of precision
+  float offset; 	//!< sensor offset in sensor units
+  float scale;  	//!< convert sensor-units into SI-data
+  float variance; 	//!< measure of precision: sensor calibration parameter variance
 };
 
 class compass_calibration_t
@@ -81,24 +72,21 @@ public:
       out.e[i]=calibration[i].calibrate( in.e[i]);
     return out;
   }
-  void set_calibration( linear_least_square_fit<float> mag_calibrator[3])
+  void set_calibration( linear_least_square_fit<float> mag_calibrator[3], char id)
   {
     if( mag_calibrator[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES)
       return; // not enough entropy
 
-    float new_calibration[3][4];
+    linear_least_square_result<float> new_calibration[3];
+    new_calibration[0].id=id;
 
     for (unsigned i = 0; i < 3; ++i)
       {
-        mag_calibrator[i].evaluate (new_calibration[i][0], new_calibration[i][1],
-  				  new_calibration[i][2], new_calibration[i][3]);
-
-        calibration[i].refresh (
-  	  new_calibration[i][0], new_calibration[i][1],
-  	  new_calibration[i][2] + new_calibration[i][3]);
+        mag_calibrator[i].evaluate( new_calibration[i]);
+        calibration[i].refresh ( new_calibration[i]);
       }
-
-    calibration_done = true; // at least one calibration done now
+    calibration_done = true; // at least one calibration has been done now
+    magnetic_calibration_queue.send(new_calibration, 0);
   }
 
   bool isCalibrationDone () const
@@ -106,9 +94,58 @@ public:
     return calibration_done;
   }
 
+  float get_variance( void) const
+  {
+    float retv = 0.0f;
+    for( unsigned i=0; i < 3; ++i)
+      retv += calibration[i].variance;
+    return retv;
+  }
+
+  bool parameters_changed_significantly(void) const;
+  void write_into_EEPROM( void) const;
+  void read_from_EEPROM( void);
 private:
   bool calibration_done;
   calibration_t calibration[3];
 };
+
+inline bool compass_calibration_t::parameters_changed_significantly (void) const
+{
+  float parameter_change_variance = 0.0f;
+  for( unsigned i=0; i<3; ++i)
+    {
+      parameter_change_variance +=
+	  SQR( configuration( (EEPROM_PARAMETER_ID)(MAG_X_OFF   + 2*i)) - calibration[i].offset) +
+	  SQR( configuration( (EEPROM_PARAMETER_ID)(MAG_X_SCALE + 2*i)) - calibration[i].scale);
+    }
+  return parameter_change_variance > MAG_CALIBRATION_CHANGE_LIMIT;
+}
+
+inline void
+compass_calibration_t::write_into_EEPROM (void) const
+{
+  float variance = 0.0f;
+  for( unsigned i=0; i<3; ++i)
+    {
+      write_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_OFF   + 2*i), calibration[i].offset);
+      write_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_SCALE + 2*i), calibration[i].scale);
+      variance += calibration[i].variance;
+    }
+  write_EEPROM_value(MAG_VARIANCE, variance);
+}
+
+inline void
+compass_calibration_t::read_from_EEPROM (void)
+{
+  float variance;
+  read_EEPROM_value( MAG_VARIANCE, variance);
+  for( unsigned i=0; i<3; ++i)
+    {
+      read_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_OFF   + 2*i), calibration[i].offset);
+      read_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_SCALE + 2*i), calibration[i].scale);
+      calibration[i].variance = variance / 3.0f; // assuming symmetric variance
+    }
+}
 
 #endif /* COMPASS_CALIBRATION_H_ */

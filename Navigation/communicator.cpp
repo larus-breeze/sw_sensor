@@ -24,6 +24,7 @@ void communicator_runnable (void*)
 {
   navigator_t navigator;
   float3vector acc, mag, gyro;
+  unsigned airborne_counter = 0;
 
   float pitot_offset = configuration( PITOT_OFFSET);
   float pitot_span   = configuration( PITOT_SPAN);
@@ -69,9 +70,26 @@ void communicator_runnable (void*)
       navigator.update_pabs (output_data.m.static_pressure);
       navigator.update_pitot( output_data.m.pitot_pressure);
 #else // apply EEPROM configuration data
-      navigator.update_pabs (output_data.m.static_pressure - QNH_offset);
-      navigator.update_pitot( (output_data.m.pitot_pressure - pitot_offset) * pitot_span);
+      navigator.update_pabs (  output_data.m.static_pressure - QNH_offset);
+      navigator.update_pitot( (output_data.m.pitot_pressure  - pitot_offset) * pitot_span);
 #endif
+
+      if( navigator.get_IAS() > 20.0f) // are we flying ?
+	{
+	  if( airborne_counter < 500)
+	    airborne_counter = 500;
+	  else if( airborne_counter < 2000)
+	    ++airborne_counter;
+	}
+      else
+	{
+	  if( airborne_counter > 0)
+	    {
+	      --airborne_counter;
+	      if( airborne_counter == 0) // event: landed
+		  navigator.handle_magnetic_calibration();
+	    }
+	}
 
 #ifndef INFILE // if not in sim mode
       if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS

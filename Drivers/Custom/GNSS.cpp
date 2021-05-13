@@ -120,11 +120,11 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 
 	const uBlox_relpos_NED * p = (uBlox_relpos_NED *) (data + 6);
 
-	coordinates.relPosNED[NORTH]=0.01f*(p->relPosN) + 0.0001f * p->relPosHP_N;
-	coordinates.relPosNED[EAST] =0.01f*(p->relPosE) + 0.0001f * p->relPosHP_E;
-	coordinates.relPosNED[DOWN] =0.01f*(p->relPosD) + 0.0001f * p->relPosHP_D;
+	coordinates.relPosNED[NORTH]=0.01f*(float)(p->relPosN) + 0.0001f * (float)(p->relPosHP_N);
+	coordinates.relPosNED[EAST] =0.01f*(float)(p->relPosE) + 0.0001f * (float)(p->relPosHP_E);
+	coordinates.relPosNED[DOWN] =0.01f*(float)(p->relPosD) + 0.0001f * (float)(p->relPosHP_D);
 
-	coordinates.relPosHeading = p->relPosheading * 1.745329252e-7f; // 1e-5 deg -> rad
+	coordinates.relPosHeading = (float)(p->relPosheading) * 1.745329252e-7f; // 1e-5 deg -> rad
 //	coordinates.relPosLength  = 0.01f*(p->relPoslength) + 0.0001f * p->relPosHP_len;
 
 //	return ( p->flags == 0b0100110111) ? GPS_HAVE_FIX : GPS_NO_FIX; // for two F9P receivers
@@ -136,6 +136,8 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 #else
 	if( res == GNSS_HAVE_FIX) // patch
 	  D_GNSS_new_data_ready = true;
+	else
+	  coordinates.relPosHeading = NAN_F; // report missing D-GNSS heading
 #endif
 
 	return res;

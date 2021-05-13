@@ -21,5 +21,6 @@
 #define ASIN(x) my_asinf(x)
 #define ATAN2(y, x) my_atan2f(y, x)
 
+#define NAN_F 0x40000000
 
 #endif /* INC_EMBEDDED_MATH_H_ */

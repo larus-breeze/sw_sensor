@@ -121,7 +121,6 @@ static void D_GNSS_runnable (void*)
 	}
       HAL_UART_Abort (&huart4);
       GNSS_Result result = GNSS.update_delta(buffer);
-//      if ((buffer[0] != 0xb5) || (buffer[1] != 'b'))
       if(  result == GNSS_ERROR)
 	{
 #if UART4_LED_STATUS

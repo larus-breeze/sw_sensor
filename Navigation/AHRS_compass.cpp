@@ -27,7 +27,7 @@
 
 void AHRS_compass_type::feed_compass_calibration (const float3vector &mag)
 {
-  float3vector expected_induction = nav2body * induction_nav_frame;
+  float3vector expected_induction = nav2body * expected_nav_induction;
 
   for (unsigned i = 0; i < 3; ++i)
     mag_calibrator[i].add_value (expected_induction.e[i], mag.e[i]);
@@ -101,11 +101,11 @@ AHRS_compass_type::AHRS_compass_type (float sampling_time)
   slip_angle_averager( ANGLE_F_BY_FS),
   nick_angle_averager( ANGLE_F_BY_FS)
   {
-    float inclination=configuration(INCLINATION);
-    float declination=configuration(DECLINATION);
-    induction_nav_frame[NORTH]=SIN( inclination);
-    induction_nav_frame[EAST]=COS( inclination) * SIN( declination);
-    induction_nav_frame[DOWN]=COS( inclination);
+  float inclination=configuration(INCLINATION);
+  float declination=configuration(DECLINATION);
+  expected_nav_induction[NORTH] = SIN( inclination);
+  expected_nav_induction[EAST]  = COS( inclination) * SIN( declination);
+  expected_nav_induction[DOWN]  = COS( inclination);
   }
 
 /**
@@ -235,7 +235,7 @@ void AHRS_compass_type::update_compass(
 	    }
 	  else if (old_circle_state == CIRCLING) // coming out of circling
 	    {
-	      compass_calibration.set_calibration( mag_calibrator);
+	      compass_calibration.set_calibration( mag_calibrator, 'M');
 	    }
 
 }

@@ -20,18 +20,22 @@ class navigator_t
 {
 public:
   navigator_t (void)
-	:ins (0.01f),
-	 ins_magnetic (0.01f),
+	:ahrs (0.01f),
+	 ahrs_magnetic (0.01f),
 	 atmosphere (101325.0f),
 	 vario_integrator( configuration( VARIO_INT_TC)),
 	 wind_observer( configuration( MEAN_WIND_TC))
-  {};
+  {
+#if USE_DIFF_GNSS == 1
+    GNSS_heading = NAN_F;
+#endif
+  };
 
   void report_data( output_data_t &d);
-
+  void handle_magnetic_calibration( void) const;
   void set_from_euler ( float r, float n, float y)
   {
-    ins.set_from_euler(r, n, y);
+    ahrs.set_from_euler(r, n, y);
   }
   /**
    * @brief update absolute pressure
@@ -67,7 +71,6 @@ public:
    */
 
   void update_GNSS( const coordinates_t &coordinates /* , const float3vector & _GNSS_acceleration*/);
-  void update_GNSS_old( const coordinates_t &coordinates , float3vector acceleration);
 
   /**
    * @brief return aggregate flight observer
@@ -79,13 +82,17 @@ public:
 
   void set_attitude( float roll, float nick, float yaw)
   {
-    ins.set_from_euler(roll, nick, yaw);
-    ins_magnetic.set_from_euler(roll, nick, yaw);
+    ahrs.set_from_euler(roll, nick, yaw);
+    ahrs_magnetic.set_from_euler(roll, nick, yaw);
+  }
+  float get_IAS( void) const
+  {
+    return IAS;
   }
 
 private:
-  AHRS_type 		ins;
-  AHRS_compass_type	ins_magnetic;
+  AHRS_type 		ahrs;
+  AHRS_compass_type	ahrs_magnetic;
 
   atmosphere_t 		atmosphere;
   float 		pitot_pressure;
@@ -94,7 +101,9 @@ private:
   float3vector 		GNSS_velocity;
   float			GNSS_speed;
   float3vector 		GNSS_acceleration;
+#if USE_DIFF_GNSS == 1
   float 		GNSS_heading;
+#endif
   float 		GNSS_altitude;
   float3vector 		true_airspeed;
 

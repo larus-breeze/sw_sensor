@@ -12,23 +12,26 @@ void navigator_t::update_IMU (
     const float3vector &mag,
     const float3vector &gyro)
 {
-  ins.update_diff_GNSS ( // todo GNSS-kompass nicht immer verfügbar
-	  gyro, acc, mag,
-	  GNSS_acceleration,
-	  GNSS_heading);
+  if( GNSS_heading != NAN_F) // D-GNSS heading healthy
+    ahrs.update_diff_GNSS (
+	    gyro, acc, mag,
+	    GNSS_acceleration,
+	    GNSS_heading);
+  else
+    ahrs.update_compass(gyro, acc, mag, GNSS_acceleration);
 
-  ins_magnetic.update_compass(
+  ahrs_magnetic.update_compass(
 	  gyro, acc, mag,
 	  GNSS_acceleration);
 
-  true_airspeed[NORTH] = ins.get_north () * TAS; // todo which special ins to use = ???
-  true_airspeed[EAST]  = ins.get_east ()  * TAS;
-  true_airspeed[DOWN]  = ins.get_down ()  * TAS; // todo: do we need this one ?
+  true_airspeed[NORTH] = ahrs.get_north () * TAS; // todo which special ins to use = ???
+  true_airspeed[EAST]  = ahrs.get_east ()  * TAS;
+  true_airspeed[DOWN]  = ahrs.get_down ()  * TAS; // todo: do we need this one ?
 
   flight_observer.update (
       GNSS_velocity,
       GNSS_acceleration,
-      ins.get_nav_acceleration (),
+      ahrs.get_nav_acceleration (),
       true_airspeed,
       wind_observer.get_value(),
       GNSS_altitude,
@@ -48,12 +51,12 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
   GNSS_speed 		= coordinates.speed_motion;
 
   wind_observer.update( flight_observer.get_wind(), // do this here because of the update rate 10Hz
-			ins.get_euler ().y,
-			ins.get_circling_state ());
+			ahrs.get_euler ().y,
+			ahrs.get_circling_state ());
 
   vario_integrator.update (flight_observer.get_vario_GNSS(), // here because of the update rate 10Hz
-			   ins.get_euler ().y,
-			   ins.get_circling_state ());
+			   ahrs.get_euler ().y,
+			   ahrs.get_circling_state ());
 }
 
 void navigator_t::report_data(output_data_t &d)
@@ -61,11 +64,11 @@ void navigator_t::report_data(output_data_t &d)
     d.TAS 			= TAS;
     d.IAS 			= IAS;
 
-    d.euler			= ins.get_euler();
-    d.q				= ins.attitude;
+    d.euler			= ahrs.get_euler();
+    d.q				= ahrs.attitude;
 
-    d.euler_magnetic		= ins_magnetic.get_euler();
-    d.q_magnetic		= ins_magnetic.attitude;
+    d.euler_magnetic		= ahrs_magnetic.get_euler();
+    d.q_magnetic		= ahrs_magnetic.attitude;
 
 #if USE_GNSS_VARIO
     d.vario			= flight_observer.get_vario_GNSS(); // todo pick one vario
@@ -84,14 +87,20 @@ void navigator_t::report_data(output_data_t &d)
     d.effective_vertical_acceleration
 				= flight_observer.get_effective_vertical_acceleration();
 
-    d.circle_mode 		= ins.get_circling_state();
-    d.gyro_correction		= ins.get_gyro_correction();
-    d.nav_acceleration_gnss 	= ins.get_nav_acceleration();
-    d.nav_acceleration_mag 	= ins_magnetic.get_nav_acceleration();
-    d.nav_induction_gnss 	= ins.get_nav_induction();
-    d.nav_induction_mag 	= ins_magnetic.get_nav_induction();
+    d.circle_mode 		= ahrs.get_circling_state();
+    d.gyro_correction		= ahrs.get_gyro_correction();
+    d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();
+    d.nav_acceleration_mag 	= ahrs_magnetic.get_nav_acceleration();
+    d.nav_induction_gnss 	= ahrs.get_nav_induction();
+    d.nav_induction_mag 	= ahrs_magnetic.get_nav_induction();
 
-    d.turn_rate			= ins.turn_rate;
-    d.slip_angle		= ins.getSlipAngle();
-    d.nick_angle		= ins.getNickAngle();
+    d.turn_rate			= ahrs.get_turn_rate();
+    d.slip_angle		= ahrs.getSlipAngle();
+    d.nick_angle		= ahrs.getNickAngle();
+}
+
+//! eventually make magnetic calibration permanent
+void navigator_t::handle_magnetic_calibration (void) const
+{
+  ahrs.handle_magnetic_calibration(); // todo: eventually do this with the magnetic AHRS
 }

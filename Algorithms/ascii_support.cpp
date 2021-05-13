@@ -73,150 +73,63 @@ void lutox(uint64_t value, char* result)
   utox( value & 0xffffffff, result+8, 8);
 }
 
-/**************************************************
- *
- *    ftoa - converts float to string
- *
- ***************************************************
- *
- *    This is a simple implemetation with rigid
- *    parameters:
- *            - Buffer must be 8 chars long
- *            - 3 digits precision max
- *            - absolute range is -524,287 to 524,287
- *            - resolution (epsilon) is 0.125 and
- *              always rounds down
- **************************************************/
- char* ftoa(float Value, char* Buffer)
+char * my_itoa( char * target, int value)
  {
-     union
-     {
-         float f;
-
-         struct
-         {
-             unsigned int    mantissa_lo : 16;
-             unsigned int    mantissa_hi : 7;
-             unsigned int     exponent : 8;
-             unsigned int     sign : 1;
-         }bits;
-     } helper;
-
-     unsigned long mantissa;
-     signed char exponent;
-     unsigned int int_part;
-     char frac_part[3];
-     int i, count = 0;
-
-     helper.f = Value;
-     //mantissa is LS 23 bits
-     mantissa = helper.bits.mantissa_lo;
-     mantissa += ((unsigned long) helper.bits.mantissa_hi << 16);
-     //add the 24th bit to get 1.mmmm^eeee format
-     mantissa += 0x00800000;
-     //exponent is biased by 127
-     exponent = (signed char) helper.bits.exponent - 127;
-
-     //too big to shove into 8 chars
-     if (exponent > 18)
-     {
-         Buffer[0] = 'I';
-         Buffer[1] = 'n';
-         Buffer[2] = 'f';
-         Buffer[3] = '\0';
-         return Buffer;
-     }
-
-     //too small to resolve (resolution of 1/8)
-     if (exponent < -3)
-     {
-         Buffer[0] = '0';
-         Buffer[1] = '\0';
-         return Buffer;
-     }
-
-     count = 0;
-
-     //add negative sign (if applicable)
-     if (helper.bits.sign)
-     {
-         Buffer[0] = '-';
-         count++;
-     }
-
-     //get the integer part
-     int_part = mantissa >> (23 - exponent);
-     //convert to string
-     itoa(int_part, &Buffer[count], 10);
-
-     //find the end of the integer
-     for (i = 0; i < 8; i++)
-         if (Buffer[i] == '\0')
-         {
-             count = i;
-             break;
-         }
-
-     //not enough room in the buffer for the frac part
-     if (count > 5)
-         return Buffer;
-
-     //add the decimal point
-     Buffer[count++] = '.';
-
-     //use switch to resolve the fractional part
-     switch (0x7 & (mantissa  >> (20 - exponent)))
-     {
-         case 0:
-             frac_part[0] = '0';
-             frac_part[1] = '0';
-             frac_part[2] = '0';
-             break;
-         case 1:
-             frac_part[0] = '1';
-             frac_part[1] = '2';
-             frac_part[2] = '5';
-             break;
-         case 2:
-             frac_part[0] = '2';
-             frac_part[1] = '5';
-             frac_part[2] = '0';
-             break;
-         case 3:
-             frac_part[0] = '3';
-             frac_part[1] = '7';
-             frac_part[2] = '5';
-             break;
-         case 4:
-             frac_part[0] = '5';
-             frac_part[1] = '0';
-             frac_part[2] = '0';
-             break;
-         case 5:
-             frac_part[0] = '6';
-             frac_part[1] = '2';
-             frac_part[2] = '5';
-             break;
-         case 6:
-             frac_part[0] = '7';
-             frac_part[1] = '5';
-             frac_part[2] = '0';
-             break;
-         case 7:
-             frac_part[0] = '8';
-             frac_part[1] = '7';
-             frac_part[2] = '5';
-             break;
-     }
-
-     //add the fractional part to the output string
-     for (i = 0; i < 3; i++)
-         if (count < 7)
-             Buffer[count++] = frac_part[i];
-
-     //make sure the output is terminated
-     Buffer[count] = '\0';
-
-     return Buffer;
+ 	if( value < 0)
+ 	{
+ 		*target++ = '-';
+ 		return my_itoa( target, -value);
+ 	}
+ 	if( value < 10)
+ 	{
+ 		*target++ = (char)(value + '0');
+ 		*target=0;
+ 		return target;
+ 	}
+ 	else
+ 	{
+ 		target = my_itoa( target, value / 10);
+ 		return my_itoa( target, value % 10);
+ 	}
  }
 
+char * my_ftoa( char * target, float value)
+ {
+ 	if( value < 0.0f)
+ 	{
+ 		*target++='-';
+ 		value = -value;
+ 	}
+ 	else if( value == 0.0f)
+ 	{
+ 		*target++='0';
+ 		*target++='.';
+ 		*target++='0';
+ 		*target++=0;
+ 		return target;
+ 	}
+
+ 	int exponent=0;
+
+ 	while( value >= 10.0f)
+ 	{
+ 		value /= 10.0f;
+ 		++exponent;
+ 	}
+
+ 	while( value < 1.0f)
+ 	{
+ 		value *= 10.0f;
+ 		--exponent;
+ 	}
+
+ 	uint8_t digit = (uint8_t)value;
+ 	value -= (float)digit;
+ 	*target++ = (char)(digit + '0');
+ 	*target++ = '.';
+
+ 	value *= 1000000.0f + 0.5f;
+ 	target = my_itoa( target, (int)value);
+ 	*target++='e';
+ 	return( my_itoa( target, (int)exponent));
+ }

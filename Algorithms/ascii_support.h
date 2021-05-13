@@ -9,6 +9,9 @@
 
 #include <stdint.h>
 
+char * my_itoa( char * target, int value);
+char * my_ftoa( char * target, float value);
+
 #ifdef __cplusplus
 
 void utox(uint32_t value, char* result, uint8_t nibbles = 8);

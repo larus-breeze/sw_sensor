@@ -72,7 +72,7 @@ typedef struct
   uint32_t acc_len;	// accuracy length / 0.1mm
   uint32_t acc_heading;	// accuracy heading / 1e-5 degrees
   uint32_t dummy2;	// reserved
-  uint32_t flags;	// 0b1100110111 if optimum result
+  uint32_t flags;	// 0b1100110111 if optimal result
 } uBlox_relpos_NED;
 
 #define GPS_RELPOS_DMA_buffer_SIZE (sizeof( uBlox_relpos_NED) + 8) // plus "u B class id size1 size2 ... cks1 cks2"

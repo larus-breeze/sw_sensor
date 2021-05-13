@@ -89,12 +89,6 @@ public:
 	{
 		return gyro_correction;
 	}
-#if 0
-	inline const float3vector &get_induction( void) const
-	{
-		return induction_nav_frame;
-	}
-#endif
 	inline const float3matrix &get_nav2body( void) const
 	{
 	  return nav2body;
@@ -139,8 +133,8 @@ private:
 	float3vector gyro_correction;
 	float3vector gyro_integrator;
 	float3vector acceleration_nav_frame;
-	float3vector induction_nav_frame;	//!< expected induction from EEPROM
-	float3vector nav_induction;		//!< observed induction
+	float3vector induction_nav_frame; 	//!< observed NAV induction
+	float3vector expected_nav_induction;	 //!< expected NAV induction
 	float3matrix body2nav;
 	float3matrix nav2body;
 	eulerangle<ftype> euler;

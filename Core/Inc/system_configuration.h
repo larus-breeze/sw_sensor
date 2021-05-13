@@ -8,8 +8,9 @@
 
 #include "persistent_data.h"
 
-#define INFILE "simin_210502.f46" // switches on offline calculation and defines filename
-#define OUTFILE "simout210502.f97"
+#define INFILE "simin210404.f94" // switches on offline calculation and defines filename
+#define IN_DATA_LENGTH 94
+#define OUTFILE "simout210404_mag.f97"
 
 #define DKCOM 1
 
@@ -23,8 +24,8 @@
 #define STABLE_CIRCLING_LIMIT	(30 * 100) // seconds @ 100 Hz for MAG auto calibration
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
 #define MAG_CALIB_LETHARGY	0.8f // percentage of remaining old calibration info
-
-#define SAT_DELAY_FOR_WIND	25 // cycles = 1ms, optimized empirically
+#define MAG_CALIBRATION_CHANGE_LIMIT 1.0e-5f // variance sum of changes: 3 * { offset, scale }
+//#define SAT_DELAY_FOR_WIND	25 // cycles = 1ms, optimized empirically
 
 #define USE_GNSS_VARIO		1 // else pressure-vario
 
@@ -62,7 +63,7 @@
 #define RUN_FXOS8700		0
 #define RUN_PITOT_MODULE 	0
 #else
-#define RUN_GNSS			1
+#define RUN_GNSS		1
 #define RUN_GNSS_HEADING	1
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1

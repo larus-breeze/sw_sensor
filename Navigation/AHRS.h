@@ -38,7 +38,11 @@ public:
 
 	void update_diff_GNSS( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		const float3vector &GNSS_acceleration,
-		float GNSS_heading); //!< rotate quaternion taking angular rate readings
+		float GNSS_heading);
+
+	void update_compass(
+			const float3vector &gyro, const float3vector &acc, const float3vector &mag,
+			const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
 
 	inline void set_from_euler( float r, float n, float y)
 	{
@@ -95,12 +99,6 @@ public:
 	{
 		return gyro_correction;
 	}
-#if 0
-	inline const float3vector &get_induction( void) const
-	{
-		return induction_nav_frame;
-	}
-#endif
 	inline const float3matrix &get_nav2body( void) const
 	{
 	  return nav2body;
@@ -134,13 +132,16 @@ public:
     return nick_angle_averager.get_output();
   }
 
-  const linear_least_square_fit<float> * get_magnetic_calibrator(void) const
+  quaternion<ftype>attitude;
+  float get_turn_rate( void ) const
   {
-    return mag_calibrator;
+    return turn_rate;
   }
-	quaternion<ftype>attitude;
-	float turn_rate;
+
+  void handle_magnetic_calibration( void) const;
+
 private:
+	float turn_rate;
 	void feed_compass_calibration(const float3vector &mag);
 	circle_state_t circle_state;
 	circle_state_t update_circling_state( const float3vector &gyro);
@@ -149,7 +150,8 @@ private:
 	float3vector gyro_correction;
 	float3vector gyro_integrator;
 	float3vector acceleration_nav_frame;
-	float3vector induction_nav_frame;
+	float3vector induction_nav_frame; 	//!< observed NAV induction
+	float3vector expected_nav_induction;	 //!< expected NAV induction
 	float3matrix body2nav;
 	float3matrix nav2body;
 	eulerangle<ftype> euler;

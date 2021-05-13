@@ -17,11 +17,11 @@ ROM persistent_data_t persistent_data[]=
 	{QNH_OFFSET, 	"QNH-delta", 0},	//! Absolute pressure sensor offset signed / Pa
 
 	{MAG_X_OFF,	"Mag_X_Off", 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
-	{MAG_X_GAIN,	"Mag_X_Gain", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
+	{MAG_X_SCALE,	"Mag_X_Scale", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
 	{MAG_Y_OFF,	"Mag_Y_Off", 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
-	{MAG_Y_GAIN,	"Mag_Y_Gain", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
+	{MAG_Y_SCALE,	"Mag_Y_Scale", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
 	{MAG_Z_OFF,	"Mag_Z_Off", 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
-	{MAG_Z_GAIN,	"Mag_Z_Gain", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
+	{MAG_Z_SCALE,	"Mag_Z_Scale", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
 	{MAG_VARIANCE,	"Mag_Calib_Var", 0}, 	//! Magnetic calibration variance unsigned / ( 1e-5f / 65536 )
 
 	{DECLINATION,	"Mag_Declination", 0}, 	//! Magnetic declination (east positive) signed / ( 180° / 32768)
@@ -58,9 +58,9 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
 	EEPROM_value.i16 = (int16_t)value;
       break;
     case PITOT_SPAN:
-    case MAG_X_GAIN:
-    case MAG_Y_GAIN:
-    case MAG_Z_GAIN:
+    case MAG_X_SCALE:
+    case MAG_Y_SCALE:
+    case MAG_Z_SCALE:
       if( read)
 	value = ( (float)EEPROM_value.i16 / 32768.0f) + 1.0f;
       else

@@ -200,7 +200,7 @@ public:
 		tmp = 1.0f + rotm.e[0][0] + rotm.e[1][1] + rotm.e[2][2];
 		//! formula from roenbaeck p35
 		assert(( tmp > 0.0f) && (tmp != 0.0f/0.0f /* NAN */));
-		tmp = VSQRTF( tmp);
+		tmp = SQRT( tmp);
 		tmp *= 0.5;
 		vector<datatype, 4>::e[0] = tmp;
 		tmp = 0.25f / tmp;
