@@ -15,7 +15,7 @@ public:
 
     ++ptr;
 
-    if( ptr > storage + length)
+    if( ptr >= storage + length)
       ptr=storage;
 
     return retv;

@@ -15,10 +15,6 @@ typedef float ftype;
 #include "float3matrix.h"
 #include "integrator.h"
 #include "compass_calibration.h"
-#include "GNSS.h" // for NORTH...
-
-#define SQR(x) ((x)*(x))
-#define SIN(x) arm_sin_f32(x)
 #include "pt2.h"
 
 typedef integrator<float, float3vector> vector3integrator;

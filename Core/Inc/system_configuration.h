@@ -8,9 +8,9 @@
 
 #include "persistent_data.h"
 
-#define INFILE "simin210404.f94" // switches on offline calculation and defines filename
-#define IN_DATA_LENGTH 94
-#define OUTFILE "simout210404_GNSS_speed_delay.f97"
+#define INFILE "simin_210502.f46" // switches on offline calculation and defines filename
+#define IN_DATA_LENGTH 46
+#define OUTFILE "simout_210502.f97"
 
 #define DKCOM 1
 

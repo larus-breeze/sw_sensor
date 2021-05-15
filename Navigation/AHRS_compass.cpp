@@ -103,9 +103,9 @@ AHRS_compass_type::AHRS_compass_type (float sampling_time)
   {
   float inclination=configuration(INCLINATION);
   float declination=configuration(DECLINATION);
-  expected_nav_induction[NORTH] = SIN( inclination);
+  expected_nav_induction[NORTH] = COS( inclination);
   expected_nav_induction[EAST]  = COS( inclination) * SIN( declination);
-  expected_nav_induction[DOWN]  = COS( inclination);
+  expected_nav_induction[DOWN]  = SIN( inclination);
   }
 
 /**

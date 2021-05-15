@@ -55,6 +55,8 @@ COMMON DMA_HandleTypeDef hdma_spi2_tx;
 COMMON UART_HandleTypeDef huart2;
 COMMON UART_HandleTypeDef huart6;
 
+COMMON uint32_t UNIQUE_ID[3];
+
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
@@ -116,6 +118,10 @@ int main(void)
   MX_USART6_UART_Init();
   MX_FATFS_Init();
   MX_ADC1_Init();
+
+  UNIQUE_ID[0]=*(unsigned *)0x1fff7a10;
+  UNIQUE_ID[1]=*(unsigned *)0x1fff7a14;
+  UNIQUE_ID[2]=*(unsigned *)0x1fff7a18;
 
 #if WRITE_EEPROM_DEFAULTS
   void write_EEPROM_defaults( void);
