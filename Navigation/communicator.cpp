@@ -131,7 +131,7 @@ void communicator_runnable (void*)
 #define STACKSIZE 1024 // in 32bit words
 static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 
-static TaskParameters_t p =
+static ROM TaskParameters_t p =
   {
       communicator_runnable,
       "COM",

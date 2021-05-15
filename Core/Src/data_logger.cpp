@@ -97,7 +97,7 @@ data_logger_runnable (void*)
 
   char out_filename[25];
   FRESULT fresult;
-  FIL fp;
+  FIL outfile;
 
   // wait until sd card is detected
   while (!BSP_PlatformIsDetected ())
@@ -199,7 +199,7 @@ data_logger_runnable (void*)
   uint32_t writtenBytes = 0;
   uint8_t *buf_ptr = buffer;
 
-  fresult = f_open (&fp, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
+  fresult = f_open (&outfile, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)
     suspend (); // give up, logger can not work
 
@@ -212,7 +212,8 @@ data_logger_runnable (void*)
       fresult = f_read(&infile, (void *)&output_data, IN_DATA_LENGTH*4, &bytesread); // todo PATCH
       if( ! (fresult == FR_OK) && (bytesread == IN_DATA_LENGTH*4)) // probably end of file
 	{
-	      f_close(&fp);
+	      f_close(&infile);
+	      f_close(&outfile);
 	      suspend();
 	}
 
@@ -241,7 +242,7 @@ data_logger_runnable (void*)
       if (buf_ptr < buffer + BUFSIZE)
 	continue; // buffer only filled partially
 
-      fresult = f_write (&fp, buffer, BUFSIZE, (UINT*) &writtenBytes); /*Shall return FR_DENIED if disk is full.*/
+      fresult = f_write (&outfile, buffer, BUFSIZE, (UINT*) &writtenBytes); /*Shall return FR_DENIED if disk is full.*/
       ASSERT((fresult == FR_OK) && (writtenBytes == BUFSIZE)); /* Returns writtenBytes = 0 if disk is full. */
       /* TODO: decide what to do if disk is full.  Simple: Stop Logging.  Better: Remove older files until e.g. 1GB is free
        at startup. FATFS configuration is not up to that. */
@@ -252,7 +253,7 @@ data_logger_runnable (void*)
 
       if( ++sync_counter >= 16)
 	{
-	      f_sync (&fp);
+	      f_sync (&outfile);
 	      sync_counter = 0;
 #if uSD_LED_STATUS
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, led_state);

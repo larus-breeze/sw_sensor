@@ -23,8 +23,11 @@ void flight_observer_t::update (
     float TAS
   )
 {
-  windspeed_averager_NORTH.respond( gnss_velocity.e[NORTH] - air_velocity.e[NORTH]);
-  windspeed_averager_EAST .respond( gnss_velocity.e[EAST] - air_velocity.e[EAST]);
+  float gnss_velocity_delayed_N = GNSS_velocity_delay_N.respond(gnss_velocity.e[NORTH]);
+  float gnss_velocity_delayed_E = GNSS_velocity_delay_E.respond(gnss_velocity.e[EAST]);
+
+  windspeed_averager_NORTH.respond( gnss_velocity_delayed_N - air_velocity.e[NORTH]);
+  windspeed_averager_EAST .respond( gnss_velocity_delayed_E - air_velocity.e[EAST]);
 
   // non TEC compensated vario, negative if *climbing* !
   vario_uncompensated_GNSS = KalmanVario_GNSS.update ( GNSS_altitude, ahrs_acceleration.e[DOWN]);
@@ -42,8 +45,8 @@ void flight_observer_t::update (
 		      KalmanVario_GNSS.get_x(KalmanVario_t::VARIO) * KalmanVario_GNSS.get_x(KalmanVario_t::ACCELERATION_OBSERVED)
 		   ) * RECIP_GRAVITY;
 
-  vario_averager_pressure.respond( speed_compensation_TAS - vario_uncompensated_pressure); // -> positive on positive energy gain
-  vario_averager_GNSS.respond( speed_compensation_GNSS - vario_uncompensated_GNSS); // -> positive on positive energy gain
+  vario_averager_pressure.respond( speed_compensation_TAS  - vario_uncompensated_pressure); 	// -> positive on positive energy gain
+  vario_averager_GNSS.respond(     speed_compensation_GNSS - vario_uncompensated_GNSS);
 }
 
 void flight_observer_t::reset(float pressure_altitude, float GNSS_altitude)

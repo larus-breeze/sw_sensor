@@ -20,7 +20,7 @@ static void test( void *)
   suspend();
 }
 
-static TaskParameters_t p =
+static ROM TaskParameters_t p =
   {
       test,
       "EEPROM",

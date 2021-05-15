@@ -36,7 +36,7 @@ static void runnable (void*)
 #define STACKSIZE 128
 static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 
-static TaskParameters_t p =
+static ROM TaskParameters_t p =
 {
     runnable,
     "CHIPSNS",

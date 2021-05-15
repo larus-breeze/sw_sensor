@@ -264,7 +264,7 @@ run (void*)
 
 static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 
-static TaskParameters_t p =
+static ROM TaskParameters_t p =
   { run, "IMU",
   STACKSIZE, 0,
   MTI_PRIORITY + 2, stack_buffer,
