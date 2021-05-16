@@ -104,6 +104,8 @@ AHRS_type::AHRS_type (float sampling_time)
   expected_nav_induction[NORTH] = COS( inclination);
   expected_nav_induction[EAST]  = COS( inclination) * SIN( declination);
   expected_nav_induction[DOWN]  = SIN( inclination);
+
+  compass_calibration.read_from_EEPROM();
 }
 
 /**
@@ -147,7 +149,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro, const float3vector &acc,
 {
   float3vector mag;
   if( compass_calibration.isCalibrationDone()) // use calibration if available
-      mag = compass_calibration.calibrate(mag_sensor); // todo: read calib. from EEPROM
+      mag = compass_calibration.calibrate(mag_sensor);
   else
       mag = mag_sensor;
 

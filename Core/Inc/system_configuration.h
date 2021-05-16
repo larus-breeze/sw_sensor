@@ -10,7 +10,8 @@
 
 #define INFILE "simin_210502.f46" // switches on offline calculation and defines filename
 #define IN_DATA_LENGTH 46
-#define OUTFILE "simout_210502.f97"
+#define OUTFILE "simout_210502_test_mag_EEPROM.f97"
+#define WRITE_EEPROM_DEFAULTS	0
 
 #define DKCOM 1
 

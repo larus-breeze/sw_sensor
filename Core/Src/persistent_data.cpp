@@ -46,14 +46,14 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
   {
     case BOARD_ID:
       if( read)
-	value = (float)EEPROM_value.u16;
+	value = (float)(EEPROM_value.u16);
       else
 	EEPROM_value.u16 = (uint16_t)value;
       break;
     case QNH_OFFSET:
     case PITOT_OFFSET:
       if( read)
-	value = ( float)EEPROM_value.i16;
+	value = ( float)(EEPROM_value.i16);
       else
 	EEPROM_value.i16 = (int16_t)value;
       break;
@@ -62,13 +62,13 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
     case MAG_Y_SCALE:
     case MAG_Z_SCALE:
       if( read)
-	value = ( (float)EEPROM_value.i16 / 32768.0f) + 1.0f;
+	value = ( (float)(EEPROM_value.i16) / 32768.0f) + 1.0f;
       else
 	EEPROM_value.i16 = (int16_t)((value - 1.0f) * 32768.0f);
       break;
     case MAG_VARIANCE:
       if( read)
-	value = (float)EEPROM_value.u16 / 65536.0f * 1e-5f;
+	value = (float)(EEPROM_value.u16) / 65536.0f * 1e-5f;
       else
 	EEPROM_value.u16 = (uint16_t)(value * 1e5f * 65536.0f);
       break;
@@ -76,15 +76,15 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
     case MAG_Y_OFF:
     case MAG_Z_OFF:
       if( read)
-	value = ( (float)EEPROM_value.i16 / 3276.8f) + 1.0f;
+	value = ( (float)(EEPROM_value.i16) / 3276.8f) + 1.0f;
       else
-	EEPROM_value.i16 = (uint16_t)(value - 1.0f * 3276.8f);
+	EEPROM_value.i16 = (int16_t)((value - 1.0f) * 3276.8f);
       break;
     case ANT_BASELENGTH: // max +/- 32.768 m
     case ANT_SLAVE_DOWN:
     case ANT_SLAVE_RIGHT:
       if( read)
-	value = (float)EEPROM_value.i16 * 0.001f;
+	value = (float)(EEPROM_value.i16) * 0.001f;
       else
 	EEPROM_value.i16 = (int16_t)(value * 1000.0f);
       break;
@@ -95,7 +95,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
     case SENS_TILT_NICK:
     case SENS_TILT_YAW:
       if( read)
-	value = (float)EEPROM_value.i16 / 32768.0f * M_PI_F;
+	value = (float)(EEPROM_value.i16) / 32768.0f * M_PI_F;
       else
 	EEPROM_value.i16 = (int16_t)(value * 32768.0f / M_PI_F);
       break;
@@ -104,7 +104,7 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
     case WIND_TC:
     case MEAN_WIND_TC:
       if( read)
-	value = (float)EEPROM_value.u16 / 655.36f;
+	value = (float)(EEPROM_value.u16) / 655.36f;
       else
 	EEPROM_value.u16 = (uint16_t)(value * 655.36f);
       break;
@@ -132,7 +132,9 @@ bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value)
       return true; // error
 
   EEPROM_data_t read_value;
-  if( HAL_OK == EE_ReadVariable( id, &read_value.u16) && (read_value.u16 == EEPROM_value.u16))
+  if( HAL_OK != EE_ReadVariable( id, &read_value.u16))
+    return true; // error
+  if(read_value.u16 == EEPROM_value.u16)
     return HAL_OK;
   return EE_WriteVariable( id, EEPROM_value.u16);
 }

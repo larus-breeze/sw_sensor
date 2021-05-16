@@ -74,18 +74,18 @@ void write_magnetic_calibration_file (const coordinates_t &c)
     {
       char *next = buffer;
       next = my_ftoa (next, data[i].a);
-      *next++=' ';
+      *next++='\t';
       next = my_ftoa (next, data[i].b);
-      *next++=' ';
+      *next++='\t';
       next = my_ftoa (next, data[i].var_a);
-      *next++=' ';
+      *next++='\t';
       next = my_ftoa (next, data[i].var_b);
-      *next++='\r';
-      *next++='\n';
+      *next++='\t';
       fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
       if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
         return;
     }
+  f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
   f_close(&fp);
 }
 
@@ -199,7 +199,8 @@ data_logger_runnable (void*)
   uint32_t writtenBytes = 0;
   uint8_t *buf_ptr = buffer;
 
-  fresult = f_open (&outfile, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
+//  fresult = f_open (&outfile, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
+  fresult = f_open (&outfile, out_filename, FA_CREATE_NEW | FA_WRITE);
   if (fresult != FR_OK)
     suspend (); // give up, logger can not work
 

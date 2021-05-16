@@ -72,9 +72,9 @@ public:
       out.e[i]=calibration[i].calibrate( in.e[i]);
     return out;
   }
-  void set_calibration( linear_least_square_fit<float> mag_calibrator[3], char id)
+  void set_calibration( linear_least_square_fit<float> mag_calibrator[3], char id, bool check_samples=false)
   {
-    if( mag_calibrator[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES)
+    if( check_samples && ( mag_calibrator[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES))
       return; // not enough entropy
 
     linear_least_square_result<float> new_calibration[3];
@@ -104,7 +104,7 @@ public:
 
   bool parameters_changed_significantly(void) const;
   void write_into_EEPROM( void) const;
-  void read_from_EEPROM( void);
+  bool read_from_EEPROM( void); // false if OK
 private:
   bool calibration_done;
   calibration_t calibration[3];
@@ -122,9 +122,10 @@ inline bool compass_calibration_t::parameters_changed_significantly (void) const
   return parameter_change_variance > MAG_CALIBRATION_CHANGE_LIMIT;
 }
 
-inline void
-compass_calibration_t::write_into_EEPROM (void) const
+inline void compass_calibration_t::write_into_EEPROM (void) const
 {
+  if( calibration_done == false)
+    return;
   float variance = 0.0f;
   for( unsigned i=0; i<3; ++i)
     {
@@ -135,17 +136,24 @@ compass_calibration_t::write_into_EEPROM (void) const
   write_EEPROM_value(MAG_VARIANCE, variance);
 }
 
-inline void
-compass_calibration_t::read_from_EEPROM (void)
+inline bool compass_calibration_t::read_from_EEPROM (void)
 {
   float variance;
-  read_EEPROM_value( MAG_VARIANCE, variance);
+  calibration_done = false;
+  if( true == read_EEPROM_value( MAG_VARIANCE, variance))
+    return true; // error
   for( unsigned i=0; i<3; ++i)
     {
-      read_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_OFF   + 2*i), calibration[i].offset);
-      read_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_SCALE + 2*i), calibration[i].scale);
+      if( true == read_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_OFF   + 2*i), calibration[i].offset))
+	    return true; // error
+
+      if( true == read_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_SCALE + 2*i), calibration[i].scale))
+	    return true; // error
+
       calibration[i].variance = variance / 3.0f; // assuming symmetric variance
     }
+  calibration_done = true;
+  return false; // no error;
 }
 
 #endif /* COMPASS_CALIBRATION_H_ */
