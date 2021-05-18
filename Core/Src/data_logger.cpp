@@ -95,7 +95,7 @@ data_logger_runnable (void*)
   HAL_SD_DeInit (&hsd);
   delay (2000); //TODO: Quick consecutive resets cause SD Card to hang. This improved but does not fix the situation. Might require switching sd card power
 
-  char out_filename[25];
+  char out_filename[30];
   FRESULT fresult;
   FIL outfile;
 
@@ -199,15 +199,18 @@ data_logger_runnable (void*)
   uint32_t writtenBytes = 0;
   uint8_t *buf_ptr = buffer;
 
-//  fresult = f_open (&outfile, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
-  fresult = f_open (&outfile, out_filename, FA_CREATE_NEW | FA_WRITE);
+  fresult = f_open (&outfile, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)
     suspend (); // give up, logger can not work
 
   int32_t sync_counter=0;
 
-#ifdef INFILE // simulation at max speed
+#ifdef INFILE
+#if 0  // simulation at max speed
   while(true)
+#else
+    for (synchronous_timer t (10); true; t.sync ())
+#endif
     {
       UINT bytesread;
       fresult = f_read(&infile, (void *)&output_data, IN_DATA_LENGTH*4, &bytesread); // todo PATCH
@@ -224,8 +227,8 @@ data_logger_runnable (void*)
 
 #else
       // logging loop @ 100 Hz
-   for (synchronous_timer t (10); true; t.sync ())
-    {
+      for (synchronous_timer t (10); true; t.sync ())
+       {
 #endif
 
 #if LOG_OBSERVATIONS
