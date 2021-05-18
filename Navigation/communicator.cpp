@@ -5,8 +5,6 @@
  **************************************************************************/
 #include "system_configuration.h"
 
-#if RUN_COMMUNICATOR == 1
-
 #include <FreeRTOS_wrapper.h>
 #include "navigator.h"
 #include "flight_observer.h"
@@ -19,6 +17,12 @@ void sync_logger(void);
 
 COMMON output_data_t __ALIGNED(1024) output_data =  {0};
 COMMON GNSS_type GNSS (output_data.c);
+
+#if RUN_COMMUNICATOR == 0
+void sync_communicator (void)
+{
+}
+#else
 
 void communicator_runnable (void*)
 {

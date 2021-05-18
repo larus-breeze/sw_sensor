@@ -132,11 +132,11 @@ bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value)
       return true; // error
 
   EEPROM_data_t read_value;
-  if( HAL_OK != EE_ReadVariable( id, &read_value.u16))
-    return true; // error
-  if(read_value.u16 == EEPROM_value.u16)
-    return HAL_OK;
-  return EE_WriteVariable( id, EEPROM_value.u16);
+  if( (HAL_OK != EE_ReadVariable( id, &read_value.u16))
+      ||
+      (read_value.u16 != EEPROM_value.u16) )
+	return EE_WriteVariable( id, EEPROM_value.u16);
+  return HAL_OK;
 }
 
 bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value)
@@ -153,4 +153,11 @@ float configuration( EEPROM_PARAMETER_ID id)
   bool result = read_EEPROM_value( id, value);
   ASSERT( result == false);
   return value;
+}
+
+bool EEPROM_initialize( void)
+{
+  unsigned status = HAL_FLASH_Unlock();
+  ASSERT( status == HAL_OK);
+  return( EE_Init() != 0);
 }

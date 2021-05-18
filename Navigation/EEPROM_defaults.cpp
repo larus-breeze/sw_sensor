@@ -4,7 +4,14 @@
 //! helper function, in use until manual configuration is implemented
 void write_EEPROM_defaults( void)
 {
-  lock_EEPROM( false);
+  unsigned status;
+  status = EEPROM_initialize();
+  ASSERT( ! status);
+
+  status = lock_EEPROM( false);
+  ASSERT( status == HAL_OK);
+
+#if DKCOM == 1 // *******************************************************************
 
   // sensor orientation
   write_EEPROM_value( SENS_TILT_ROLL, 0.0f); // todo presently D-KCOM special data
@@ -14,7 +21,12 @@ void write_EEPROM_defaults( void)
   write_EEPROM_value( ANT_BASELENGTH, 2.03f);
   write_EEPROM_value( ANT_SLAVE_DOWN, 0.263f);
   write_EEPROM_value( ANT_SLAVE_RIGHT, -0.06f);
-
+#else
+  // sensor orientation
+  write_EEPROM_value( SENS_TILT_ROLL, 3.14159265f); 	// sensor orientation USB -> front
+  write_EEPROM_value( SENS_TILT_NICK, 0.0f);		// component side top
+  write_EEPROM_value( SENS_TILT_YAW,  0.0f);
+#endif
   // time constants
   write_EEPROM_value( VARIO_TC, VARIO_F_BY_FS);
   write_EEPROM_value( VARIO_INT_TC, AVG_VARIO_F_BY_FS);
@@ -26,7 +38,7 @@ void write_EEPROM_defaults( void)
   write_EEPROM_value( PITOT_SPAN, 1.031f);
 
   write_EEPROM_value( QNH_OFFSET, 0.0f);
-#if 0
+#if 1
   write_EEPROM_value( MAG_X_OFF, 0.0f);
   write_EEPROM_value( MAG_X_SCALE, 1.0f);
   write_EEPROM_value( MAG_Y_OFF, 0.0f);

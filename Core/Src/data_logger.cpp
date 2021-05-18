@@ -14,6 +14,8 @@
 #include "Linear_Least_Square_Fit.h"
 #include "data_structures.h"
 
+COMMON Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue(4);
+
 #if RUN_DATA_LOGGER
 
 FATFS fatfs;
@@ -24,8 +26,6 @@ extern DMA_HandleTypeDef hdma_sdio_tx;
 #define BUFSIZE 2048 // bytes
 #define RESERVE 512
 static uint8_t __ALIGNED(BUFSIZE) buffer[BUFSIZE + RESERVE];
-
-COMMON Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue(4);
 
 inline char *append_string( char *target, const char *source)
 {

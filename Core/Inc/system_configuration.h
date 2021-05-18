@@ -8,12 +8,12 @@
 
 #include "persistent_data.h"
 
-#define INFILE "simin_210502.f46" // switches on offline calculation and defines filename
-#define IN_DATA_LENGTH 46
-#define OUTFILE "simout_210502.f97"
-#define WRITE_EEPROM_DEFAULTS	0
+//#define INFILE "simin_210502.f46" // switches on offline calculation and defines filename
+//#define IN_DATA_LENGTH 46
+#define OUTFILE "test.f97"
+#define WRITE_EEPROM_DEFAULTS	1
 
-#define DKCOM 1
+#define DKCOM 0
 
 #define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
 #define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
@@ -46,7 +46,7 @@
 
 #else // **************************************************************************
 
-#define USE_DIFF_GNSS		0
+#define USE_DIFF_GNSS		1
 #define ALTI_DIFF 		0.0f 	// antenna height difference compensation
 #define HORIZ_DIFF		0.0f
 #define BLUETOOTH_NAME		"AT+NAMESOAR"
@@ -91,7 +91,7 @@
 #define RUN_COMMUNICATOR	1 // normal mode
 #define RUN_CAN_OUTPUT		1
 
-#define RUN_DATA_LOGGER		1
+#define RUN_DATA_LOGGER		0
 #define LOG_OBSERVATIONS	0 // log IMU + pressure data
 #define LOG_COORDINATES		0 // log GNSS data
 #define LOG_OUTPUT_DATA		1 // logging all inclusive

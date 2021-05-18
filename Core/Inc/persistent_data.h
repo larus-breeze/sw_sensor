@@ -62,6 +62,7 @@ float configuration( EEPROM_PARAMETER_ID id);
 bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value);
 bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value);
 bool lock_EEPROM( bool lockit);
+bool EEPROM_initialize( void);
 
 #endif ///#ifdef __cplusplus
 
