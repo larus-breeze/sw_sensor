@@ -27,6 +27,7 @@
 #define MAG_CALIB_LETHARGY	0.8f // percentage of remaining old calibration info
 #define MAG_CALIBRATION_CHANGE_LIMIT 1.0e-5f // variance sum of changes: 3 * { offset, scale }
 #define SAT_DELAY_FOR_WIND	26 // cycles = 1ms, optimized empirically
+#define GNSS_SAMPLE_RATE 	10.0f // depending on master GNSS RX configuration
 
 #define USE_GNSS_VARIO		1 // else pressure-vario
 
@@ -43,13 +44,16 @@
 //#define BLUETOOTH_NAME		"AT+NAMED-KCOM"
 #define BLUETOOTH_NAME		"AT+NAMEALBATROS"
 #define ACTIVATE_USB_NMEA	1
+#define USE_F9P_F9H		1
 
 #else // **************************************************************************
 
 #define USE_DIFF_GNSS		1
+#define USE_TWIN_GNSS		1
+
 #define ALTI_DIFF 		0.0f 	// antenna height difference compensation
 #define HORIZ_DIFF		0.0f
-#define BLUETOOTH_NAME		"AT+NAMESOAR"
+#define BLUETOOTH_NAME		"AT+NAMEALBATROS2"
 #define ACTIVATE_USB_NMEA	1
 
 #endif // **************************************************************************
@@ -86,12 +90,11 @@
 #define UART4_LED_STATUS	0
 #define D_GNSS_LED_STATUS	1
 #define uSD_LED_STATUS		1
-#define RUN_GNSS_UPDATE_WITHOUT_FIX 0
 
 #define RUN_COMMUNICATOR	1 // normal mode
 #define RUN_CAN_OUTPUT		1
 
-#define RUN_DATA_LOGGER		0
+#define RUN_DATA_LOGGER		1
 #define LOG_OBSERVATIONS	0 // log IMU + pressure data
 #define LOG_COORDINATES		0 // log GNSS data
 #define LOG_OUTPUT_DATA		1 // logging all inclusive

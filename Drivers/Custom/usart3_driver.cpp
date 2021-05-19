@@ -78,8 +78,18 @@ DMA1_Stream1_IRQHandler (void)
 }
 
 #define GPS_DMA_buffer_SIZE (sizeof( uBlox_pvt) + 8) // plus "u B class id size1 size2 ... cks1 cks2"
+#if USE_DIFF_GNSS
+#define GPS_RELPOS_DMA_buffer_SIZE (sizeof( uBlox_relpos_NED) + 8) // plus "u B class id size1 size2 ... cks1 cks2"
+#define RECEIVE_BUFFER_SIZE (GPS_DMA_buffer_SIZE+GPS_RELPOS_DMA_buffer_SIZE)
+#else
+#define (RECEIVE_BUFFER_SIZE GPS_DMA_buffer_SIZE)
+#endif
 
+#if USE_TWIN_GNSS
+static uint8_t __ALIGNED(256) buffer[RECEIVE_BUFFER_SIZE];
+#else
 static uint8_t buffer[GPS_DMA_buffer_SIZE];
+#endif
 
 static void GNSS_runnable (void*)
 {
@@ -89,7 +99,7 @@ static void GNSS_runnable (void*)
 
   while (true)
     {
-      result = HAL_UART_Receive_DMA (&huart3, buffer, GPS_DMA_buffer_SIZE);
+      result = HAL_UART_Receive_DMA (&huart3, buffer, RECEIVE_BUFFER_SIZE);
       if( result != HAL_OK)
 	{
 	  HAL_UART_Abort (&huart3);
@@ -125,7 +135,11 @@ static void GNSS_runnable (void*)
       HAL_UART_Abort (&huart3);
 
 //      if ((buffer[0] != 0xb5) || (buffer[1] != 'b'))
+#if USE_TWIN_GNSS
+      GNSS_Result result = GNSS.update_combined(buffer);
+#else
       GNSS_Result result = GNSS.update(buffer);
+#endif
       if( result == GNSS_ERROR)
       {
 #if UART3_LED_STATUS
@@ -137,13 +151,12 @@ static void GNSS_runnable (void*)
 	  continue;
 	}
       if(  result == GNSS_HAVE_FIX)
-    	  update_system_state_set( GNSS_AVAILABLE);
+  	  update_system_state_set( GNSS_AVAILABLE);
 
 #if UART3_LED_STATUS
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_SET);
 #endif
-      delay( 50);
     }
 }
 

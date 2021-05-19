@@ -10,6 +10,7 @@
 #include "GNSS.h"
 
 #if RUN_GNSS_HEADING
+#if USE_TWIN_GNSS	== 0
 
 COMMON UART_HandleTypeDef huart4;
 COMMON DMA_HandleTypeDef hdma_uart4_rx;
@@ -153,4 +154,5 @@ static void D_GNSS_runnable (void*)
 
 Task usart4_task (D_GNSS_runnable, "D-GNSS", 256, 0, STANDARD_TASK_PRIORITY+1);
 
+#endif
 #endif

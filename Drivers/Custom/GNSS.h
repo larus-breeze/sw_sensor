@@ -1,10 +1,8 @@
-/*
- * GPS.h
- *
- *  Created on: Feb 24, 2015
- *      Author: schaefer
+/**
+ @file GNSS.h
+ @brief uBlox GNSS + D-GNSS interface
+ @author: Dr. Klaus Schaefer
  */
-
 #ifndef DRIVER_GPS_H_
 #define DRIVER_GPS_H_
 
@@ -47,8 +45,6 @@ typedef struct
   uint8_t reserved[14]; // useless
 } uBlox_pvt;
 
-#define GPS_DMA_buffer_SIZE (sizeof( uBlox_pvt) + 8) // plus "u B class id size1 size2 ... cks1 cks2"
-
 #if USE_DIFF_GNSS
 typedef struct
 {
@@ -75,7 +71,6 @@ typedef struct
   uint32_t flags;	// 0b1100110111 if optimal result
 } uBlox_relpos_NED;
 
-#define GPS_RELPOS_DMA_buffer_SIZE (sizeof( uBlox_relpos_NED) + 8) // plus "u B class id size1 size2 ... cks1 cks2"
 #endif
 
 typedef enum { FIX_none, FIX_dead, FIX_2d, FIX_3d} FIX_TYPE;
@@ -118,6 +113,8 @@ public:
   GNSS_type (coordinates_t & coo);
   GNSS_Result update( const uint8_t * data);
   GNSS_Result update_delta( const uint8_t * data);
+  GNSS_Result update_combined( uint8_t * data);
+
   void reset_reference( void)
   {
     fix_type = FIX_none;

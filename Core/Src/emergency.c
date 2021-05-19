@@ -23,6 +23,7 @@ uint32_t Bad_Memory_Address;
 uint32_t Fault_status;
 uint32_t Bad_Instruction_Address;
 uint8_t  Bus_Fault_Status;
+uint16_t Usage_Fault_Status_Register;
 
 /**
  * @brief  This function handles exceptions triggered by bad parameters to lib functions
@@ -129,8 +130,15 @@ MemManage_Handler(void)
 void
 BusFault_Handler(void)
 {
-	Bus_Fault_Address=*(uint32_t *)0xe000ed38;
-	Bus_Fault_Status =*(uint8_t *)0xe000ed29;
+  Bus_Fault_Address=*(uint32_t *)0xe000ed38;
+  Bus_Fault_Status =*(uint8_t *) 0xe000ed29;
+	// bus fault status:
+	// 0x80 Bus_Fault_Address valid
+	// 0x10 stacking error
+	// 0x08 un-stacking error
+	// 0x04 imprecise error
+	// 0x02 bus error during data access size incorrect, disallowed in user mode ...
+	// 0x01 branch to invalid memory, invalid EXC. return code, vector table error ...
   __asm volatile
   (
       " mov r5, #2                                                     \n"
@@ -152,10 +160,9 @@ BusFault_Handler(void)
  */
 void __attribute__(( naked )) UsageFault_Handler(void)
 {
+  Usage_Fault_Status_Register = * (uint16_t *)0xe000ed2a;
   __asm volatile
   (
-//	  " bkpt 0                                                         \n"
-//	  " bx  lr		                                                   \n"
       " mov r5, #3                                                     \n"
       " tst lr, #4                                                     \n"
       " ite eq                                                         \n"
