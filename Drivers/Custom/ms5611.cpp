@@ -207,7 +207,7 @@ bool MS5611::initialize (void)
 	uint8_t reg = CMD_RESET;
 	if(I2C_OK == I2C_Write (MS5611_I2C, I2C_address, &reg, 1))
 	{
-		vTaskDelay (3);
+		vTaskDelay (5);
 
 		for (uint8_t j = 0; j < 8; j++)
 			PromData[j] = read_coef (j);
