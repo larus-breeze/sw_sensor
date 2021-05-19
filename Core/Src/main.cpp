@@ -91,9 +91,8 @@ int main(void)
 
 #if ACTIVATE_FPU_EXCEPTION_TRAP
   // enable floating-point exception
-  uint32_t prioritygroup = NVIC_GetPriorityGrouping ();
-  NVIC_SetPriority ((IRQn_Type) FPU_IRQn, STANDARD_ISR_PRIORITY+2);
-  NVIC_EnableIRQ ((IRQn_Type) FPU_IRQn);
+  HAL_NVIC_SetPriority ((IRQn_Type) FPU_IRQn, EMERGENCY_ISR_PRIORITY, 0);
+  HAL_NVIC_EnableIRQ ((IRQn_Type) FPU_IRQn);
 #endif
 
 #if 0 // test FPU exception

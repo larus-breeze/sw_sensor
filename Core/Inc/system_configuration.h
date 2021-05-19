@@ -11,7 +11,7 @@
 //#define INFILE "simin_210502.f46" // switches on offline calculation and defines filename
 //#define IN_DATA_LENGTH 46
 #define OUTFILE "test.f97"
-#define WRITE_EEPROM_DEFAULTS	1
+#define WRITE_EEPROM_DEFAULTS	0
 
 #define DKCOM 0
 
@@ -118,6 +118,7 @@
 #define CAN_PRIORITY		STANDARD_TASK_PRIORITY
 #define LOGGER_PRIORITY		STANDARD_TASK_PRIORITY
 
+#define EMERGENCY_ISR_PRIORITY	12 // highest priority
 #define USB_ISR_PRIORITY	13
 #define SDIO_ISR_PRIORITY	14
 #define STANDARD_ISR_PRIORITY	15 // lowest priority

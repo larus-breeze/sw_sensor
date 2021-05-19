@@ -37,6 +37,7 @@ assert_failed(uint8_t* file, uint32_t line)
 void FPU_IRQHandler( void)
 {
   asm("bkpt 0");
+  asm("bx lr");
 }
 
 /**
