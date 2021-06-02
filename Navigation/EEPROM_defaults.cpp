@@ -9,7 +9,7 @@ void write_EEPROM_defaults( void)
   ASSERT( ! status);
 
   status = lock_EEPROM( false);
-  ASSERT( status == HAL_OK);
+  ASSERT( status == 0); // HAL_OK
 
 #if DKCOM == 1 // *******************************************************************
 

@@ -59,6 +59,8 @@ bool can_driver_t::send_can_packet (const CANpacket &msg)
   return true;
 }
 
+CAN_HandleTypeDef CanHandle;
+
 namespace CAN_driver_ISR
 {
   /**
@@ -91,14 +93,34 @@ namespace CAN_driver_ISR
       CANx->IER &= ~CAN_IT_TX_MAILBOX_EMPTY; // interrupt off, no more work to do
   }
 
-} // namespace CAN_driver_ISR
+  extern "C" void CAN1_SCE_IRQHandler( void)
+  {
+    CANx->IER = 0; // no more interrupts
+    CANx->MSR = CAN_MSR_ERRI_Msk; // reset any pending error
+    CAN_driver.locked = true;
+    CAN_driver.reset_timer.start_from_ISR();
+  }
 
-CAN_HandleTypeDef CanHandle;
+  void CAN_reset( void)
+  {
+    CAN_driver.reset();
+  }
+} // namespace CAN_driver_ISR
 
 can_driver_t::can_driver_t () :
     RX_queue (20),
-    TX_queue (20)
+    TX_queue (20),
+    reset_timer( 10000, CAN_reset_timer_callback, false),
+    locked( true)
 {
+  initialize();
+}
+
+void can_driver_t::initialize(void)
+{
+  if (HAL_CAN_DeInit (&CanHandle) != HAL_OK)
+      asm("bkpt 0");
+
   __HAL_RCC_CAN1_CLK_ENABLE();  // also required for CAN2 !!
 //  __HAL_RCC_CAN2_CLK_ENABLE();
 
@@ -126,7 +148,7 @@ can_driver_t::can_driver_t () :
 
   HAL_GPIO_Init (CANx_RX_GPIO_PORT, &GPIO_InitStruct);
 
-  CAN_FilterTypeDef sFilterConfig;
+  CAN_FilterTypeDef sFilterConfig={0};
 
   /*##-1- Configure the CAN peripheral #######################################*/
   CanHandle.Instance = CANx;
@@ -169,10 +191,7 @@ can_driver_t::can_driver_t () :
 
   /*##-3- Start the CAN peripheral ###########################################*/
   if (HAL_CAN_Start (&CanHandle) != HAL_OK)
-    {
-      /* Start Error */
       asm("bkpt 0");
-    }
 
   /*##-4- Activate CAN RX notification #######################################*/
   if (HAL_CAN_ActivateNotification (&CanHandle, CAN_IT_RX_FIFO0_MSG_PENDING)
@@ -187,11 +206,26 @@ can_driver_t::can_driver_t () :
   NVIC_SetPriority ((IRQn_Type) CAN1_RX0_IRQn,
 		    NVIC_EncodePriority (prioritygroup, STANDARD_ISR_PRIORITY, 0));
   NVIC_EnableIRQ ((IRQn_Type) CAN1_RX0_IRQn);
+
   NVIC_SetPriority ((IRQn_Type) CAN1_TX_IRQn,
 		    NVIC_EncodePriority (prioritygroup, STANDARD_ISR_PRIORITY, 0));
   NVIC_EnableIRQ ((IRQn_Type) CAN1_TX_IRQn);
 
+  NVIC_SetPriority ((IRQn_Type) CAN1_SCE_IRQn,
+		    NVIC_EncodePriority (prioritygroup, STANDARD_ISR_PRIORITY-1, 0));
+  NVIC_EnableIRQ ((IRQn_Type) CAN1_SCE_IRQn);
+
+  CANx->MSR = CAN_MSR_ERRI_Msk; // reset any pending error
+
   CANx->IER |= CAN_IT_RX_FIFO0_MSG_PENDING; // enable CANx FIFO 0 RX interrupt
+  CANx->IER |= CAN_IER_BOFIE | CAN_IER_LECIE | CAN_IER_EPVIE | CAN_IER_EWGIE | CAN_IER_ERRIE;
+
+  locked = false; // allow usage now
+}
+
+void CAN_reset_timer_callback( TimerHandle_t)
+{
+  CAN_driver.initialize();
 }
 
 #if RUN_CAN_TESTER

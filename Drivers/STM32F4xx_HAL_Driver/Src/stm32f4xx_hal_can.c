@@ -1043,7 +1043,7 @@ HAL_StatusTypeDef HAL_CAN_Start(CAN_HandleTypeDef *hcan)
 
     /* Get tick */
     tickstart = HAL_GetTick();
-
+#if 0
     /* Wait the acknowledge */
     while ((hcan->Instance->MSR & CAN_MSR_INAK) != 0U)
     {
@@ -1059,7 +1059,7 @@ HAL_StatusTypeDef HAL_CAN_Start(CAN_HandleTypeDef *hcan)
         return HAL_ERROR;
       }
     }
-
+#endif
     /* Reset the CAN ErrorCode */
     hcan->ErrorCode = HAL_CAN_ERROR_NONE;
 
