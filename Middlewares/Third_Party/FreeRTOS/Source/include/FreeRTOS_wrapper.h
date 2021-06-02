@@ -591,10 +591,10 @@ inline void delay(TickType_t time)
 class timer
 {
 public:
-	timer(TickType_t period, TimerCallbackFunction_t callback) :
+	timer(TickType_t period, TimerCallbackFunction_t callback, bool periodic = true) :
 			timer_ID(0)
 	{
-		timer_ID = xTimerCreate(0, period, 0, 0, callback);
+		timer_ID = xTimerCreate(0, period, periodic, 0, callback);
 		ASSERT(timer_ID != 0);
 	}
 	~timer( void)

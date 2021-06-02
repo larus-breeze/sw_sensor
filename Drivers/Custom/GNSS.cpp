@@ -124,7 +124,7 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 	coordinates.relPosHeading = (float)(p.relPosheading) * 1.745329252e-7f; // 1e-5 deg -> rad
 //	coordinates.relPosLength  = 0.01f*(p.relPoslength) + 0.0001f * p.relPosHP_len;
 #if USE_F9P_F9H
-//	GNSS_Result res = ( p.flags == 0b1100110111) ? GNSS_HAVE_FIX : GNSS_NO_FIX; // for F9P + F9H receiver
+	GNSS_Result res = ( p.flags == 0b1100110111) ? GNSS_HAVE_FIX : GNSS_NO_FIX; // for F9P + F9H receiver
 #else
 	GNSS_Result res = ( p.flags == 0b0100110111) ? GNSS_HAVE_FIX : GNSS_NO_FIX; // for F9P + F9P receiver
 #endif

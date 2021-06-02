@@ -8,12 +8,13 @@
 
 #include "persistent_data.h"
 
-//#define INFILE "simin_210502.f46" // switches on offline calculation and defines filename
-//#define IN_DATA_LENGTH 46
-#define OUTFILE "test.f97"
+#define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
+#define IN_DATA_LENGTH 46
+#define OUTFILE "simout_20210530.f97"
+
 #define WRITE_EEPROM_DEFAULTS	0
 
-#define DKCOM 0
+#define DKCOM 1
 
 #define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
 #define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
@@ -35,14 +36,10 @@
 
 #define USE_DIFF_GNSS		1
 
-#define ALTI_DIFF 		0.136f 	// antenna height difference compensation
-					// front lower for D-KCOM
-#define HORIZ_DIFF		(-0.06f/2.03f)
 #define DGNSS_SETUP_RAW		{ 2.03f, -0.06f, 0.136f} // slave antenna position
 #define DGNSS_SETUP_NORMALIZED	{ 0.9973f, -0.0295f, 0.0668f} // slave antenna position norm.
 
-//#define BLUETOOTH_NAME		"AT+NAMED-KCOM"
-#define BLUETOOTH_NAME		"AT+NAMEALBATROS"
+#define BLUETOOTH_NAME		"AT+NAMED-KCOM"
 #define ACTIVATE_USB_NMEA	1
 #define USE_F9P_F9H		1
 
@@ -51,8 +48,6 @@
 #define USE_DIFF_GNSS		1
 #define USE_TWIN_GNSS		1
 
-#define ALTI_DIFF 		0.0f 	// antenna height difference compensation
-#define HORIZ_DIFF		0.0f
 #define BLUETOOTH_NAME		"AT+NAMEALBATROS2"
 #define ACTIVATE_USB_NMEA	1
 
