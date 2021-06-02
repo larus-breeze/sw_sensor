@@ -95,9 +95,13 @@ namespace CAN_driver_ISR
 
   extern "C" void CAN1_SCE_IRQHandler( void)
   {
+<<<<<<< HEAD
     CANx->IER = 0; // no more interrupts
     CANx->MSR = CAN_MSR_ERRI_Msk; // reset any pending error
     CAN_driver.locked = true;
+=======
+    CANx->MSR &= ~CAN_MSR_ERRI_Msk;
+>>>>>>> branch 'master' of git@github.com:MaxBaex/the_soar_instrument.git
     CAN_driver.reset_timer.start_from_ISR();
   }
 
@@ -215,7 +219,11 @@ void can_driver_t::initialize(void)
 		    NVIC_EncodePriority (prioritygroup, STANDARD_ISR_PRIORITY-1, 0));
   NVIC_EnableIRQ ((IRQn_Type) CAN1_SCE_IRQn);
 
+<<<<<<< HEAD
   CANx->MSR = CAN_MSR_ERRI_Msk; // reset any pending error
+=======
+  CANx->MSR &= ~CAN_MSR_ERRI_Msk; // reset any pending error
+>>>>>>> branch 'master' of git@github.com:MaxBaex/the_soar_instrument.git
 
   CANx->IER |= CAN_IT_RX_FIFO0_MSG_PENDING; // enable CANx FIFO 0 RX interrupt
   CANx->IER |= CAN_IER_BOFIE | CAN_IER_LECIE | CAN_IER_EPVIE | CAN_IER_EWGIE | CAN_IER_ERRIE;
