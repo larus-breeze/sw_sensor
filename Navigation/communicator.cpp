@@ -37,7 +37,8 @@ void communicator_runnable (void*)
   float3matrix sensor_mapping;
   {
     quaternion<float> q;
-    q.from_euler( configuration( SENS_TILT_ROLL), configuration( SENS_TILT_NICK), configuration( SENS_TILT_YAW));
+    //    q.from_euler( configuration( SENS_TILT_ROLL), configuration( SENS_TILT_NICK), configuration( SENS_TILT_YAW));
+    q.from_euler( 0.0f, -0.13f, -3.14159265f); // todo patch
     q.get_rotation_matrix(sensor_mapping);
   }
 
@@ -125,10 +126,7 @@ void communicator_runnable (void*)
 	}
 #endif
 
-#ifdef INFILE // in sim mode: logger: continue
-      sync_logger();
-#endif
-
+      sync_logger(); // kick logger @ 100 Hz
     }
 }
 

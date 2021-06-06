@@ -25,7 +25,7 @@
         	
     </configuration>
     	
-    <configuration id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.266989291" name="Release">
+    <configuration id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.29276544.1641109768" name="Release">
         		
         <extension point="org.eclipse.cdt.core.LanguageSettingsProvider">
             			

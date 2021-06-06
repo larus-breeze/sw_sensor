@@ -6,6 +6,7 @@
 
 #include "embedded_memory.h"
 #include "ascii_support.h"
+#include "my_assert.h"
 
 float string2float(char *input)
 {
@@ -133,3 +134,53 @@ char * my_ftoa( char * target, float value)
  	*target++='e';
  	return( my_itoa( target, (int)exponent));
  }
+
+void portable_ftoa ( float value, char* res, unsigned  no_of_decimals, unsigned res_len )
+{
+	ASSERT( no_of_decimals <= res_len-2);
+
+	unsigned i=no_of_decimals;
+	while( i-- > 0)
+		value *=10.0f;
+
+	int number;
+	char sign;
+
+	if( value < 0.0f)
+	{
+		sign = '-';
+		number = (int)( -value + 0.5f);
+	}
+	else
+		{
+		sign = ' ';
+		number = (int)( value + 0.5f);
+		}
+
+	char * target = res + res_len;
+	*target-- = 0;
+
+	for( i=no_of_decimals; i; --i)
+	{
+		*target-- = number % 10 + '0';
+		number /= 10;
+	}
+
+	*target-- = '.';
+	if( number == 0)
+	{
+		*target -- = '0';
+	}
+	else while(( number > 0) && ( target > res+1))
+	{
+		*target-- = number % 10 + '0';
+		number /= 10;
+	}
+
+	*target-- = sign;
+
+	while( target >= res)
+		*target-- = ' ';
+
+}
+

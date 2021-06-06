@@ -11,6 +11,7 @@ static void test( void *)
   volatile uint16_t data;
 
   HAL_FLASH_Unlock();
+  ASSERT(status == HAL_OK);
   status = EE_Init();
   ASSERT(status == HAL_OK);
   status = EE_WriteVariable( 1, 0xa512);

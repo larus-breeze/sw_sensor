@@ -227,8 +227,9 @@ data_logger_runnable (void*)
 
 #else
       // logging loop @ 100 Hz
-      for (synchronous_timer t (10); true; t.sync ())
+      while( true)
        {
+	  notify_take (true); // wait for synchronization by from communicator
 #endif
 
 #if LOG_OBSERVATIONS
@@ -265,7 +266,6 @@ data_logger_runnable (void*)
 #endif
 	write_magnetic_calibration_file ( output_data.c);
 	}
-
     }
 }
 

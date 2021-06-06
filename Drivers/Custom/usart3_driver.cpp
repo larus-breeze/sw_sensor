@@ -78,11 +78,12 @@ DMA1_Stream1_IRQHandler (void)
 }
 
 #define GPS_DMA_buffer_SIZE (sizeof( uBlox_pvt) + 8) // plus "u B class id size1 size2 ... cks1 cks2"
-#if USE_DIFF_GNSS
+
+#if USE_TWIN_GNSS
 #define GPS_RELPOS_DMA_buffer_SIZE (sizeof( uBlox_relpos_NED) + 8) // plus "u B class id size1 size2 ... cks1 cks2"
 #define RECEIVE_BUFFER_SIZE (GPS_DMA_buffer_SIZE+GPS_RELPOS_DMA_buffer_SIZE)
 #else
-#define (RECEIVE_BUFFER_SIZE GPS_DMA_buffer_SIZE)
+#define RECEIVE_BUFFER_SIZE GPS_DMA_buffer_SIZE
 #endif
 
 #if USE_TWIN_GNSS

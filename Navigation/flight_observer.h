@@ -11,9 +11,9 @@
 #include <differentiator.h>
 #include "KalmanVario.h"
 #include "delay_line.h"
+#include "embedded_math.h"
 
 #define SQR(x) ((x)*(x))
-#define SIN(x) arm_sin_f32(x)
 #include "pt2.h"
 
 class flight_observer_t

@@ -5,9 +5,7 @@
  **************************************************************************/
 #include "system_configuration.h"
 #include "flight_observer.h"
-
-#define SQR(x) ((x)*(x))
-#define SIN(x) arm_sin_f32(x)
+#include "embedded_math.h"
 
 #define ONE_DIV_BY_GRAVITY_TIMES_2 0.0509684f
 #define RECIP_GRAVITY 0.1094f

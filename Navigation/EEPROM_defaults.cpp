@@ -38,7 +38,8 @@ void write_EEPROM_defaults( void)
   write_EEPROM_value( PITOT_SPAN, 1.031f);
 
   write_EEPROM_value( QNH_OFFSET, 0.0f);
-#if 1
+
+#if 1 // simple magnetic defaults
   write_EEPROM_value( MAG_X_OFF, 0.0f);
   write_EEPROM_value( MAG_X_SCALE, 1.0f);
   write_EEPROM_value( MAG_Y_OFF, 0.0f);
@@ -69,8 +70,6 @@ void write_EEPROM_defaults( void)
 
   write_EEPROM_value( DECLINATION, +3.0f * M_PI_F / 180.0);
   write_EEPROM_value( INCLINATION, +65.5f * M_PI_F / 180.0);
-
-
 
   lock_EEPROM( true);
 }
