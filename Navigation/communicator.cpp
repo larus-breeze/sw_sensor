@@ -30,15 +30,16 @@ void communicator_runnable (void*)
   float3vector acc, mag, gyro;
   unsigned airborne_counter = 0;
 
+#ifdef INFILE // we presently run HIL/SIL
   float pitot_offset = configuration( PITOT_OFFSET);
   float pitot_span   = configuration( PITOT_SPAN);
   float QNH_offset    = configuration( QNH_OFFSET);
+#endif
 
   float3matrix sensor_mapping;
   {
     quaternion<float> q;
-    //    q.from_euler( configuration( SENS_TILT_ROLL), configuration( SENS_TILT_NICK), configuration( SENS_TILT_YAW));
-    q.from_euler( 0.0f, -0.13f, -3.14159265f); // todo patch
+    q.from_euler( configuration( SENS_TILT_ROLL), configuration( SENS_TILT_NICK), configuration( SENS_TILT_YAW));
     q.get_rotation_matrix(sensor_mapping);
   }
 
@@ -122,7 +123,7 @@ void communicator_runnable (void*)
       if (++count_10Hz >= 10)
 	{
 	  count_10Hz = 0;
-	  trigger_CAN (); // todo alle abtastraten checken !
+	  trigger_CAN ();
 	}
 #endif
 

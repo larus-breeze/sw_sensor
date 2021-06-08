@@ -336,6 +336,8 @@ HAL_StatusTypeDef HAL_CAN_Init(CAN_HandleTypeDef *hcan)
   /* Get tick */
   tickstart = HAL_GetTick();
 
+#if 0
+
   /* Check Sleep mode leave acknowledge */
   while ((hcan->Instance->MSR & CAN_MSR_SLAK) != 0U)
   {
@@ -350,6 +352,8 @@ HAL_StatusTypeDef HAL_CAN_Init(CAN_HandleTypeDef *hcan)
       return HAL_ERROR;
     }
   }
+
+#endif
 
   /* Request initialisation */
   SET_BIT(hcan->Instance->MCR, CAN_MCR_INRQ);

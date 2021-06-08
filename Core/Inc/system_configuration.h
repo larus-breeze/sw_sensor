@@ -8,9 +8,9 @@
 
 #include "persistent_data.h"
 
-//#define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
-//#define IN_DATA_LENGTH 46
-//#define OUTFILE "simout_20210530.f97"
+#define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
+#define IN_DATA_LENGTH 46
+#define OUTFILE "simout_20210530.f97"
 
 #define WRITE_EEPROM_DEFAULTS	0
 
@@ -63,6 +63,7 @@
 #define RUN_L3GD20 		0
 #define RUN_FXOS8700		0
 #define RUN_PITOT_MODULE 	0
+
 #else
 #define RUN_GNSS		1
 #define RUN_GNSS_HEADING	1
@@ -71,6 +72,7 @@
 #define RUN_L3GD20 		1
 #define RUN_FXOS8700		1
 #define RUN_PITOT_MODULE 	1
+
 #endif
 
 #define RUN_CAN_TESTER		0

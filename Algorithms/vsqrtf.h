@@ -1,14 +1,10 @@
-/*
- * vsqrtf.h
- *
- *  Created on: Jan 11, 2018
- *      Author: schaefer
+/**
+ * @file    vsqrtf.h
+ * @brief   macro to force usage of "vsqrt" FPU instruction
+ * @author  Dr. Klaus Schaefer dr.klaus.schaefer@mail.de
  */
-
 #ifndef VSQRTF_H_
 #define VSQRTF_H_
-
-#if 1 // in arm_math.h
 
 __attribute__((always_inline)) static float inline VSQRTF(float op1)
   {
@@ -16,7 +12,5 @@ __attribute__((always_inline)) static float inline VSQRTF(float op1)
   	asm volatile ("vsqrt.f32 %0, %1" : "=&w" (result) : "w" (op1) );
   	return (result);
   }
-
-#endif
 
 #endif /* VSQRTF_H_ */
