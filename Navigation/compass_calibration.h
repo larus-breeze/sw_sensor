@@ -72,7 +72,7 @@ public:
       out.e[i]=calibration[i].calibrate( in.e[i]);
     return out;
   }
-  void set_calibration( linear_least_square_fit<float> mag_calibrator[3], char id, bool check_samples=false)
+  void set_calibration( linear_least_square_fit<float> mag_calibrator[3], char id, bool check_samples=true)
   {
     if( check_samples && ( mag_calibrator[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES))
       return; // not enough entropy
@@ -133,14 +133,14 @@ inline void compass_calibration_t::write_into_EEPROM (void) const
       write_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_SCALE + 2*i), calibration[i].scale);
       variance += calibration[i].variance;
     }
-  write_EEPROM_value(MAG_VARIANCE, variance);
+  write_EEPROM_value(MAG_STD_DEVIATION, SQRT( variance));
 }
 
 inline bool compass_calibration_t::read_from_EEPROM (void)
 {
   float variance;
   calibration_done = false;
-  if( true == read_EEPROM_value( MAG_VARIANCE, variance))
+  if( true == read_EEPROM_value( MAG_STD_DEVIATION, variance))
     return true; // error
   for( unsigned i=0; i<3; ++i)
     {

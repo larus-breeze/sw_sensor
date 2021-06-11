@@ -206,9 +206,9 @@ data_logger_runnable (void*)
   int32_t sync_counter=0;
 
 #ifdef INFILE
-#if 0  // simulation at max speed
-  while(true)
-#else
+#if MAXSPEED_CALCULATION  // simulation at max speed
+  while( true)
+#else // simulation in real time
     for (synchronous_timer t (10); true; t.sync ())
 #endif
     {
@@ -218,7 +218,19 @@ data_logger_runnable (void*)
 	{
 	      f_close(&infile);
 	      f_close(&outfile);
+#if uSD_LED_STATUS
+	      while( true)
+		{
+		  delay(100);
+		    HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, led_state);
+		    led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
+		  delay(300);
+		    HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, led_state);
+		    led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
+		}
+#else
 	      suspend();
+#endif
 	}
 
       void sync_communicator (void);

@@ -10,7 +10,7 @@
 
 #define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
 #define IN_DATA_LENGTH 46
-#define OUTFILE "simout_20210530.f97"
+#define OUTFILE "simout_xcorr_20210530.f97"
 
 #define WRITE_EEPROM_DEFAULTS	0
 
@@ -92,9 +92,9 @@
 #define RUN_CAN_OUTPUT		1
 
 #define RUN_DATA_LOGGER		1
-#define LOG_OBSERVATIONS	1 // log IMU + pressure data
-#define LOG_COORDINATES		1 // log GNSS data
-#define LOG_OUTPUT_DATA		0 // logging all inclusive
+#define LOG_OBSERVATIONS	0 // log IMU + pressure data
+#define LOG_COORDINATES		0 // log GNSS data
+#define LOG_OUTPUT_DATA		1 // logging all inclusive
 #define OLD_FORMAT 		0 // for year 2020 old data without cheap sensor info
 				  // and without GNSS speed information
 

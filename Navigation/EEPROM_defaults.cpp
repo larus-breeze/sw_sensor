@@ -46,7 +46,7 @@ void write_EEPROM_defaults( void)
   write_EEPROM_value( MAG_Y_SCALE, 1.0f);
   write_EEPROM_value( MAG_Z_OFF, 0.0f);
   write_EEPROM_value( MAG_Z_SCALE, 1.0f);
-  write_EEPROM_value( MAG_VARIANCE, 0.9999e-5f);
+  write_EEPROM_value( MAG_STD_DEVIATION, 0.009999f);
 #else // used to test compass calibration + EEPROM writing
   compass_calibration_t calibration;
   linear_least_square_fit<float> mag_calibrator[3];

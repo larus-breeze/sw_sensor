@@ -22,7 +22,7 @@ ROM persistent_data_t persistent_data[]=
 	{MAG_Y_SCALE,	"Mag_Y_Scale", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
 	{MAG_Z_OFF,	"Mag_Z_Off", 0},	//! Induction sensor x offset signed / ( 10.0f / 32768 )
 	{MAG_Z_SCALE,	"Mag_Z_Scale", 0},	//! Induction sensor x gain signed ( scale-factor = 1.0f + value / 32768 )
-	{MAG_VARIANCE,	"Mag_Calib_Var", 0}, 	//! Magnetic calibration variance unsigned / ( 1e-5f / 65536 )
+	{MAG_STD_DEVIATION, "Mag_Calib_Err", 0},//! Magnetic calibration STD deviation / ( 1 % / 65536 )
 
 	{DECLINATION,	"Mag_Declination", 0}, 	//! Magnetic declination (east positive) signed / ( 180° / 32768)
 	{INCLINATION,	"Mag_Inclination", 0}, 	//! Magnetic inclination (down positive) signed / ( 180° / 32768)
@@ -66,11 +66,11 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
       else
 	EEPROM_value.i16 = (int16_t)((value - 1.0f) * 32768.0f);
       break;
-    case MAG_VARIANCE:
+    case MAG_STD_DEVIATION:
       if( read)
-	value = (float)(EEPROM_value.u16) / 65536.0f * 1e-5f;
+	value = (float)(EEPROM_value.u16) / 65536.0f * 1e-2f;
       else
-	EEPROM_value.u16 = (uint16_t)(value * 1e5f * 65536.0f);
+	EEPROM_value.u16 = (uint16_t)(value * 1e2f * 65536.0f);
       break;
     case MAG_X_OFF:
     case MAG_Y_OFF:
