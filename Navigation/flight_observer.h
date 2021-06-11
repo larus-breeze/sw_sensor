@@ -98,9 +98,6 @@ private:
 	float vario_uncompensated_GNSS;
 	float vario_uncompensated_pressure;
 
-	delay_line<float, SAT_DELAY_FOR_WIND> GNSS_velocity_delay_N;
-	delay_line<float, SAT_DELAY_FOR_WIND> GNSS_velocity_delay_E;
-
 	KalmanVario_t KalmanVario_GNSS;
 	KalmanVario_t KalmanVario_pressure;
 };
