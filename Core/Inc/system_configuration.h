@@ -11,6 +11,7 @@
 #define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
 #define IN_DATA_LENGTH 46
 #define OUTFILE "simout_xcorr_20210530.f97"
+#define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
 
 #define WRITE_EEPROM_DEFAULTS	0
 
@@ -26,7 +27,7 @@
 #define STABLE_CIRCLING_LIMIT	(30 * 100) // seconds @ 100 Hz for MAG auto calibration
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
 #define MAG_CALIB_LETHARGY	0.8f // percentage of remaining old calibration info
-#define MAG_CALIBRATION_CHANGE_LIMIT 1.0e-5f // variance sum of changes: 3 * { offset, scale }
+#define MAG_CALIBRATION_CHANGE_LIMIT 5.0e-4f // variance average of changes: 3 * { offset, scale }
 #define SAT_DELAY_FOR_WIND	26 // cycles = 1ms, optimized empirically
 #define GNSS_SAMPLE_RATE 	10.0f // depending on master GNSS RX configuration
 

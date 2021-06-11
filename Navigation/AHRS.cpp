@@ -319,7 +319,7 @@ void AHRS_type::handle_magnetic_calibration (void) const
     return;
 
   // make calibration permanent if precision improved or values have changed significantly
-  if( (compass_calibration.get_variance() < configuration(MAG_STD_DEVIATION) )
+  if( (compass_calibration.get_variance_average() < configuration(MAG_STD_DEVIATION) )
       ||
       (compass_calibration.parameters_changed_significantly())
       )

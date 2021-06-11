@@ -39,7 +39,17 @@ void write_EEPROM_defaults( void)
 
   write_EEPROM_value( QNH_OFFSET, 0.0f);
 
-#if 1 // simple magnetic defaults
+#if 1 // fine-tuned magnetic defaults D-KCOM May 2021
+  write_EEPROM_value( MAG_X_OFF, 0.32861645f);
+  write_EEPROM_value( MAG_X_SCALE, 1.0f / 1.221335f);
+  write_EEPROM_value( MAG_Y_OFF, 0.007314864f);
+  write_EEPROM_value( MAG_Y_SCALE, 1.0f / 0.95970715f);
+  write_EEPROM_value( MAG_Z_OFF, -2.9421685f);
+  write_EEPROM_value( MAG_Z_SCALE, 1.0f / 0.86157445);
+  write_EEPROM_value( MAG_STD_DEVIATION, 0.0005f);
+#endif
+
+#if 0 // simple magnetic defaults
   write_EEPROM_value( MAG_X_OFF, 0.0f);
   write_EEPROM_value( MAG_X_SCALE, 1.0f);
   write_EEPROM_value( MAG_Y_OFF, 0.0f);
@@ -47,7 +57,9 @@ void write_EEPROM_defaults( void)
   write_EEPROM_value( MAG_Z_OFF, 0.0f);
   write_EEPROM_value( MAG_Z_SCALE, 1.0f);
   write_EEPROM_value( MAG_STD_DEVIATION, 0.009999f);
-#else // used to test compass calibration + EEPROM writing
+#endif
+
+#if 0 // used to test compass calibration + EEPROM writing
   compass_calibration_t calibration;
   linear_least_square_fit<float> mag_calibrator[3];
 

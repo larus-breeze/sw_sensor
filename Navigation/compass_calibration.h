@@ -94,12 +94,12 @@ public:
     return calibration_done;
   }
 
-  float get_variance( void) const
+  float get_variance_average( void) const
   {
     float retv = 0.0f;
     for( unsigned i=0; i < 3; ++i)
       retv += calibration[i].variance;
-    return retv;
+    return retv * 0.33333f;
   }
 
   bool parameters_changed_significantly(void) const;
@@ -119,6 +119,7 @@ inline bool compass_calibration_t::parameters_changed_significantly (void) const
 	  SQR( configuration( (EEPROM_PARAMETER_ID)(MAG_X_OFF   + 2*i)) - calibration[i].offset) +
 	  SQR( configuration( (EEPROM_PARAMETER_ID)(MAG_X_SCALE + 2*i)) - calibration[i].scale);
     }
+  parameter_change_variance /= 6.0f; // => average
   return parameter_change_variance > MAG_CALIBRATION_CHANGE_LIMIT;
 }
 
@@ -133,7 +134,7 @@ inline void compass_calibration_t::write_into_EEPROM (void) const
       write_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_SCALE + 2*i), calibration[i].scale);
       variance += calibration[i].variance;
     }
-  write_EEPROM_value(MAG_STD_DEVIATION, SQRT( variance));
+  write_EEPROM_value(MAG_STD_DEVIATION, SQRT( variance / 3.0f));
 }
 
 inline bool compass_calibration_t::read_from_EEPROM (void)
@@ -142,6 +143,8 @@ inline bool compass_calibration_t::read_from_EEPROM (void)
   calibration_done = false;
   if( true == read_EEPROM_value( MAG_STD_DEVIATION, variance))
     return true; // error
+  variance = SQR( variance); // has been stored as STD DEV
+
   for( unsigned i=0; i<3; ++i)
     {
       if( true == read_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_OFF   + 2*i), calibration[i].offset))
@@ -150,8 +153,9 @@ inline bool compass_calibration_t::read_from_EEPROM (void)
       if( true == read_EEPROM_value( (EEPROM_PARAMETER_ID)(MAG_X_SCALE + 2*i), calibration[i].scale))
 	    return true; // error
 
-      calibration[i].variance = variance / 3.0f; // assuming symmetric variance
+      calibration[i].variance = variance;
     }
+
   calibration_done = true;
   return false; // no error;
 }
