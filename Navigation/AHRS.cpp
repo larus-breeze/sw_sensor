@@ -147,6 +147,9 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro, const float3vector &acc,
 			     const float3vector &GNSS_acceleration,
 			     float GNSS_heading)
 {
+  circle_state_t old_circle_state = circle_state;
+  update_circling_state (gyro);
+
   float3vector mag;
   if( compass_calibration.isCalibrationDone()) // use calibration if available
       mag = compass_calibration.calibrate(mag_sensor);
@@ -173,13 +176,22 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro, const float3vector &acc,
 
   nav_correction[NORTH] = - nav_acceleration.e[EAST]  + GNSS_acceleration.e[EAST];
   nav_correction[EAST]  = + nav_acceleration.e[NORTH] - GNSS_acceleration.e[NORTH];
-  nav_correction[DOWN]  =   heading_gnss_work * H_GAIN;
+
+  if (circle_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
+    {
+      float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+	   + nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
+	   - nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
+
+      cross_correction = cross_correction;
+
+      nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
+    }
+  else
+    nav_correction[DOWN]  =   heading_gnss_work * H_GAIN;
 
   gyro_correction = nav2body * nav_correction;
   gyro_correction *= P_GAIN;
-
-  circle_state_t old_circle_state = circle_state;
-  update_circling_state (gyro);
 
   if (circle_state == STRAIGHT_FLIGHT)
     {
