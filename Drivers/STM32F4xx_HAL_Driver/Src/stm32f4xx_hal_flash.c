@@ -165,7 +165,10 @@ HAL_StatusTypeDef HAL_FLASH_Program(uint32_t TypeProgram, uint32_t Address, uint
   assert_param(IS_FLASH_TYPEPROGRAM(TypeProgram));
   
   /* Wait for last operation to be completed */
-  status = FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE);
+  while(
+      (HAL_OK != (status = FLASH_WaitForLastOperation((uint32_t)FLASH_TIMEOUT_VALUE)))
+	  )
+    ; // todo patch dangerous spinlock
   
   if(status == HAL_OK)
   {

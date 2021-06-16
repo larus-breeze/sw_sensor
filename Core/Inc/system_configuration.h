@@ -10,7 +10,7 @@
 
 #define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
 #define IN_DATA_LENGTH 46
-#define OUTFILE "simout_xcorr_20210530.f97"
+#define OUTFILE "simout_nmg_20210530.f97"
 #define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
 
 #define WRITE_EEPROM_DEFAULTS	0

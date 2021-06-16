@@ -127,6 +127,9 @@ inline void compass_calibration_t::write_into_EEPROM (void) const
 {
   if( calibration_done == false)
     return;
+
+  EEPROM_initialize();
+
   float variance = 0.0f;
   for( unsigned i=0; i<3; ++i)
     {

@@ -208,10 +208,11 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro, const float3vector &acc,
 
   if (circle_state == CIRCLING) // only here we get fresh magnetic entropy
     {
+#if 0 // todo patch
       if( old_circle_state == TRANSITION)
 	  for (unsigned i = 0; i < 3; ++i)
 	      mag_calibrator[i].reset();
-
+#endif
       feed_compass_calibration (mag_sensor);
     }
   else if (old_circle_state == CIRCLING) // coming out of circling
@@ -319,9 +320,9 @@ void AHRS_type::handle_magnetic_calibration (void) const
     return;
 
   // make calibration permanent if precision improved or values have changed significantly
-  if( (compass_calibration.get_variance_average() < configuration(MAG_STD_DEVIATION) )
+  if( ( SQRT( compass_calibration.get_variance_average()) < configuration(MAG_STD_DEVIATION) )
       ||
-      (compass_calibration.parameters_changed_significantly())
+      (       compass_calibration.parameters_changed_significantly())
       )
     {
       lock_EEPROM( false);

@@ -229,10 +229,11 @@ void AHRS_compass_type::update_compass(
 
 	  if (new_circle_state == CIRCLING) // only here we get fresh magnetic information
 	    {
+#if 0 // todo patch
 	      if( old_circle_state == TRANSITION)
 		  for (unsigned i = 0; i < 3; ++i)
 		      mag_calibrator[i].reset();
-
+#endif
 	      feed_compass_calibration (mag_sensor);
 	    }
 	  else if (old_circle_state == CIRCLING) // coming out of circling

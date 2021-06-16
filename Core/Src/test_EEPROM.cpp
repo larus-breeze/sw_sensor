@@ -10,11 +10,19 @@ static void test( void *)
   volatile uint16_t status;
   volatile uint16_t data;
 
+  delay(10);
+
   HAL_FLASH_Unlock();
   ASSERT(status == HAL_OK);
+
   status = EE_Init();
   ASSERT(status == HAL_OK);
-  status = EE_WriteVariable( 1, 0xa512);
+
+  status = EE_WriteVariable( 0xf000, 0x18a5);
+  ASSERT(status == HAL_OK);
+  status = EE_WriteVariable( 0xf000, 0x5a81);
+  ASSERT(status == HAL_OK);
+  status = EE_WriteVariable( 0x001, 0x0000);
   ASSERT(status == HAL_OK);
   status = EE_ReadVariable( 1, (uint16_t*)&data);
   ASSERT(status == HAL_OK);

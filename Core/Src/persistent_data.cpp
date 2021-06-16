@@ -76,9 +76,9 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
     case MAG_Y_OFF:
     case MAG_Z_OFF:
       if( read)
-	value = ( (float)(EEPROM_value.i16) / 3276.8f) + 1.0f;
+	value = ( (float)(EEPROM_value.i16) / 3276.8f);
       else
-	EEPROM_value.i16 = (int16_t)((value - 1.0f) * 3276.8f);
+	EEPROM_value.i16 = (int16_t)(value * 3276.8f);
       break;
     case ANT_BASELENGTH: // max +/- 32.768 m
     case ANT_SLAVE_DOWN:
@@ -157,7 +157,13 @@ float configuration( EEPROM_PARAMETER_ID id)
 
 bool EEPROM_initialize( void)
 {
-  unsigned status = HAL_FLASH_Unlock();
-  ASSERT( status == HAL_OK);
-  return( EE_Init() != 0);
+  unsigned status;
+
+  status = HAL_FLASH_Unlock();
+  ASSERT(status == HAL_OK);
+
+  status = EE_Init();
+  ASSERT(status == HAL_OK);
+
+  return HAL_OK;
 }

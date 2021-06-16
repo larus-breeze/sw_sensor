@@ -8,19 +8,25 @@ void write_EEPROM_defaults( void)
   status = EEPROM_initialize();
   ASSERT( ! status);
 
-  status = lock_EEPROM( false);
-  ASSERT( status == 0); // HAL_OK
+//  status = lock_EEPROM( false);
+//  ASSERT( status == 0); // HAL_OK
 
 #if DKCOM == 1 // *******************************************************************
 
   // sensor orientation
-  write_EEPROM_value( SENS_TILT_ROLL, 0.0f); // todo presently D-KCOM special data
-  write_EEPROM_value( SENS_TILT_NICK, -0.13f);
-  write_EEPROM_value( SENS_TILT_YAW, -3.14159265f);
+  status = write_EEPROM_value( SENS_TILT_ROLL, 0.0f); // todo presently D-KCOM special data
+  ASSERT( ! status);
+  status = write_EEPROM_value( SENS_TILT_NICK, -0.13f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( SENS_TILT_YAW, -3.14159265f);
+  ASSERT( ! status);
 
-  write_EEPROM_value( ANT_BASELENGTH, 2.03f);
-  write_EEPROM_value( ANT_SLAVE_DOWN, 0.263f);
-  write_EEPROM_value( ANT_SLAVE_RIGHT, -0.06f);
+  status = write_EEPROM_value( ANT_BASELENGTH, 2.03f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( ANT_SLAVE_DOWN, 0.263f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( ANT_SLAVE_RIGHT, -0.06f);
+  ASSERT( ! status);
 #else
   // sensor orientation
   write_EEPROM_value( SENS_TILT_ROLL, 3.14159265f); 	// sensor orientation USB -> front
@@ -28,25 +34,39 @@ void write_EEPROM_defaults( void)
   write_EEPROM_value( SENS_TILT_YAW,  0.0f);
 #endif
   // time constants
-  write_EEPROM_value( VARIO_TC, VARIO_F_BY_FS);
-  write_EEPROM_value( VARIO_INT_TC, AVG_VARIO_F_BY_FS);
+  status = write_EEPROM_value( VARIO_TC, VARIO_F_BY_FS);
+  ASSERT( ! status);
+  status = write_EEPROM_value( VARIO_INT_TC, AVG_VARIO_F_BY_FS);
+  ASSERT( ! status);
 
-  write_EEPROM_value( WIND_TC, WIND_SHORTTERM_F_BY_FS);
-  write_EEPROM_value( MEAN_WIND_TC, WIND_AVG_F_BY_FS);
+  status = write_EEPROM_value( WIND_TC, WIND_SHORTTERM_F_BY_FS);
+  ASSERT( ! status);
+  status = write_EEPROM_value( MEAN_WIND_TC, WIND_AVG_F_BY_FS);
+  ASSERT( ! status);
 
-  write_EEPROM_value( PITOT_OFFSET, -7.5f);
-  write_EEPROM_value( PITOT_SPAN, 1.031f);
+  status = write_EEPROM_value( PITOT_OFFSET, -7.5f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( PITOT_SPAN, 1.031f);
+  ASSERT( ! status);
 
-  write_EEPROM_value( QNH_OFFSET, 0.0f);
+  status = write_EEPROM_value( QNH_OFFSET, 0.0f);
+  ASSERT( ! status);
 
 #if 1 // fine-tuned magnetic defaults D-KCOM May 2021
-  write_EEPROM_value( MAG_X_OFF, 0.32861645f);
-  write_EEPROM_value( MAG_X_SCALE, 1.0f / 1.221335f);
-  write_EEPROM_value( MAG_Y_OFF, 0.007314864f);
-  write_EEPROM_value( MAG_Y_SCALE, 1.0f / 0.95970715f);
-  write_EEPROM_value( MAG_Z_OFF, -2.9421685f);
-  write_EEPROM_value( MAG_Z_SCALE, 1.0f / 0.86157445);
-  write_EEPROM_value( MAG_STD_DEVIATION, 0.0005f);
+  status = write_EEPROM_value( MAG_X_OFF, 3.135242e-1f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( MAG_X_SCALE, 1.0f / 1.12360e0f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( MAG_Y_OFF, -4.493407e-3f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( MAG_Y_SCALE, 1.0f / 9.312426e-1f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( MAG_Z_OFF, -2.968704e0f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( MAG_Z_SCALE, 1.0f / 8.819322e-1f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( MAG_STD_DEVIATION, 3e-4f);
+  ASSERT( ! status);
 #endif
 
 #if 0 // simple magnetic defaults
@@ -78,10 +98,13 @@ void write_EEPROM_defaults( void)
   calibration.set_calibration(mag_calibrator, 'X', false);
   calibration.write_into_EEPROM();
 #endif
-  write_EEPROM_value( QNH_OFFSET, 0.0f);
+  status = write_EEPROM_value( QNH_OFFSET, 0.0f);
+  ASSERT( ! status);
 
-  write_EEPROM_value( DECLINATION, +3.0f * M_PI_F / 180.0);
-  write_EEPROM_value( INCLINATION, +65.5f * M_PI_F / 180.0);
+  status = write_EEPROM_value( DECLINATION, +3.0f * M_PI_F / 180.0);
+  ASSERT( ! status);
+  status = write_EEPROM_value( INCLINATION, +65.5f * M_PI_F / 180.0);
+  ASSERT( ! status);
 
   lock_EEPROM( true);
 }

@@ -124,6 +124,7 @@ int main(void)
 
 #if WRITE_EEPROM_DEFAULTS
   void write_EEPROM_defaults( void);
+  EEPROM_initialize();
   write_EEPROM_defaults();
 #endif
 
