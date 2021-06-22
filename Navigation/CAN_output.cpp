@@ -119,7 +119,7 @@ void CAN_output ( const output_data_t &x)
   p.dlc=7;
   p.data_sh[0] = x.m.acc.e[DOWN] * -1000.0f; // mm/s^2
   p.data_sh[1] = x.effective_vertical_acceleration * -1000.0f; // mm/s^2
-  p.data_sh[2] = x.vario_uncompensated * 1000.0f; // mm/s
+  p.data_sh[2] = x.vario_uncompensated * -1000.0f; // mm/s
   p.data_sb[6] = x.circle_mode;
   CAN_driver.send(p, 1);
 
