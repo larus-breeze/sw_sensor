@@ -59,6 +59,9 @@ AHRS_type::attitude_setup (const float3vector &acceleration,
 circle_state_t
 AHRS_type::update_circling_state (const float3vector &gyro)
 {
+#if DISABLE_CIRCLING_STATE == 1
+  return STRAIGHT_FLIGHT;
+#else
   float turn_rate_abs = abs (turn_rate);
 
   if (circling_counter < CIRCLE_LIMIT)
@@ -77,6 +80,7 @@ AHRS_type::update_circling_state (const float3vector &gyro)
     circle_state = TRANSITION;
 
   return circle_state;
+#endif
 }
 
 void

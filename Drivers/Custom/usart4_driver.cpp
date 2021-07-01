@@ -8,9 +8,7 @@
 #include "FreeRTOS_wrapper.h"
 #include "stm32f4xx_hal.h"
 #include "GNSS.h"
-
-#if RUN_GNSS_HEADING
-#if USE_TWIN_GNSS	== 0
+#include "usart4_driver.h"
 
 COMMON UART_HandleTypeDef huart4;
 COMMON DMA_HandleTypeDef hdma_uart4_rx;
@@ -82,7 +80,7 @@ DMA1_Stream2_IRQHandler (void)
 
 static uint8_t buffer[DGNSS_DMA_buffer_SIZE];
 
-static void D_GNSS_runnable (void*)
+void USART_4_runnable(void*)
 {
   USART4_task_Id = xTaskGetCurrentTaskHandle();
   MX_USART4_UART_Init ();
@@ -93,10 +91,6 @@ static void D_GNSS_runnable (void*)
       if( result != HAL_OK)
 	{
 	  HAL_UART_Abort (&huart4);
-#if UART4_LED_STATUS
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
-#endif
 	  continue;
 	}
       uint32_t pulNotificationValue;
@@ -104,55 +98,24 @@ static void D_GNSS_runnable (void*)
       if( notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart4);
-#if UART4_LED_STATUS
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
-#endif
 	  continue;
 	}
       notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 10);
       if( notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart4);
-#if UART4_LED_STATUS
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
-#endif
 	  continue;
 	}
       HAL_UART_Abort (&huart4);
-      GNSS_Result result = GNSS.update_delta(buffer);
-      if(  result == GNSS_ERROR)
-	{
-#if UART4_LED_STATUS
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
-#endif
-	  delay( 150); // uBlox sends every 200ms for 3ms
-	  continue;
-	}
-#if D_GNSS_LED_STATUS
-      if(  result == GNSS_HAVE_FIX)
-	{
-	update_system_state_set( D_GNSS_AVAILABLE);
-	HAL_GPIO_TogglePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin);
-	}
-	else
-	  HAL_GPIO_WritePin (LED_STATUS3_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
-#else
-      if(  result == GNSS_HAVE_FIX)
-	update_system_state_set( D_GNSS_AVAILABLE);
-#endif
 
-#if UART4_LED_STATUS
-      HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_SET);
-#endif
+      GNSS_Result result = GNSS.update_delta(buffer);
+
+      if(  result == GNSS_HAVE_FIX)
+	update_system_state_set( D_GNSS_AVAILABLE);
+
       delay( 150); // uBlox sends every 200ms for 3ms
     }
 }
 
-Task usart4_task (D_GNSS_runnable, "D-GNSS", 256, 0, STANDARD_TASK_PRIORITY+1);
+// Task usart4_task (USART_4_runnable, "D-GNSS", 256, 0, STANDARD_TASK_PRIORITY+1);
 
-#endif
-#endif

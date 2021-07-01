@@ -45,7 +45,6 @@ typedef struct
   uint8_t reserved[14]; // useless
 } uBlox_pvt;
 
-#if USE_DIFF_GNSS
 typedef struct
 {
   uint8_t version; 	// =0x01
@@ -71,8 +70,6 @@ typedef struct
   uint32_t flags;	// 0b1100110111 if optimal result
 } uBlox_relpos_NED;
 
-#endif
-
 typedef enum { FIX_none, FIX_dead, FIX_2d, FIX_3d} FIX_TYPE;
 typedef enum { GNSS_HAVE_FIX, GNSS_NO_FIX, GNSS_ERROR} GNSS_Result;
 
@@ -85,13 +82,8 @@ typedef struct
 #endif
   float  heading_motion;	// degrees
   float  speed_motion;		// m/s
-#if USE_DIFF_GNSS
   float3vector relPosNED;	//
   float relPosHeading;
-#if OLD_FORMAT == 1
-  float relPosLength; 	// not in use by now
-#endif
-#endif
   double latitude;		//!< degrees
   double longitude;		//!< degrees
 //  uint32_t time; 		// time of day / ms

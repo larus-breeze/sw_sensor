@@ -44,9 +44,7 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
 {
   GNSS_velocity 	= coordinates.velocity;
   GNSS_acceleration	= coordinates.acceleration;
-#if USE_DIFF_GNSS == 1
   GNSS_heading 		= coordinates.relPosHeading;
-#endif
   GNSS_altitude 	= coordinates.position.e[DOWN]; // negative altitude
   GNSS_speed 		= coordinates.speed_motion;
 

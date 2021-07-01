@@ -74,22 +74,28 @@ void AHRS_compass_type::attitude_setup( const float3vector & acceleration, const
 */
 circle_state_t AHRS_compass_type::update_circling_state( const float3vector &gyro)
 {
-	float turn_rate_abs=abs( turn_rate);
+#if DISABLE_CIRCLING_STATE == 1
+  return STRAIGHT_FLIGHT;
+#else
+  float turn_rate_abs = abs (turn_rate);
 
-	if( (circling_counter < CIRCLE_LIMIT) && ( turn_rate_abs > HIGH_TURN_RATE))
-	    ++circling_counter;
+  if (circling_counter < CIRCLE_LIMIT)
+    if (turn_rate_abs > HIGH_TURN_RATE)
+      ++circling_counter;
 
-	if(( circling_counter > 0) && ( turn_rate_abs < LOW_TURN_RATE))
-	    --circling_counter;
+  if (circling_counter > 0)
+    if (turn_rate_abs < LOW_TURN_RATE)
+      --circling_counter;
 
-	if( circling_counter == 0)
-	  circle_state = STRAIGHT_FLIGHT;
-	else if ( circling_counter == CIRCLE_LIMIT)
-	  circle_state = CIRCLING;
-	else
-	  circle_state = TRANSITION;
+  if (circling_counter == 0)
+    circle_state = STRAIGHT_FLIGHT;
+  else if (circling_counter == CIRCLE_LIMIT)
+    circle_state = CIRCLING;
+  else
+    circle_state = TRANSITION;
 
-	return circle_state;
+  return circle_state;
+#endif
 }
 
 AHRS_compass_type::AHRS_compass_type (float sampling_time)

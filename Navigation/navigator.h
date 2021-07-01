@@ -26,9 +26,7 @@ public:
 	 vario_integrator( configuration( VARIO_INT_TC)),
 	 wind_observer( configuration( MEAN_WIND_TC))
   {
-#if USE_DIFF_GNSS == 1
     GNSS_heading = NAN_F;
-#endif
   };
 
   void report_data( output_data_t &d);
@@ -101,9 +99,7 @@ private:
   float3vector 		GNSS_velocity;
   float			GNSS_speed;
   float3vector 		GNSS_acceleration;
-#if USE_DIFF_GNSS == 1
   float 		GNSS_heading;
-#endif
   float 		GNSS_altitude;
   float3vector 		true_airspeed;
 

@@ -32,6 +32,7 @@ ROM persistent_data_t persistent_data[]=
 	{WIND_TC,	"Wind_TC", 0},	 	//! Wind fast time constant unsigned s / ( 100.0f / 65536 )
 	{MEAN_WIND_TC,	"Mean_Wind_TC", 0},	//! Wind slow time constant unsigned s / ( 100.0f / 65536 )
 
+	{GNSS_CONFIGURATION, "GNSS_CONFIG", 0},	//! type of GNSS system
 	{ANT_BASELENGTH, "ANT_BASELEN", 0},	//! Slave DGNSS antenna baselength / mm
 	{ANT_SLAVE_DOWN, "ANT_SLAVE_DOWN", 0},	//! Slave DGNSS antenna lower / mm
 	{ANT_SLAVE_RIGHT,"ANT_SLAVE_RIGHT", 0},	//! Slave DGNSS antenna more right /mm
@@ -45,10 +46,11 @@ bool EEPROM_convert( EEPROM_PARAMETER_ID id, EEPROM_data_t & EEPROM_value, float
   switch(id)
   {
     case BOARD_ID:
+    case GNSS_CONFIGURATION:
       if( read)
 	value = (float)(EEPROM_value.u16);
       else
-	EEPROM_value.u16 = (uint16_t)value;
+	EEPROM_value.u16 = (uint16_t)(value + 0.5f); // rounding
       break;
     case QNH_OFFSET:
     case PITOT_OFFSET:

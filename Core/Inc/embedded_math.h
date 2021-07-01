@@ -24,4 +24,6 @@
 #define ASIN(x) my_asinf(x)
 #define ATAN2(y, x) my_atan2f(y, x)
 
+inline int ROUND(float x) { return (int)((x) + 0.5f);}
+
 #endif /* INC_EMBEDDED_MATH_H_ */

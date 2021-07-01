@@ -83,10 +83,10 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 
 	float velocity_north = p.velocity[NORTH] * SCALE_MM;
 	float velocity_east  = p.velocity[EAST] * SCALE_MM;
-#if OLD_FORMAT == 0
+
 	coordinates.acceleration[NORTH]= (velocity_north - coordinates.velocity[NORTH]) * GNSS_SAMPLE_RATE;
 	coordinates.acceleration[EAST] = (velocity_east  - coordinates.velocity[EAST])  * GNSS_SAMPLE_RATE;
-#endif
+
 	coordinates.velocity[NORTH] = velocity_north;
 	coordinates.velocity[EAST]  = velocity_east;
 	coordinates.velocity[DOWN]  = p.velocity[DOWN]  * SCALE_MM_NEG;
@@ -98,7 +98,6 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 
 	return GNSS_HAVE_FIX;
 }
-#if USE_DIFF_GNSS == 1
 
 GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 {
@@ -121,18 +120,14 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 	coordinates.relPosNED[EAST] =0.01f*(float)(p.relPosE) + 0.0001f * (float)(p.relPosHP_E);
 	coordinates.relPosNED[DOWN] =0.01f*(float)(p.relPosD) + 0.0001f * (float)(p.relPosHP_D);
 
-	coordinates.relPosHeading = (float)(p.relPosheading) * 1.745329252e-7f; // 1e-5 deg -> rad
-//	coordinates.relPosLength  = 0.01f*(p.relPoslength) + 0.0001f * p.relPosHP_len;
-#if USE_F9P_F9H
-	GNSS_Result res = ( p.flags == 0b1100110111) ? GNSS_HAVE_FIX : GNSS_NO_FIX; // for F9P + F9H receiver
-#else
-	GNSS_Result res = ( p.flags == 0b0100110111) ? GNSS_HAVE_FIX : GNSS_NO_FIX; // for F9P + F9P receiver
-#endif
+	GNSS_Result res = ( (p.flags & 0b0111111111) == 0b0100110111) ? GNSS_HAVE_FIX : GNSS_NO_FIX;
+
 	if( res == GNSS_HAVE_FIX) // patch
-	  D_GNSS_new_data_ready = true;
+	  coordinates.relPosHeading = (float)(p.relPosheading) * 1.745329252e-7f; // 1e-5 deg -> rad
 	else
 	  coordinates.relPosHeading = NAN_F; // report missing D-GNSS heading
 
+	D_GNSS_new_data_ready = true;
 	return res;
 }
 
@@ -146,11 +141,6 @@ GNSS_type::update_combined (uint8_t *data)
   res = GNSS.update_delta(data + sizeof( uBlox_pvt) + 8);
 
   if(  res == GNSS_HAVE_FIX)
-    {
     update_system_state_set( D_GNSS_AVAILABLE);
-    HAL_GPIO_TogglePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin);
-    }
   return res;
 }
-
-#endif

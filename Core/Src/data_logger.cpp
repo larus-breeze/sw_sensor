@@ -40,6 +40,7 @@ inline char * format_2_digits( char * target, uint32_t data)
   data %= 100;
   *target++ = data / 10 + '0';
   *target++ = data % 10 + '0';
+  *target = 0; // just be sure string is terminated
   return target;
 }
 void write_magnetic_calibration_file (const coordinates_t &c)
@@ -112,17 +113,16 @@ data_logger_runnable (void*)
     suspend (); // give up, logger can not work
 
 #ifdef INFILE // SIL simulation requested
-
-  strcpy( out_filename, OUTFILE);
-
   FIL infile;
-
   fresult = f_open(&infile, INFILE, FA_READ);
   if (fresult != FR_OK)
   {
 	    asm("bkpt 0");
   }
+#else
 
+#ifdef OUTFILE // SIL simulation requested
+  strcpy( out_filename, OUTFILE);
 #else
   // wait until a GNSS timestamp is available.
   while (output_data.c.year == 0)
@@ -183,7 +183,9 @@ data_logger_runnable (void*)
   out_filename[idx] = '.';
   out_filename[idx + 1] = 'f';
 #if LOG_OBSERVATIONS
-#if LOG_COORDINATES
+  itoa ( sizeof(measurement_data_t) / sizeof(float),
+	out_filename + idx + 2);
+#elif LOG_COORDINATES
   itoa ((sizeof(coordinates_t) + sizeof(measurement_data_t)) / sizeof(float),
 	out_filename + idx + 2, 10);
 #endif
@@ -201,7 +203,7 @@ data_logger_runnable (void*)
 
   fresult = f_open (&outfile, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)
-    suspend (); // give up, logger can not work
+    suspend (); // give up, logger unable to work
 
   int32_t sync_counter=0;
 

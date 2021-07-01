@@ -79,35 +79,27 @@ DMA1_Stream1_IRQHandler (void)
 
 #define GPS_DMA_buffer_SIZE (sizeof( uBlox_pvt) + 8) // plus "u B class id size1 size2 ... cks1 cks2"
 
-#if USE_TWIN_GNSS
 #define GPS_RELPOS_DMA_buffer_SIZE (sizeof( uBlox_relpos_NED) + 8) // plus "u B class id size1 size2 ... cks1 cks2"
 #define RECEIVE_BUFFER_SIZE (GPS_DMA_buffer_SIZE+GPS_RELPOS_DMA_buffer_SIZE)
-#else
-#define RECEIVE_BUFFER_SIZE GPS_DMA_buffer_SIZE
-#endif
 
-#if USE_TWIN_GNSS
 static uint8_t __ALIGNED(256) buffer[RECEIVE_BUFFER_SIZE];
-#else
-static uint8_t buffer[GPS_DMA_buffer_SIZE];
-#endif
 
-static void GNSS_runnable (void*)
+void USART_3_runnable (void* using_DGNSS)
 {
+  unsigned buffer_size = *(bool *)using_DGNSS
+      ? GPS_DMA_buffer_SIZE + GPS_RELPOS_DMA_buffer_SIZE
+      : GPS_DMA_buffer_SIZE;
+
   USART3_task_Id = xTaskGetCurrentTaskHandle();
   MX_USART3_UART_Init ();
   volatile HAL_StatusTypeDef result;
 
   while (true)
     {
-      result = HAL_UART_Receive_DMA (&huart3, buffer, RECEIVE_BUFFER_SIZE);
+      result = HAL_UART_Receive_DMA (&huart3, buffer, buffer_size);
       if( result != HAL_OK)
 	{
 	  HAL_UART_Abort (&huart3);
-#if UART3_LED_STATUS
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
-#endif
 	  continue;
 	}
       // wait for half transfer interrupt
@@ -116,10 +108,6 @@ static void GNSS_runnable (void*)
       if( notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart3);
-#if UART3_LED_STATUS
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
-#endif
 	  continue;
 	}
       // wait for transfer complete interrupt
@@ -127,40 +115,25 @@ static void GNSS_runnable (void*)
       if( notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart3);
-#if UART3_LED_STATUS
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
-#endif
 	  continue;
 	}
       HAL_UART_Abort (&huart3);
 
 //      if ((buffer[0] != 0xb5) || (buffer[1] != 'b'))
-#if USE_TWIN_GNSS
-      GNSS_Result result = GNSS.update_combined(buffer);
-#else
-      GNSS_Result result = GNSS.update(buffer);
-#endif
+      if(buffer_size == GPS_DMA_buffer_SIZE+GPS_RELPOS_DMA_buffer_SIZE)
+	GNSS_Result result = GNSS.update_combined(buffer);
+      else
+	GNSS_Result result = GNSS.update(buffer);
+
       if( result == GNSS_ERROR)
       {
-#if UART3_LED_STATUS
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
-#endif
 	  HAL_UART_Abort (&huart3);
 	  delay (50);
 	  continue;
 	}
       if(  result == GNSS_HAVE_FIX)
   	  update_system_state_set( GNSS_AVAILABLE);
-
-#if UART3_LED_STATUS
-      HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_SET);
-#endif
     }
 }
-
-Task usart3_task (GNSS_runnable, "GNSS", 256, 0, STANDARD_TASK_PRIORITY+1);
 
 #endif
