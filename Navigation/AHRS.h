@@ -36,13 +36,9 @@ public:
 	AHRS_type(float sampling_time);
 	void attitude_setup( const float3vector & acceleration, const float3vector & induction);
 
-	void update_diff_GNSS( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
+	void update( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		const float3vector &GNSS_acceleration,
 		float GNSS_heading);
-
-	void update_compass(
-			const float3vector &gyro, const float3vector &acc, const float3vector &mag,
-			const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
 
 	inline void set_from_euler( float r, float n, float y)
 	{
@@ -145,7 +141,16 @@ private:
 	void feed_compass_calibration(const float3vector &mag);
 	circle_state_t circle_state;
 	circle_state_t update_circling_state( const float3vector &gyro);
-	void update( const float3vector &acc, const float3vector &gyro, const float3vector &mag);
+
+	void update_diff_GNSS( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
+		const float3vector &GNSS_acceleration,
+		float GNSS_heading);
+
+	void update_compass(
+			const float3vector &gyro, const float3vector &acc, const float3vector &mag,
+			const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
+
+	void update_attitude( const float3vector &acc, const float3vector &gyro, const float3vector &mag);
 	float3vector nav_correction;
 	float3vector gyro_correction;
 	float3vector gyro_integrator;
@@ -163,6 +168,7 @@ private:
 	pt2<float,float> nick_angle_averager;
 	linear_least_square_fit<float> mag_calibrator[3];
 	compass_calibration_t compass_calibration;
+	bool DGNSS_available;
 	float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
 	float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
 };

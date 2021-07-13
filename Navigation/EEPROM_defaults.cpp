@@ -16,7 +16,7 @@ void write_EEPROM_defaults( void)
   // sensor orientation
   status = write_EEPROM_value( SENS_TILT_ROLL, 0.0f); // todo presently D-KCOM special data
   ASSERT( ! status);
-  status = write_EEPROM_value( SENS_TILT_NICK, -0.13f);
+  status = write_EEPROM_value( SENS_TILT_NICK, -0.12f);
   ASSERT( ! status);
   status = write_EEPROM_value( SENS_TILT_YAW, -3.14159265f);
   ASSERT( ! status);

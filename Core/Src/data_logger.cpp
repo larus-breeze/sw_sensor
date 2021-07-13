@@ -119,7 +119,7 @@ data_logger_runnable (void*)
   {
 	    asm("bkpt 0");
   }
-#else
+#endif
 
 #ifdef OUTFILE // SIL simulation requested
   strcpy( out_filename, OUTFILE);
@@ -182,6 +182,7 @@ data_logger_runnable (void*)
 
   out_filename[idx] = '.';
   out_filename[idx + 1] = 'f';
+
 #if LOG_OBSERVATIONS
   itoa ( sizeof(measurement_data_t) / sizeof(float),
 	out_filename + idx + 2);
@@ -189,7 +190,7 @@ data_logger_runnable (void*)
   itoa ((sizeof(coordinates_t) + sizeof(measurement_data_t)) / sizeof(float),
 	out_filename + idx + 2, 10);
 #endif
-#endif
+
 #if LOG_OUTPUT_DATA
   itoa (sizeof(output_data_t) / sizeof(float), out_filename + idx + 2, 10);
 #endif

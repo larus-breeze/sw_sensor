@@ -8,15 +8,15 @@
 
 #include "persistent_data.h"
 
-// #define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
-// #define IN_DATA_LENGTH 46
-//#define OUTFILE "simout_nmg_20210530.f97"
-#define OUTFILE "data.f24"
+//#define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
+//#define IN_DATA_LENGTH 46
+//#define OUTFILE "simout_0707_20210530.f97"
+//#define OUTFILE "data.f24"
 //#define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
 
 #define WRITE_EEPROM_DEFAULTS	0
 
-#define DKCOM 0
+#define DKCOM 1
 
 #define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
 #define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
@@ -66,8 +66,8 @@
 #define RUN_GNSS		1
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
-#define RUN_L3GD20 		1
-#define RUN_FXOS8700		1
+#define RUN_L3GD20 		0
+#define RUN_FXOS8700		0
 #define RUN_PITOT_MODULE 	1
 
 #endif
@@ -75,7 +75,7 @@
 #define RUN_CAN_TESTER		0
 #define TEST_EEPROM		0
 
-#define ACTIVATE_BLUETOOTH_NMEA	0
+#define ACTIVATE_BLUETOOTH_NMEA	1
 
 #define ACTIVATE_USB_TEST	0
 #define ACTIVATE_BLUETOOTH_TEST	0

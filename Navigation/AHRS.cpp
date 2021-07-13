@@ -109,7 +109,35 @@ AHRS_type::AHRS_type (float sampling_time)
   expected_nav_induction[EAST]  = COS( inclination) * SIN( declination);
   expected_nav_induction[DOWN]  = SIN( inclination);
 
+  GNSS_configration_t GNSS_configuration =
+      (GNSS_configration_t) ROUND (configuration (GNSS_CONFIGURATION));
+
+  switch( GNSS_configuration)
+  {
+    case GNSS_F9P_F9H:
+    case GNSS_F9P_F9P:
+      DGNSS_available = true;
+      break;
+
+    case GNSS_M9N:
+    case GNSS_NONE:
+    default:
+      DGNSS_available = false;
+      break;
+  }
+
   compass_calibration.read_from_EEPROM();
+}
+
+void
+AHRS_type::update (const float3vector &gyro, const float3vector &acc,
+		   const float3vector &mag,
+		   const float3vector &GNSS_acceleration, float GNSS_heading)
+{
+  if( (! DGNSS_available) || (GNSS_heading == NAN_F))
+    update_compass(gyro, acc, mag, GNSS_acceleration);
+  else
+    update_diff_GNSS (gyro, acc, mag, GNSS_acceleration, GNSS_heading);
 }
 
 /**
@@ -118,7 +146,7 @@ AHRS_type::AHRS_type (float sampling_time)
  * Side-effect: create rotation matrices, NAV-acceleration, NAV-induction
  */
 void
-AHRS_type::update (const float3vector &acc, const float3vector &gyro,
+AHRS_type::update_attitude (const float3vector &acc, const float3vector &gyro,
 		   const float3vector &mag)
 {
   attitude.rotate (gyro.e[ROLL] * Ts_div_2, gyro.e[NICK] * Ts_div_2,
@@ -137,9 +165,8 @@ AHRS_type::update (const float3vector &acc, const float3vector &gyro,
   nav_rotation = body2nav * gyro;
   turn_rate = nav_rotation[DOWN];
 
-  slip_angle_averager.respond (ATAN2 (-acc.e[RIGHT], -acc.e[DOWN]));
-  // todo keine ahnung warum da PI dazu muß !
-  nick_angle_averager.respond (ATAN2 (acc.e[FRONT], acc.e[DOWN]) - M_PI_F);
+  slip_angle_averager.respond( ATAN2( -acc.e[RIGHT], -acc.e[DOWN]));
+  nick_angle_averager.respond( ATAN2( +acc.e[FRONT], -acc.e[DOWN]));
 }
 
 /**
@@ -208,7 +235,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro, const float3vector &acc,
       gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
     }
 
-  update (acc, gyro + gyro_correction, mag);
+  update_attitude (acc, gyro + gyro_correction, mag);
 
   if (circle_state == CIRCLING) // only here we get fresh magnetic entropy
     {
@@ -277,17 +304,12 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
     case CIRCLING:
       {
 	float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
-	    nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
-		- nav_acceleration.e[EAST] * GNSS_acceleration.e[NORTH];
+	     + nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
+	     - nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
 
-	if (!compass_calibration.isCalibrationDone ())
-	  nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG use here !
-	else
-	  // also use mag if it has been calibrated
-	  nav_correction[DOWN] =
-	      0.5f
-		  * (cross_correction * CROSS_GAIN
-		      + nav_induction[EAST] * M_H_GAIN);
+	cross_correction = cross_correction;
+
+	nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
 
 	gyro_correction = nav2body * nav_correction;
 
@@ -314,7 +336,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
     }
 
   // feed quaternion update with corrected sensor readings
-  update (acc, gyro + gyro_correction, mag);
+  update_attitude (acc, gyro + gyro_correction, mag);
 }
 
 //! to be called after landing: eventually make calibration permanent

@@ -142,7 +142,7 @@ void AHRS_compass_type::update( const float3vector &acc, const float3vector &gyr
 	turn_rate = nav_rotation[DOWN];
 
 	slip_angle_averager.respond( ATAN2( -acc.e[RIGHT], -acc.e[DOWN]));
-	nick_angle_averager.respond( ATAN2(  acc.e[FRONT],  acc.e[DOWN]));
+	nick_angle_averager.respond( ATAN2( -acc.e[FRONT], -acc.e[DOWN]));
 }
 
 /**

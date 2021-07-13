@@ -12,13 +12,9 @@ void navigator_t::update_IMU (
     const float3vector &mag,
     const float3vector &gyro)
 {
-  if( GNSS_heading != NAN_F) // D-GNSS heading healthy
-    ahrs.update_diff_GNSS (
-	    gyro, acc, mag,
+  ahrs.update( gyro, acc, mag,
 	    GNSS_acceleration,
 	    GNSS_heading);
-  else
-    ahrs.update_compass(gyro, acc, mag, GNSS_acceleration);
 
   ahrs_magnetic.update_compass(
 	  gyro, acc, mag,

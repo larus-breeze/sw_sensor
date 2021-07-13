@@ -54,6 +54,7 @@ communicator_runnable (void*)
   uint8_t count_10Hz = 1; // de-synchronize CAN output by 1 cycle
 #endif
 
+#ifndef INFILE // only outside of the offline mode
   for (unsigned i = 0; i < 200; ++i) // wait 200 IMU loops
     notify_take (true);
 
@@ -94,7 +95,7 @@ communicator_runnable (void*)
 	navigator.set_attitude (0.0f, 0.0f, present_heading);
       }
       break;
-    case GNSS_F9P_F9P: // extra task for 2nd GNSS module required
+    case GNSS_F9P_F9P: // no extra task for 2nd GNSS module
       {
 	{
 	  bool use_D_GNSS = true;
@@ -114,6 +115,9 @@ communicator_runnable (void*)
     default:
       ASSERT(false);
     }
+#else
+    double old_latitude; // used to trigger on new input
+#endif
 
   navigator.update_pabs (output_data.m.static_pressure);
   navigator.reset_altitude ();
@@ -148,24 +152,20 @@ communicator_runnable (void*)
 	    }
 	}
 
-      if (GNSS_configuration == GNSS_NONE)
-	{
-	  if (++GNSS_sim >= 10)
+#ifdef INFILE // we presently run HIL/SIL
+	  if (GNSS.coordinates.latitude != old_latitude) // todo this is a dirty workaround
 	    {
-	      GNSS_sim = 0;
+	      old_latitude = GNSS.coordinates.latitude;
 	      GNSS.fix_type = FIX_3d; // has not been recorded ...
 	      navigator.update_GNSS (GNSS.coordinates);
 	    }
-	}
-      else
-	{
+#else
 	  if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
 	    {
 	      GNSS_new_data_ready = false;
 	      navigator.update_GNSS (GNSS.coordinates);
 	    }
-	}
-
+#endif
       // rotate sensor coordinates into airframe coordinates
       acc = sensor_mapping * output_data.m.acc;
       mag = sensor_mapping * output_data.m.mag;
