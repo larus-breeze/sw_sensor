@@ -32,6 +32,7 @@ communicator_runnable (void*)
   // Task usart4_task (USART_4_runnable, "D-GNSS", 256, 0, STANDARD_TASK_PRIORITY+1);
 
   unsigned airborne_counter = 0;
+  unsigned D_GNSS_count;
 
   GNSS_configration_t GNSS_configuration = (GNSS_configration_t) ROUND (
       configuration (GNSS_CONFIGURATION));
@@ -174,10 +175,20 @@ communicator_runnable (void*)
       navigator.update_IMU (acc, mag, gyro);
 
       navigator.report_data (output_data);
-
+#if 0 // locost gyreo test
       HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin,
-//	  output_data.m.lowcost_gyro[2] < 0.0f ? GPIO_PIN_RESET : GPIO_PIN_SET);
-	GNSS.coordinates.relPosHeading == NAN_F ? GPIO_PIN_RESET : GPIO_PIN_SET);
+	  output_data.m.lowcost_gyro[2] < 0.0f ? GPIO_PIN_RESET : GPIO_PIN_SET);
+#else
+      if( GNSS.coordinates.relPosHeading != NAN_F)
+	{
+	  ++D_GNSS_count;
+	  HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin,
+	      (D_GNSS_count & 0xff) > 127 ? GPIO_PIN_RESET : GPIO_PIN_SET);
+	}
+      else
+	HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
+
+#endif
 
 #if RUN_CAN_OUTPUT == 1
       if (++count_10Hz >= 10)

@@ -158,7 +158,7 @@ bool Bluetooth_Cmd(const uint8_t *cmd)
 /* \r\n not required. "AT Command are fixed length commands and new line is this redundant. "HowToUse Hm-1x.pdf
  * This can not be true especially for setting a custom NAME?*/
 ROM uint8_t baudratecmd[] = "AT+BAUD7";  /* Change to 115200 baud  HM.19*/
-ROM uint8_t setName[] = "AT+NAMEOSCAR"; //BLUETOOTH_NAME;
+ROM uint8_t setName[] = "AT+NAMEMIKE"; //BLUETOOTH_NAME;
 ROM uint8_t NO_PIN[] = "AT+ADTY?";
 ROM uint8_t RELI_MODE[] = "AT+RELI1";
 ROM uint8_t interruptModule[] = "AT";
@@ -196,9 +196,10 @@ bool Bluetooth_Init(void)
   if(true == Bluetooth_Cmd(interruptModule))
     {
       /*Modules uses Baudrate 9600, and thus has never configured before!*/
+//      response=Bluetooth_Cmd(factory_resetModule);
       response=Bluetooth_Cmd(setName);
-      response=Bluetooth_Cmd(NO_PIN);
-      response=Bluetooth_Cmd(RELI_MODE);
+//      response=Bluetooth_Cmd(NO_PIN);
+//      response=Bluetooth_Cmd(RELI_MODE);
       response=Bluetooth_Cmd(baudratecmd);
       response=Bluetooth_Cmd(resetModule);
     }
@@ -208,9 +209,10 @@ bool Bluetooth_Init(void)
   UART6_ChangeBaudRate(115200);
   //  if(true == Bluetooth_Cmd(interruptModule))
     {
-#if 0
+#if 1
       response=Bluetooth_Cmd(interruptModule);
       response=Bluetooth_Cmd(factory_resetModule);
+      response=Bluetooth_Cmd(setName);
       response=Bluetooth_Cmd(baudratecmd);
 #endif
       response=Bluetooth_Cmd(resetModule);

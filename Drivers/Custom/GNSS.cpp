@@ -122,7 +122,7 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 
 	GNSS_Result res = ( (p.flags & 0b0111111111) == 0b0100110111) ? GNSS_HAVE_FIX : GNSS_NO_FIX;
 
-	res = GNSS_HAVE_FIX; // todo remove this patch
+//	res = GNSS_HAVE_FIX; // todo remove this patch
 
 	if( res == GNSS_HAVE_FIX) // patch
 	  coordinates.relPosHeading = (float)(p.relPosheading) * 1.745329252e-7f; // 1e-5 deg -> rad

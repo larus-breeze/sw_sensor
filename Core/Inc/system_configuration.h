@@ -16,7 +16,7 @@
 
 #define WRITE_EEPROM_DEFAULTS	0
 
-#define DKCOM 1
+#define DKCOM 0
 
 #define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
 #define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
@@ -66,8 +66,8 @@
 #define RUN_GNSS		1
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
-#define RUN_L3GD20 		0
-#define RUN_FXOS8700		0
+#define RUN_L3GD20 		1
+#define RUN_FXOS8700		1
 #define RUN_PITOT_MODULE 	1
 
 #endif
@@ -87,7 +87,7 @@
 
 #define RUN_DATA_LOGGER		1
 #define LOG_OBSERVATIONS	1 // log IMU + pressure data
-#define LOG_COORDINATES		0 // log GNSS data
+#define LOG_COORDINATES		1 // log GNSS data
 #define LOG_OUTPUT_DATA		0 // logging all inclusive
 #define OLD_FORMAT 		0 // for year 2020 old data without cheap sensor info
 				  // and without GNSS speed information
