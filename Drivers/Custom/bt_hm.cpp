@@ -204,12 +204,12 @@ bool Bluetooth_Init(void)
       response=Bluetooth_Cmd(resetModule);
     }
   delay(500);
-  #endif
+#endif
 
   UART6_ChangeBaudRate(115200);
   //  if(true == Bluetooth_Cmd(interruptModule))
     {
-#if 1
+#if 0
       response=Bluetooth_Cmd(interruptModule);
       response=Bluetooth_Cmd(factory_resetModule);
       response=Bluetooth_Cmd(setName);
