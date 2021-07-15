@@ -53,6 +53,9 @@ static void runnable (void*)
 #if ACTIVATE_BLUETOOTH_NMEA
       Bluetooth_Transmit( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
 #endif
+#if ACTIVATE_USART_2_NMEA
+//      Bluetooth_Transmit( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
+#endif
     }
 }
 

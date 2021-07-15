@@ -52,7 +52,7 @@ COMMON DMA_HandleTypeDef hdma_spi1_tx;
 COMMON DMA_HandleTypeDef hdma_spi2_rx;
 COMMON DMA_HandleTypeDef hdma_spi2_tx;
 
-COMMON UART_HandleTypeDef huart2;
+//COMMON UART_HandleTypeDef huart2;
 COMMON UART_HandleTypeDef huart6;
 
 COMMON uint32_t UNIQUE_ID[3];
@@ -66,7 +66,7 @@ static void MX_I2C2_Init(void);
 static void MX_SDIO_SD_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
-static void MX_USART2_UART_Init(void);
+//static void MX_USART2_UART_Init(void);
 static void MX_USART6_UART_Init(void);
 static void MX_ADC1_Init(void);
 
@@ -113,7 +113,7 @@ int main(void)
   MX_SDIO_SD_Init();
   MX_SPI1_Init();
   MX_SPI2_Init();
-  MX_USART2_UART_Init();
+//  MX_USART2_UART_Init();
   MX_USART6_UART_Init();
   MX_FATFS_Init();
   MX_ADC1_Init();
@@ -395,6 +395,8 @@ static void MX_SPI2_Init(void)
 
 }
 
+#if 0 // moved into extra driver
+
 /**
   * @brief USART2 Initialization Function
   * @param None
@@ -427,6 +429,7 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE END USART2_Init 2 */
 
 }
+#endif
 
 /**
   * @brief USART6 Initialization Function

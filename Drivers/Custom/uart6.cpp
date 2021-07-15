@@ -74,14 +74,13 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
   if (huart->Instance == USART6)
     {
       queue_status = xQueueSendFromISR(UART6_CPL_Message_Id, 0, &xHigherPriorityTaskWokenByPost);
+      ASSERT(pdTRUE == queue_status);
     }
   else
     {
-      ASSERT(0);
+//      ASSERT(0); todo patch needs to be reworked
     }
-  ASSERT(pdTRUE == queue_status);
-  portYIELD_FROM_ISR(xHigherPriorityTaskWokenByPost);
-
+  portEND_SWITCHING_ISR( xHigherPriorityTaskWokenByPost);
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)

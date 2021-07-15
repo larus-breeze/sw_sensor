@@ -94,6 +94,7 @@
 
 #define RUN_SPI_TESTER		0
 #define RUN_SDIO_TEST		0
+#define RUN_USART_2_TEST	1
 
 #define MTI_PRIORITY		STANDARD_TASK_PRIORITY + 2
 
