@@ -23,8 +23,9 @@ COMMON output_data_t __ALIGNED(1024) output_data =
   { 0 };
 COMMON GNSS_type GNSS (output_data.c);
 
-void
-communicator_runnable (void*)
+extern RestrictedTask NMEA_task;
+
+void communicator_runnable (void*)
 {
   navigator_t navigator;
   float3vector acc, mag, gyro;
@@ -122,6 +123,8 @@ communicator_runnable (void*)
 
   navigator.update_pabs (output_data.m.static_pressure);
   navigator.reset_altitude ();
+
+  NMEA_task.resume();
 
   while (true)
     {

@@ -7,6 +7,7 @@
 #include "NMEA_format.h"
 #include "usb_device.h"
 #include "usbd_cdc.h"
+#include "usart_2_driver.h"
 
 COMMON NMEA_buffer_t NMEA_buf;
 extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c
@@ -17,6 +18,13 @@ static void runnable (void*)
   MX_USB_DEVICE_Init();
   update_system_state_set( USB_OUTPUT_ACTIVE);
 #endif
+
+#if ACTIVATE_USART_2_NMEA
+  USART_2_Init ();
+  update_system_state_set( USART_2_OUTPUT_ACTIVE);
+#endif
+
+  suspend(); // wait until we are needed
 
   for (synchronous_timer t (NMEA_REPORTING_PERIOD); true; t.sync ())
     {
@@ -54,10 +62,10 @@ static void runnable (void*)
       Bluetooth_Transmit( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
 #endif
 #if ACTIVATE_USART_2_NMEA
-//      Bluetooth_Transmit( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
+      USART_2_transmit_DMA( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
 #endif
     }
 }
 
-RestrictedTask NMEA_task( runnable, "NMEA", 256, 0, NMEA_USB_PRIORITY | portPRIVILEGE_BIT);
+COMMON RestrictedTask NMEA_task( runnable, "NMEA", 256, 0, NMEA_USB_PRIORITY | portPRIVILEGE_BIT);
 

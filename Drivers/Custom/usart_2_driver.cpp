@@ -55,7 +55,7 @@ void USART_2_Init (void)
 
   huart2.Instance = USART2;
 
-  huart2.Init.BaudRate = 38400;
+  huart2.Init.BaudRate = 38400; //115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -66,6 +66,11 @@ void USART_2_Init (void)
     {
       ASSERT(0);
     }
+}
+
+void USART_2_transmit_DMA( uint8_t *pData, uint16_t Size)
+{
+  HAL_UART_Transmit_DMA (&huart2, pData, Size);
 }
 
 /**
@@ -81,11 +86,14 @@ extern "C" void USART2_IRQHandler (void)
  */
 extern "C" void DMA1_Stream6_IRQHandler (void)
 {
-  BaseType_t HigherPriorityTaskWoken=0;
   HAL_DMA_IRQHandler (&hdma_USART_2_TX);
+#if RUN_USART_2_TEST
+  BaseType_t HigherPriorityTaskWoken=0;
   vTaskNotifyGiveFromISR( USART_2_task_ID, &HigherPriorityTaskWoken);
   portEND_SWITCHING_ISR(HigherPriorityTaskWoken);
+#endif
 }
+
 #if RUN_USART_2_TEST
 
 void USART_2_runnable (void*)

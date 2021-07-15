@@ -5,3 +5,4 @@
  */
 
 void USART_2_Init (void);
+void USART_2_transmit_DMA( uint8_t *pData, uint16_t Size);
