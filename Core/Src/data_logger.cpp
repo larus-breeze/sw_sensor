@@ -186,7 +186,8 @@ data_logger_runnable (void*)
 #if LOG_OBSERVATIONS
   itoa ( sizeof(measurement_data_t) / sizeof(float),
 	out_filename + idx + 2);
-#elif LOG_COORDINATES
+#endif
+#if LOG_COORDINATES
   itoa ((sizeof(coordinates_t) + sizeof(measurement_data_t)) / sizeof(float),
 	out_filename + idx + 2, 10);
 #endif
@@ -263,9 +264,12 @@ data_logger_runnable (void*)
 	continue; // buffer only filled partially
 
       fresult = f_write (&outfile, buffer, BUFSIZE, (UINT*) &writtenBytes); /*Shall return FR_DENIED if disk is full.*/
-      ASSERT((fresult == FR_OK) && (writtenBytes == BUFSIZE)); /* Returns writtenBytes = 0 if disk is full. */
+ //     ASSERT((fresult == FR_OK) && (writtenBytes == BUFSIZE)); /* Returns writtenBytes = 0 if disk is full. */
       /* TODO: decide what to do if disk is full.  Simple: Stop Logging.  Better: Remove older files until e.g. 1GB is free
        at startup. FATFS configuration is not up to that. */
+
+      if( ! (fresult == FR_OK) && (writtenBytes == BUFSIZE))
+	suspend(); // silently give up
 
       uint32_t rest = buf_ptr - (buffer + BUFSIZE);
       memcpy (buffer, buffer + BUFSIZE, rest);
