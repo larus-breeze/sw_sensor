@@ -283,7 +283,9 @@ data_logger_runnable (void*)
       HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, led_state);
       led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
 #endif
+#if LOG_MAGNETIC_CALIBRATION
 	write_magnetic_calibration_file ( output_data.c);
+#endif
 	}
     }
 }
