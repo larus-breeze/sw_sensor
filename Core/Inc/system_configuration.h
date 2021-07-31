@@ -8,14 +8,14 @@
 
 #include "persistent_data.h"
 
-//#define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
+//#define INFILE "simin.f46" // switches on offline calculation and defines filename
 //#define IN_DATA_LENGTH 46
-//#define OUTFILE "simout_0707_20210530.f97"
+//#define OUTFILE "simout_stefly_9grad.f97"
 //#define OUTFILE "data.f24"
 //#define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
 
 #define LOG_MAGNETIC_CALIBRATION 	0
-#define WRITE_EEPROM_DEFAULTS		0
+#define WRITE_EEPROM_DEFAULTS		1
 
 #define DKCOM 0
 
@@ -40,7 +40,6 @@
 #define USE_GNSS_VARIO		1 // else pressure-vario
 
 #if DKCOM == 1 // *******************************************************************
-
 
 #define BLUETOOTH_NAME		"AT+NAMED-KCOM"
 #define ACTIVATE_USB_NMEA	1
@@ -91,8 +90,8 @@
 #define LOG_OBSERVATIONS	1 // log IMU + pressure data
 #define LOG_COORDINATES		1 // log GNSS data
 #define LOG_OUTPUT_DATA		0 // logging all inclusive
-#define OLD_FORMAT 		0 // for year 2020 old data without cheap sensor info
-				  // and without GNSS speed information
+#define OLD_FORMAT 		0 	  // for year 2020 old data without cheap sensor info
+				  			  // and without GNSS speed information
 
 #define RUN_SPI_TESTER		0
 #define RUN_SDIO_TEST		0

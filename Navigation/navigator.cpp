@@ -81,9 +81,10 @@ void navigator_t::report_data(output_data_t &d)
     d.effective_vertical_acceleration
 				= flight_observer.get_effective_vertical_acceleration();
 
-    d.circle_mode 		= ahrs.get_circling_state();
+    d.circle_mode 			= ahrs.get_circling_state();
+    d.nav_correction		= ahrs.get_nav_correction();
     d.gyro_correction		= ahrs.get_gyro_correction();
-    d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();
+    d.nav_acceleration_gnss = ahrs.get_nav_acceleration();
     d.nav_acceleration_mag 	= ahrs_magnetic.get_nav_acceleration();
     d.nav_induction_gnss 	= ahrs.get_nav_induction();
     d.nav_induction_mag 	= ahrs_magnetic.get_nav_induction();

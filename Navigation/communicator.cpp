@@ -30,14 +30,11 @@ void communicator_runnable (void*)
   navigator_t navigator;
   float3vector acc, mag, gyro;
 
-  // Task usart4_task (USART_4_runnable, "D-GNSS", 256, 0, STANDARD_TASK_PRIORITY+1);
-
   unsigned airborne_counter = 0;
   unsigned D_GNSS_count;
 
   GNSS_configration_t GNSS_configuration = (GNSS_configration_t) ROUND (
       configuration (GNSS_CONFIGURATION));
-  uint32_t GNSS_sim = 0; // used to synchronize offline calculation w/o GNSS receiver
 
   float pitot_offset = configuration (PITOT_OFFSET);
   float pitot_span = configuration (PITOT_SPAN);

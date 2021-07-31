@@ -51,10 +51,10 @@ void write_EEPROM_defaults( void)
   ASSERT( ! status);
 
 #else
-  // sensor orientation
-  status = write_EEPROM_value( SENS_TILT_ROLL, -3.14159265f); 	// sensor orientation USB -> front
+  // sensor orientation SteFly
+  status = write_EEPROM_value( SENS_TILT_ROLL, -3.14159265f); // upside down
   ASSERT( ! status);
-  status = write_EEPROM_value( SENS_TILT_NICK, 0.085f);		// component side top
+  status = write_EEPROM_value( SENS_TILT_NICK, 0.16f);
   ASSERT( ! status);
   status = write_EEPROM_value( SENS_TILT_YAW,  -3.14159265f);   // looking backwards
   ASSERT( ! status);
