@@ -137,6 +137,7 @@ private:
   int32_t latitude_reference;
   int32_t longitude_reference;
   float latitude_scale;
+  unsigned old_timestamp_ms;
 };
 
 extern GNSS_type GNSS;

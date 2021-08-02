@@ -11,6 +11,8 @@
 
 #if RUN_GNSS
 
+#define DATA_PACKET_TIMEOUT_MS 250 //
+
 COMMON UART_HandleTypeDef huart3;
 COMMON DMA_HandleTypeDef hdma_usart3_rx;
 COMMON  static TaskHandle_t USART3_task_Id = NULL;
@@ -104,14 +106,14 @@ void USART_3_runnable (void* using_DGNSS)
 	}
       // wait for half transfer interrupt
       uint32_t pulNotificationValue;
-      BaseType_t notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 100);
+      BaseType_t notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, DATA_PACKET_TIMEOUT_MS);
       if( notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart3);
 	  continue;
 	}
       // wait for transfer complete interrupt
-      notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 10);
+      notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, DATA_PACKET_TIMEOUT_MS);
       if( notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart3);

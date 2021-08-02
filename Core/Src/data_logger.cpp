@@ -110,7 +110,8 @@ data_logger_runnable (void*)
   fresult = f_mount (&fatfs, "", 0);
 
   if (fresult != FR_OK)
-    suspend (); // give up, logger can not work
+    while(true)
+      suspend (); // give up, logger can not work
 
 #ifdef INFILE // SIL simulation requested
   FIL infile;
@@ -269,7 +270,8 @@ data_logger_runnable (void*)
        at startup. FATFS configuration is not up to that. */
 
       if( ! (fresult == FR_OK) && (writtenBytes == BUFSIZE))
-	suspend(); // silently give up
+	    while(true)
+	      suspend (); // give up, logger can not work
 
       uint32_t rest = buf_ptr - (buffer + BUFSIZE);
       memcpy (buffer, buffer + BUFSIZE, rest);

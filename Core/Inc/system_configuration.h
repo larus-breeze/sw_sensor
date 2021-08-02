@@ -35,8 +35,6 @@
 #define MAG_CALIB_LETHARGY	0.8f // percentage of remaining old calibration info
 #define MAG_CALIBRATION_CHANGE_LIMIT 5.0e-4f // variance average of changes: 3 * { offset, scale }
 
-#define GNSS_SAMPLE_RATE 	10.0f // depending on master GNSS RX configuration
-
 #define USE_GNSS_VARIO		1 // else pressure-vario
 
 #if DKCOM == 1 // *******************************************************************

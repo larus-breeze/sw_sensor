@@ -40,6 +40,16 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	while( count --)
 	  *to++ = *from++;
 
+	// compute time since last sample has been recorded
+	unsigned day_time_ms =
+	    p.hour * 3600000 +
+	    p.minute * 60000 +
+	    p.second * 1000  +
+	    (p.nano < 0 ? 0 : (unsigned)(p.nano / 1000000) );
+
+	float delta_t = (float)(day_time_ms - old_timestamp_ms) * 0.001f;
+	old_timestamp_ms = day_time_ms;
+
 	/* Pack date and time into a DWORD variable */
 	FAT_time = ((p.year - 1980) << 25) + (p.month << 21) + (p.day << 16)
 			+ (p.hour << 11) + (p.minute << 5) + (p.second >> 1);
@@ -84,8 +94,8 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	float velocity_north = p.velocity[NORTH] * SCALE_MM;
 	float velocity_east  = p.velocity[EAST] * SCALE_MM;
 
-	coordinates.acceleration[NORTH]= (velocity_north - coordinates.velocity[NORTH]) * GNSS_SAMPLE_RATE;
-	coordinates.acceleration[EAST] = (velocity_east  - coordinates.velocity[EAST])  * GNSS_SAMPLE_RATE;
+	coordinates.acceleration[NORTH]= (velocity_north - coordinates.velocity[NORTH]) / delta_t;
+	coordinates.acceleration[EAST] = (velocity_east  - coordinates.velocity[EAST])  / delta_t;
 
 	coordinates.velocity[NORTH] = velocity_north;
 	coordinates.velocity[EAST]  = velocity_east;
