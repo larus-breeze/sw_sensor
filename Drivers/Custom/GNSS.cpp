@@ -9,6 +9,7 @@ COMMON bool GNSS_new_data_ready;
 COMMON bool D_GNSS_new_data_ready;
 
 #define SCALE_MM 0.001f
+#define SCALE_CM 0.01f
 #define SCALE_MM_NEG -0.001f
 #define DEG_2_METER 111111.111e-7f // (10000 / 90) m / degree on great circle
 #define ANGLE_SCALE (double)1e-7
@@ -45,7 +46,7 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	    p.hour * 3600000 +
 	    p.minute * 60000 +
 	    p.second * 1000  +
-	    (p.nano < 0 ? 0 : (unsigned)(p.nano / 1000000) );
+	    (p.nano < 0 ? 0 : (unsigned)(p.nano / 1000000) ); // see uBlox documentation
 
 	float delta_t = (float)(day_time_ms - old_timestamp_ms) * 0.001f;
 	old_timestamp_ms = day_time_ms;
@@ -71,7 +72,6 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	double lat_double=lat_raw;
 	coordinates.latitude = lat_double;
 	coordinates.latitude *= ANGLE_SCALE;
-//	coordinates.latitude = (double) (p.latitude) * ANGLE_SCALE;
 	coordinates.position[NORTH] = (double) (p.latitude - latitude_reference)
 			* DEG_2_METER;
 
@@ -80,7 +80,7 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 			* latitude_scale;
 
 	coordinates.position[DOWN] = (double)(p.height) * SCALE_MM_NEG;
-	coordinates.geo_sep_dm = (p.height_ellip - p.height) / 100;
+	coordinates.geo_sep_dm = (p.height_ellip - p.height) * SCALE_CM;
 
 	// record new time
 	coordinates.year   = p.year % 100;

@@ -8,16 +8,15 @@
 
 #include "persistent_data.h"
 
-//#define INFILE "simin.f46" // switches on offline calculation and defines filename
-//#define IN_DATA_LENGTH 46
-//#define OUTFILE "simout_stefly_9grad.f97"
-//#define OUTFILE "data.f24"
-//#define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
+#define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
+#define IN_DATA_LENGTH 46
+#define OUTFILE "simout_20210530.f97"
+#define MAXSPEED_CALCULATION	0 // not realtime but 100% CPU duty cycle
 
 #define LOG_MAGNETIC_CALIBRATION 	0
 #define WRITE_EEPROM_DEFAULTS		1
 
-#define DKCOM 0
+#define DKCOM 1
 
 #define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
 #define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
