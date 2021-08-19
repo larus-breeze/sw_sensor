@@ -51,21 +51,38 @@ void write_EEPROM_defaults( void)
   ASSERT( ! status);
 
 #else
+#if 0
   // sensor orientation SteFly
-  status = write_EEPROM_value( SENS_TILT_ROLL, -3.14159265f); // upside down
+  status = write_EEPROM_value( SENS_TILT_ROLL, -3.14159265f);
   ASSERT( ! status);
   status = write_EEPROM_value( SENS_TILT_NICK, 0.16f);
   ASSERT( ! status);
   status = write_EEPROM_value( SENS_TILT_YAW,  -3.14159265f);   // looking backwards
-  ASSERT( ! status);
-
-  status = write_EEPROM_value( GNSS_CONFIGURATION, (float)GNSS_F9P_F9P);
   ASSERT( ! status);
   status = write_EEPROM_value( ANT_BASELENGTH, 2.8f);
   ASSERT( ! status);
   status = write_EEPROM_value( ANT_SLAVE_DOWN, 0.1f);
   ASSERT( ! status);
   status = write_EEPROM_value( ANT_SLAVE_RIGHT, 0.0f);
+  ASSERT( ! status);
+#else
+  status = write_EEPROM_value( SENS_TILT_ROLL, -3.14159265f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( SENS_TILT_NICK, 0.0f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( SENS_TILT_YAW,  -3.14159265f);   // looking backwards
+  ASSERT( ! status);
+
+  status = write_EEPROM_value( ANT_BASELENGTH, 1.0f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( ANT_SLAVE_DOWN, 0.0f);
+  ASSERT( ! status);
+  status = write_EEPROM_value( ANT_SLAVE_RIGHT, 0.0f);
+  ASSERT( ! status);
+#endif
+
+//  status = write_EEPROM_value( GNSS_CONFIGURATION, (float)GNSS_F9P_F9P);
+  status = write_EEPROM_value( GNSS_CONFIGURATION, (float)GNSS_M9N);
   ASSERT( ! status);
 
   status = write_EEPROM_value( PITOT_OFFSET, 0.0f);

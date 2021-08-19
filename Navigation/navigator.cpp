@@ -38,6 +38,10 @@ void navigator_t::update_IMU (
 // to be called at 10 Hz
 void navigator_t::update_GNSS (const coordinates_t &coordinates)
 {
+  if( isnan( coordinates.acceleration.e[NORTH])) // presently no GNSS fix
+    {
+      return; // todo needs to be improved
+    }
   GNSS_velocity 	= coordinates.velocity;
   GNSS_acceleration	= coordinates.acceleration;
   GNSS_heading 		= coordinates.relPosHeading;

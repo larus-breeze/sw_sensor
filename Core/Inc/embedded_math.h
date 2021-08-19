@@ -11,7 +11,8 @@
 
 #define M_PI_F 3.14159265358979323846f
 #define M_PI   3.14159265358979323846
-#define NAN_F 0x40000000
+
+#define ZERO 0.0f
 #define ONE 1.0f
 #define TWO 2.0f
 #define HALF 0.5f

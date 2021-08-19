@@ -26,7 +26,7 @@ public:
 	 vario_integrator( configuration( VARIO_INT_TC)),
 	 wind_observer( configuration( MEAN_WIND_TC))
   {
-    GNSS_heading = NAN_F;
+    GNSS_heading = NAN;
   };
 
   void report_data( output_data_t &d);

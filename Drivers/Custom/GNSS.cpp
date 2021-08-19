@@ -33,76 +33,96 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	if (!checkSumCheck(data + 2, sizeof(uBlox_pvt)))
 		return GNSS_ERROR;
 
-	uBlox_pvt p;
+	uBlox_pvt pvt;
 
 	uint32_t * from = (uint32_t *)(data + 6);
-	uint32_t * to   = (uint32_t *)&p;
+	uint32_t * to   = (uint32_t *)&pvt;
 	unsigned count = sizeof(uBlox_pvt)/sizeof(uint32_t);
 	while( count --)
 	  *to++ = *from++;
 
 	// compute time since last sample has been recorded
 	unsigned day_time_ms =
-	    p.hour * 3600000 +
-	    p.minute * 60000 +
-	    p.second * 1000  +
-	    (p.nano < 0 ? 0 : (unsigned)(p.nano / 1000000) ); // see uBlox documentation
+	    pvt.hour   * 3600000 +
+	    pvt.minute * 60000 +
+	    pvt.second * 1000  +
+	    (pvt.nano < 0 ? 0 : (unsigned)(pvt.nano / 1000000) ); // see uBlox documentation
 
 	float delta_t = (float)(day_time_ms - old_timestamp_ms) * 0.001f;
 	old_timestamp_ms = day_time_ms;
 
 	/* Pack date and time into a DWORD variable */
-	FAT_time = ((p.year - 1980) << 25) + (p.month << 21) + (p.day << 16)
-			+ (p.hour << 11) + (p.minute << 5) + (p.second >> 1);
+	FAT_time = ((pvt.year - 1980) << 25) + (pvt.month << 21) + (pvt.day << 16)
+			+ (pvt.hour << 11) + (pvt.minute << 5) + (pvt.second >> 1);
 
-	fix_type = (FIX_TYPE) (p.fix_type);
-	if ((p.fix_flags & 1) == 0)
+	fix_type = (FIX_TYPE) (pvt.fix_type);
+	if (( (pvt.fix_flags & 1) == 0) || (pvt.sAcc > 250))
+	  {
+	  coordinates.velocity[NORTH] 		= NAN;
+	  coordinates.velocity[EAST] 		= NAN;
+	  coordinates.velocity[DOWN] 		= NAN;
+	  coordinates.acceleration[NORTH] 	= NAN;
+	  coordinates.acceleration[EAST] 	= NAN;
+
+	  GNSS_new_data_ready = true;
+
 	  return GNSS_NO_FIX;
+	  }
 
-	num_SV=p.num_SV;
+	// all other data not valid now
+
+	num_SV=pvt.num_SV;
 
 	if (latitude_reference == 0)
 	{
-		latitude_reference = p.latitude;
-		longitude_reference = p.longitude;
-		latitude_scale = COS((float) (p.latitude) * ANGLE_SCALE) * DEG_2_METER;
+		latitude_reference = pvt.latitude;
+		longitude_reference = pvt.longitude;
+		latitude_scale = COS((float) (pvt.latitude) * ANGLE_SCALE) * DEG_2_METER;
 	}
 
-	unsigned lat_raw=p.latitude;
+	unsigned lat_raw=pvt.latitude;
 	double lat_double=lat_raw;
 	coordinates.latitude = lat_double;
 	coordinates.latitude *= ANGLE_SCALE;
-	coordinates.position[NORTH] = (double) (p.latitude - latitude_reference)
+	coordinates.position[NORTH] = (double) (pvt.latitude - latitude_reference)
 			* DEG_2_METER;
 
-	coordinates.longitude = (double) (p.longitude) * ANGLE_SCALE;
-	coordinates.position[EAST] = (double) (p.longitude - longitude_reference)
+	coordinates.longitude = (double) (pvt.longitude) * ANGLE_SCALE;
+	coordinates.position[EAST] = (double) (pvt.longitude - longitude_reference)
 			* latitude_scale;
 
-	coordinates.position[DOWN] = (double)(p.height) * SCALE_MM_NEG;
-	coordinates.geo_sep_dm = (p.height_ellip - p.height) * SCALE_CM;
+	coordinates.position[DOWN] = (double)(pvt.height) * SCALE_MM_NEG;
+	coordinates.geo_sep_dm = (pvt.height_ellip - pvt.height) * SCALE_CM;
 
 	// record new time
-	coordinates.year   = p.year % 100;
-	coordinates.month  = p.month;
-	coordinates.day    = p.day;
-	coordinates.hour   = p.hour;
-	coordinates.minute = p.minute;
-	coordinates.second = p.second;
+	coordinates.year   = pvt.year % 100;
+	coordinates.month  = pvt.month;
+	coordinates.day    = pvt.day;
+	coordinates.hour   = pvt.hour;
+	coordinates.minute = pvt.minute;
+	coordinates.second = pvt.second;
 //	coordinates.nano   = p.nano;
 
-	float velocity_north = p.velocity[NORTH] * SCALE_MM;
-	float velocity_east  = p.velocity[EAST] * SCALE_MM;
+	float velocity_north = pvt.velocity[NORTH] * SCALE_MM;
+	float velocity_east  = pvt.velocity[EAST] * SCALE_MM;
 
-	coordinates.acceleration[NORTH]= (velocity_north - coordinates.velocity[NORTH]) / delta_t;
-	coordinates.acceleration[EAST] = (velocity_east  - coordinates.velocity[EAST])  / delta_t;
+	if( isnan( coordinates.velocity[NORTH])) // we had no GNSS no fix before
+	  {
+	    coordinates.acceleration[NORTH]= 0.0f;
+	    coordinates.acceleration[EAST] = 0.0f;
+	  }
+	else
+	  {
+	    coordinates.acceleration[NORTH]= (velocity_north - coordinates.velocity[NORTH]) / delta_t;
+	    coordinates.acceleration[EAST] = (velocity_east  - coordinates.velocity[EAST])  / delta_t;
+	  }
 
 	coordinates.velocity[NORTH] = velocity_north;
 	coordinates.velocity[EAST]  = velocity_east;
-	coordinates.velocity[DOWN]  = p.velocity[DOWN]  * SCALE_MM_NEG;
+	coordinates.velocity[DOWN]  = pvt.velocity[DOWN]  * SCALE_MM_NEG;
 
-	coordinates.speed_motion    = p.gSpeed * SCALE_MM;
-	coordinates.heading_motion  = p.gTrack * 1e-5f;
+	coordinates.speed_motion    = pvt.gSpeed * SCALE_MM;
+	coordinates.heading_motion  = pvt.gTrack * 1e-5f;
 
 	GNSS_new_data_ready = true;
 
@@ -136,7 +156,7 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 	if( res == GNSS_HAVE_FIX) // patch
 	  coordinates.relPosHeading = (float)(p.relPosheading) * 1.745329252e-7f; // 1e-5 deg -> rad
 	else
-	  coordinates.relPosHeading = NAN_F; // report missing D-GNSS heading
+	  coordinates.relPosHeading = NAN; // report missing D-GNSS heading
 
 	D_GNSS_new_data_ready = true;
 	return res;

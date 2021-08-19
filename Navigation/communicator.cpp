@@ -31,7 +31,7 @@ void communicator_runnable (void*)
   float3vector acc, mag, gyro;
 
   unsigned airborne_counter = 0;
-  unsigned D_GNSS_count;
+  unsigned GNSS_count = 0;
 
   GNSS_configration_t GNSS_configuration = (GNSS_configration_t) ROUND (
       configuration (GNSS_CONFIGURATION));
@@ -63,7 +63,7 @@ void communicator_runnable (void*)
       break;
     case GNSS_M9N:
       {
-	GNSS.coordinates.relPosHeading = NAN_F; // be sure not to use that one !
+	GNSS.coordinates.relPosHeading = NAN; // be sure not to use that one !
 
 	bool use_D_GNSS = false;
 	Task usart3_task (USART_3_runnable, "GNSS", 256, (void *)&use_D_GNSS, STANDARD_TASK_PRIORITY+1);
@@ -105,7 +105,7 @@ void communicator_runnable (void*)
 	navigator.update_GNSS (GNSS.coordinates);
 	GNSS_new_data_ready = false;
 
-	if (D_GNSS_new_data_ready && (output_data.c.relPosHeading != NAN_F))
+	if (D_GNSS_new_data_ready && ! isnan( output_data.c.relPosHeading))
 	  navigator.set_attitude (0.0f, 0.0f, output_data.c.relPosHeading);
 	else
 	  navigator.set_attitude (0.0f, 0.0f, 0.0f); // todo improve me !
@@ -175,15 +175,23 @@ void communicator_runnable (void*)
       navigator.update_IMU (acc, mag, gyro);
 
       navigator.report_data (output_data);
-#if 0 // locost gyreo test
+
+#if 0 // locost gyro test
       HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin,
 	  output_data.m.lowcost_gyro[2] < 0.0f ? GPIO_PIN_RESET : GPIO_PIN_SET);
 #else
-      if( GNSS.coordinates.relPosHeading != NAN_F)
+      if(
+	  (((GNSS_configuration == GNSS_F9P_F9H) || (GNSS_configuration == GNSS_F9P_F9P))
+	      && ! isnan( GNSS.coordinates.relPosHeading))
+	  ||
+	  ((GNSS_configuration == GNSS_M9N)
+	      && ! isnan( GNSS.coordinates.acceleration.e[NORTH]))
+	)
+
 	{
-	  ++D_GNSS_count;
+	  ++GNSS_count;
 	  HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin,
-	      (D_GNSS_count & 0xff) > 127 ? GPIO_PIN_RESET : GPIO_PIN_SET);
+	      (GNSS_count & 0xff) > 127 ? GPIO_PIN_RESET : GPIO_PIN_SET);
 	}
       else
 	HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);

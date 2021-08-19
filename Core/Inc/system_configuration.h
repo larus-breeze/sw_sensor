@@ -8,15 +8,15 @@
 
 #include "persistent_data.h"
 
-#define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
-#define IN_DATA_LENGTH 46
-#define OUTFILE "simout_20210530.f97"
-#define MAXSPEED_CALCULATION	0 // not realtime but 100% CPU duty cycle
+//#define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
+//#define IN_DATA_LENGTH 46
+//#define OUTFILE "simout_20210530.f97"
+//#define MAXSPEED_CALCULATION	0 // not realtime but 100% CPU duty cycle
 
-#define LOG_MAGNETIC_CALIBRATION 	0
+#define LOG_MAGNETIC_CALIBRATION 	1
 #define WRITE_EEPROM_DEFAULTS		1
 
-#define DKCOM 1
+#define DKCOM 0
 
 #define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
 #define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
@@ -115,7 +115,7 @@
 
 #define NMEA_REPORTING_PERIOD	250 // period in clock ticks for NMEA output
 
-#define ACTIVATE_FPU_EXCEPTION_TRAP 	0 // todo I want to be SET !
+#define ACTIVATE_FPU_EXCEPTION_TRAP 1 // todo I want to be SET !
 #define SET_FPU_FLUSH_TO_ZERO		1
 
 enum

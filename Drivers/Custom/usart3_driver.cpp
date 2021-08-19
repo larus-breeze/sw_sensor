@@ -121,11 +121,11 @@ void USART_3_runnable (void* using_DGNSS)
 	}
       HAL_UART_Abort (&huart3);
 
-//      if ((buffer[0] != 0xb5) || (buffer[1] != 'b'))
+      GNSS_Result result;
       if(buffer_size == GPS_DMA_buffer_SIZE+GPS_RELPOS_DMA_buffer_SIZE)
-	GNSS_Result result = GNSS.update_combined(buffer);
+	result = GNSS.update_combined(buffer);
       else
-	GNSS_Result result = GNSS.update(buffer);
+	result = GNSS.update(buffer);
 
       if( result == GNSS_ERROR)
       {
