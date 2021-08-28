@@ -8,10 +8,12 @@
 
 #include "persistent_data.h"
 
-//#define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
-//#define IN_DATA_LENGTH 46
-//#define OUTFILE "simout_20210530.f97"
-//#define MAXSPEED_CALCULATION	0 // not realtime but 100% CPU duty cycle
+#if 0
+#define INFILE "20210825074900.f46" // switches on offline calculation and defines filename
+#define IN_DATA_LENGTH 46
+#define OUTFILE "simout_20210825.f97"
+#define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
+#endif
 
 #define LOG_MAGNETIC_CALIBRATION 	1
 #define WRITE_EEPROM_DEFAULTS		1
@@ -87,8 +89,6 @@
 #define LOG_OBSERVATIONS	1 // log IMU + pressure data
 #define LOG_COORDINATES		1 // log GNSS data
 #define LOG_OUTPUT_DATA		0 // logging all inclusive
-#define OLD_FORMAT 		0 	  // for year 2020 old data without cheap sensor info
-				  			  // and without GNSS speed information
 
 #define RUN_SPI_TESTER		0
 #define RUN_SDIO_TEST		0
@@ -116,7 +116,7 @@
 #define NMEA_REPORTING_PERIOD	250 // period in clock ticks for NMEA output
 
 #define ACTIVATE_FPU_EXCEPTION_TRAP 1 // todo I want to be SET !
-#define SET_FPU_FLUSH_TO_ZERO		1
+#define SET_FPU_FLUSH_TO_ZERO	0
 
 enum
 {

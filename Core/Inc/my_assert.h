@@ -8,7 +8,7 @@
 #define MY_ASSERT_H_
 
 #if 1
-#define ASSERT(x) if((x)==0) asm("bkpt 0")
+#define ASSERT(x) if((x)==0) asm volatile("bkpt 0")
 #else
 #define ASSERT(x) ((void)(x))
 #endif

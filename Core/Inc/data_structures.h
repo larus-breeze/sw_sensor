@@ -16,16 +16,14 @@
 
 #pragma pack(push, 1)
 
-typedef struct // legacy data type
+typedef struct
 {
   float3vector acc;   //XSENSE MTi1 IMU
   float3vector gyro;  //XSENSE MTi1 IMU
   float3vector mag;   //XSENSE MTi1 IMU
-#if OLD_FORMAT == 0
   float3vector lowcost_acc;
   float3vector lowcost_gyro;
   float3vector lowcost_mag;
-#endif
   float pitot_pressure;
   float static_pressure;
   float absolute_pressure;  //this is the second ms5611 on the PCB.

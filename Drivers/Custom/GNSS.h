@@ -77,13 +77,12 @@ typedef struct
 {
   float3vector position;  	//!< NED / meters
   float3vector velocity;  	//!< NED / m/s
-#if OLD_FORMAT == 0
   float3vector acceleration;  	//!< NED / m/s^2 (from velocity delta)
-#endif
   float  heading_motion;	// degrees
   float  speed_motion;		// m/s
   float3vector relPosNED;	//
   float relPosHeading;
+  float speed_acc;		// speed accuracy m/s
   double latitude;		//!< degrees
   double longitude;		//!< degrees
 //  uint32_t time; 		// time of day / ms
@@ -94,7 +93,7 @@ typedef struct
   uint8_t hour;
   uint8_t minute;
   uint8_t second;
-//  int32_t nano;		// nanoseconds from time stamp
+  int32_t nano;		// nanoseconds from time stamp
   int16_t geo_sep_dm;		// (WGS ellipsoid height - elevation MSL) in 0.1m units
 } coordinates_t;
 

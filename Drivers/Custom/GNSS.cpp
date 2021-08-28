@@ -42,11 +42,11 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	  *to++ = *from++;
 
 	// compute time since last sample has been recorded
-	unsigned day_time_ms =
+	int32_t day_time_ms =
 	    pvt.hour   * 3600000 +
 	    pvt.minute * 60000 +
 	    pvt.second * 1000  +
-	    (pvt.nano < 0 ? 0 : (unsigned)(pvt.nano / 1000000) ); // see uBlox documentation
+	    pvt.nano / 1000000; // ns -> ms , see uBlox documentation
 
 	float delta_t = (float)(day_time_ms - old_timestamp_ms) * 0.001f;
 	old_timestamp_ms = day_time_ms;
@@ -101,7 +101,8 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	coordinates.hour   = pvt.hour;
 	coordinates.minute = pvt.minute;
 	coordinates.second = pvt.second;
-//	coordinates.nano   = p.nano;
+	coordinates.nano   = pvt.nano;
+	coordinates.speed_acc = pvt.sAcc * SCALE_MM;
 
 	float velocity_north = pvt.velocity[NORTH] * SCALE_MM;
 	float velocity_east  = pvt.velocity[EAST] * SCALE_MM;
