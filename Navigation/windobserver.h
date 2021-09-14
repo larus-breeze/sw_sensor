@@ -25,7 +25,7 @@ public:
     return present_output;
   }
 
-  void update (const float3vector &current_value, float3vector heading_vector, circle_state_t state)
+  void update (const float3vector &current_value, const float3vector & heading_vector, circle_state_t state)
   {
     stage_1_N = stage_1_N * beta_max + current_value.e[NORTH] * ( 1.0f - beta_max);
     stage_1_E = stage_1_E * beta_max + current_value.e[EAST]  * ( 1.0f - beta_max);
@@ -44,8 +44,8 @@ public:
 	  }
 	else
 	  {
-	    alpha_N = (1.0f - beta_max) * SQR( heading_vector[NORTH]);
-	    alpha_E = (1.0f - beta_max) * SQR( heading_vector[EAST]);
+	    alpha_N = (1.0f - beta_max) * SQR( heading_vector.e[NORTH]);
+	    alpha_E = (1.0f - beta_max) * SQR( heading_vector.e[EAST]);
 	    beta_N = 1.0f - alpha_N;
 	    beta_E = 1.0f - alpha_E;
 	  }
