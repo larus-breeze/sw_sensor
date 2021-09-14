@@ -82,7 +82,9 @@ typedef struct
   float  speed_motion;		// m/s
   float3vector relPosNED;	//
   float relPosHeading;
+#if OLD_COORD_FORMAT == 0
   float speed_acc;		// speed accuracy m/s
+#endif
   double latitude;		//!< degrees
   double longitude;		//!< degrees
 //  uint32_t time; 		// time of day / ms
@@ -93,7 +95,9 @@ typedef struct
   uint8_t hour;
   uint8_t minute;
   uint8_t second;
+#if OLD_COORD_FORMAT == 0
   int32_t nano;		// nanoseconds from time stamp
+#endif
   int16_t geo_sep_dm;		// (WGS ellipsoid height - elevation MSL) in 0.1m units
 } coordinates_t;
 

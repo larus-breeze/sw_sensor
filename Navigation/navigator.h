@@ -24,7 +24,7 @@ public:
 	 ahrs_magnetic (0.01f),
 	 atmosphere (101325.0f),
 	 vario_integrator( configuration( VARIO_INT_TC)),
-	 wind_observer( configuration( MEAN_WIND_TC))
+	 wind_average_observer( configuration( MEAN_WIND_TC))
   {
     GNSS_heading = NAN;
   };
@@ -101,11 +101,10 @@ private:
   float3vector 		GNSS_acceleration;
   float 		GNSS_heading;
   float 		GNSS_altitude;
-  float3vector 		true_airspeed;
 
   flight_observer_t 	flight_observer;
   smart_averager< float> 	vario_integrator;
-  smart_averager< float3vector> wind_observer;
+  smart_averager< float3vector> wind_average_observer;
 };
 
 #endif /* NAVIGATORT_H_ */

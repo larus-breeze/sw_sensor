@@ -170,6 +170,16 @@ void communicator_runnable (void*)
       // rotate sensor coordinates into airframe coordinates
       acc = sensor_mapping * output_data.m.acc;
       mag = sensor_mapping * output_data.m.mag;
+
+#if OLD_COORD_FORMAT // todo remove me some day...
+      for( int i=0; i<3; ++i)
+	{
+	    if ( ! isnormal(output_data.m.gyro.e[i]) )
+	      output_data.m.gyro.e[i]=0.0f;
+	    if ( ! isnormal(output_data.wind.e[i]) )
+	      output_data.wind.e[i]=0.0f;
+	}
+#endif
       gyro = sensor_mapping * output_data.m.gyro;
 
       navigator.update_IMU (acc, mag, gyro);

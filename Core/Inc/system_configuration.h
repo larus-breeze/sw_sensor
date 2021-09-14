@@ -8,17 +8,24 @@
 
 #include "persistent_data.h"
 
-#if 0
-#define INFILE "20210825074900.f46" // switches on offline calculation and defines filename
+#if 1
+#define INFILE "simin.f46" // switches on offline calculation and defines filename
 #define IN_DATA_LENGTH 46
-#define OUTFILE "simout_20210825.f97"
+#define OUTFILE "simout_x.f97"
 #define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
 #endif
 
-#define LOG_MAGNETIC_CALIBRATION 	1
+#define RUN_DATA_LOGGER		1
+#define LOG_OBSERVATIONS	0 // log IMU + pressure data
+#define LOG_COORDINATES		0 // log GNSS data
+#define LOG_OUTPUT_DATA		1 // logging all inclusive
+
+#define OLD_COORD_FORMAT 	1
+
+#define LOG_MAGNETIC_CALIBRATION 	0
 #define WRITE_EEPROM_DEFAULTS		1
 
-#define DKCOM 0
+#define DKCOM 1
 
 #define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
 #define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
@@ -85,11 +92,6 @@
 #define RUN_COMMUNICATOR	1 // normal mode
 #define RUN_CAN_OUTPUT		1
 
-#define RUN_DATA_LOGGER		1
-#define LOG_OBSERVATIONS	1 // log IMU + pressure data
-#define LOG_COORDINATES		1 // log GNSS data
-#define LOG_OUTPUT_DATA		0 // logging all inclusive
-
 #define RUN_SPI_TESTER		0
 #define RUN_SDIO_TEST		0
 #define RUN_USART_2_TEST	0
@@ -115,8 +117,8 @@
 
 #define NMEA_REPORTING_PERIOD	250 // period in clock ticks for NMEA output
 
-#define ACTIVATE_FPU_EXCEPTION_TRAP 1 // todo I want to be SET !
-#define SET_FPU_FLUSH_TO_ZERO	0
+#define ACTIVATE_FPU_EXCEPTION_TRAP 0 // todo I want to be SET !
+#define SET_FPU_FLUSH_TO_ZERO	1
 
 enum
 {

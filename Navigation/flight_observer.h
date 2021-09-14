@@ -12,6 +12,7 @@
 #include "KalmanVario.h"
 #include "delay_line.h"
 #include "embedded_math.h"
+#include "windobserver.h"
 
 #define SQR(x) ((x)*(x))
 #include "pt2.h"
@@ -23,8 +24,7 @@ public:
   :
   vario_averager_pressure( configuration( VARIO_TC)),
   vario_averager_GNSS( configuration( VARIO_TC)),
-  windspeed_averager_NORTH( configuration( WIND_TC)),
-  windspeed_averager_EAST( configuration( WIND_TC)),
+  windspeed_instant_observer( configuration( WIND_TC)),
   kinetic_energy_differentiator( 1.0f, 1.0f / 100.0f),
   KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, -9.81f),
   KalmanVario_pressure( 0.0f, 0.0f, 0.0f, -9.81f)
@@ -36,10 +36,10 @@ public:
 	    const float3vector &gnss_acceleration,
 	    const float3vector &ahrs_acceleration,
 	    const float3vector &air_velocity,
-	    const float3vector &observed_wind,
 	    float GNSS_altitude,
 	    float pressure_altitude,
-	    float TAS
+	    float TAS,
+	    circle_state_t circle_state
 	);
 
 	void reset(float pressure_altitude, float GNSS_altitude);
@@ -71,13 +71,9 @@ public:
 		return vario_averager_GNSS.get_output();
 	}
 
-	float3vector get_wind( void ) const
+	const float3vector & get_instant_wind( void ) const
 	{
-		float3vector retv;
-		retv[NORTH] = windspeed_averager_NORTH.get_output();
-		retv[EAST]  = windspeed_averager_EAST.get_output();
-		retv[DOWN]  = 0.0f;
-		return retv;
+		return windspeed_instant_observer.get_output();
 	}
 
 	float get_effective_vertical_acceleration( void) const
@@ -88,8 +84,7 @@ public:
 private:
 	pt2<float,float> vario_averager_pressure;
 	pt2<float,float> vario_averager_GNSS;
-	pt2<float,float> windspeed_averager_NORTH;
-	pt2<float,float> windspeed_averager_EAST;
+	wind_observer_t windspeed_instant_observer;
 
 	differentiator<float,float>kinetic_energy_differentiator;
 

@@ -10,15 +10,16 @@
 #define ONE_DIV_BY_GRAVITY_TIMES_2 0.0509684f
 #define RECIP_GRAVITY 0.1094f
 
+// to be called at 100 Hz
 void flight_observer_t::update (
     const float3vector &gnss_velocity,
     const float3vector &gnss_acceleration,
     const float3vector &ahrs_acceleration,
-    const float3vector &air_velocity,
-    const float3vector &observed_wind, // smart long-term average
+    const float3vector &heading_vector,
     float GNSS_altitude,
     float pressure_altitude,
-    float TAS
+    float TAS,
+    circle_state_t circle_state
   )
 {
   vario_uncompensated_pressure = KalmanVario_pressure.update ( pressure_altitude, ahrs_acceleration.e[DOWN]);
@@ -35,15 +36,15 @@ void flight_observer_t::update (
     }
   else
     {
-      windspeed_averager_NORTH.respond( gnss_velocity.e[NORTH] - air_velocity.e[NORTH]);
-      windspeed_averager_EAST .respond( gnss_velocity.e[EAST]  - air_velocity.e[EAST]);
-
+      float3vector air_velocity = heading_vector * TAS;
+      windspeed_instant_observer.update( gnss_velocity - air_velocity, heading_vector, circle_state);
+      const float3vector & wind = windspeed_instant_observer.get_output(); // todo check if wind avg shall be used !
       // non TEC compensated vario, negative if *climbing* !
       vario_uncompensated_GNSS = KalmanVario_GNSS.update ( GNSS_altitude, ahrs_acceleration.e[DOWN]);
       speed_compensation_GNSS =
     		  (
-    		      ((gnss_velocity.e[NORTH] - observed_wind.e[NORTH]) * gnss_acceleration.e[NORTH]) +
-    		      ((gnss_velocity.e[EAST]  - observed_wind.e[EAST])  * gnss_acceleration.e[EAST])  +
+    		      ((gnss_velocity.e[NORTH] - wind.e[NORTH]) * gnss_acceleration.e[NORTH]) +
+    		      ((gnss_velocity.e[EAST]  - wind.e[EAST])  * gnss_acceleration.e[EAST])  +
     		      (KalmanVario_GNSS.get_x(KalmanVario_t::VARIO) * KalmanVario_GNSS.get_x(KalmanVario_t::ACCELERATION_OBSERVED))
     		   ) * RECIP_GRAVITY;
 

@@ -26,7 +26,7 @@ public:
   }
   float get_density( void) const
   {
-    return  1.0496346613e-5f * pressure + 0.1671546011f;
+    return  (1.0496346613e-5f * pressure + 0.1671546011f) * 1.05f; // todo patch
   }
   float get_altitude( void) const //!< get NEGATIVE altitude
   {

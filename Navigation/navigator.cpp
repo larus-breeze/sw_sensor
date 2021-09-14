@@ -20,19 +20,20 @@ void navigator_t::update_IMU (
 	  gyro, acc, mag,
 	  GNSS_acceleration);
 
-  true_airspeed[NORTH] = ahrs.get_north () * TAS; // todo which special ins to use = ???
-  true_airspeed[EAST]  = ahrs.get_east ()  * TAS;
-  true_airspeed[DOWN]  = ahrs.get_down ()  * TAS; // todo: do we need this one ?
+  float3vector heading_vector;
+  heading_vector[NORTH] = ahrs.get_north (); // todo which special ins to use = ???
+  heading_vector[EAST]  = ahrs.get_east ();
+  heading_vector[DOWN]  = ahrs.get_down (); // todo: do we need this one ?
 
   flight_observer.update (
       GNSS_velocity,
       GNSS_acceleration,
       ahrs.get_nav_acceleration (),
-      true_airspeed,
-      wind_observer.get_value(),
+      heading_vector,
       GNSS_altitude,
       atmosphere.get_altitude(),
-      TAS);
+      TAS,
+      ahrs.get_circling_state());
 }
 
 // to be called at 10 Hz
@@ -48,7 +49,7 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
   GNSS_altitude 	= coordinates.position.e[DOWN]; // negative altitude
   GNSS_speed 		= coordinates.speed_motion;
 
-  wind_observer.update( flight_observer.get_wind(), // do this here because of the update rate 10Hz
+  wind_average_observer.update( flight_observer.get_instant_wind(), // do this here because of the update rate 10Hz
 			ahrs.get_euler ().y,
 			ahrs.get_circling_state ());
 
@@ -77,18 +78,18 @@ void navigator_t::report_data(output_data_t &d)
     d.integrator_vario		= vario_integrator.get_value();
     d.vario_uncompensated 	= flight_observer.get_vario_uncompensated_GNSS();
 
-    d.wind			= flight_observer.get_wind(); // short-term avg
-    d.wind_average		= wind_observer.get_value();  // smart long-term avg
+    d.wind			= flight_observer.get_instant_wind(); // short-term avg
+    d.wind_average		= wind_average_observer.get_value();  // smart long-term avg
 
     d.speed_compensation_TAS 	= flight_observer.get_speed_compensation_TAS();
     d.speed_compensation_INS 	= flight_observer.get_speed_compensation_INS();
     d.effective_vertical_acceleration
 				= flight_observer.get_effective_vertical_acceleration();
 
-    d.circle_mode 			= ahrs.get_circling_state();
+    d.circle_mode 		= ahrs.get_circling_state();
     d.nav_correction		= ahrs.get_nav_correction();
     d.gyro_correction		= ahrs.get_gyro_correction();
-    d.nav_acceleration_gnss = ahrs.get_nav_acceleration();
+    d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();
     d.nav_acceleration_mag 	= ahrs_magnetic.get_nav_acceleration();
     d.nav_induction_gnss 	= ahrs.get_nav_induction();
     d.nav_induction_mag 	= ahrs_magnetic.get_nav_induction();

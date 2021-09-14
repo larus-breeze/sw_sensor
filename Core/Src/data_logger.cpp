@@ -219,7 +219,7 @@ data_logger_runnable (void*)
     {
       UINT bytesread;
       fresult = f_read(&infile, (void *)&output_data, IN_DATA_LENGTH*4, &bytesread); // todo PATCH
-      if( ! (fresult == FR_OK) && (bytesread == IN_DATA_LENGTH*4)) // probably end of file
+      if( ! ((fresult == FR_OK) && (bytesread == IN_DATA_LENGTH*4)) ) // probably end of file
 	{
 	      f_close(&infile);
 	      f_close(&outfile);
@@ -229,7 +229,7 @@ data_logger_runnable (void*)
 		  delay(100);
 		    HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, led_state);
 		    led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
-		  delay(300);
+		  delay(500);
 		    HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, led_state);
 		    led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
 		}

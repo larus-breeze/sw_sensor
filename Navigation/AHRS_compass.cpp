@@ -148,104 +148,93 @@ void AHRS_compass_type::update( const float3vector &acc, const float3vector &gyr
 /**
  * @brief  update attitude from IMU data and magnetometer
  */
-void AHRS_compass_type::update_compass(
-		const float3vector &gyro,
-		const float3vector &acc,
-		const float3vector &mag_sensor,
-	   	const float3vector &GNSS_acceleration
-		)
+void
+AHRS_compass_type::update_compass (const float3vector &gyro, const float3vector &acc,
+			   const float3vector &mag_sensor,
+			   const float3vector &GNSS_acceleration)
 {
-	  float3vector mag;
-	  if( compass_calibration.isCalibrationDone()) // use calibration if available
-	    {
-	      mag = compass_calibration.calibrate(mag_sensor);
-	    }
-	  else
-	    mag = mag_sensor;
+  float3vector mag;
+  if (compass_calibration.isCalibrationDone ()) // use calibration if available
+    {
+      mag = compass_calibration.calibrate (mag_sensor);
+    }
+  else
+    mag = mag_sensor;
 
-	  float3vector nav_acceleration = body2nav * acc;
-	  float3vector nav_induction    = body2nav * mag;
+  float3vector nav_acceleration = body2nav * acc;
+  float3vector nav_induction = body2nav * mag;
 
-	  // MAG vector projected on a normalized horizontal plane and normalized
-	  nav_induction[DOWN] = 0;
-	  nav_induction.normalize();
+  // MAG vector projected on a horizontal plane and normalized
+  nav_induction[DOWN] = 0;
+  nav_induction.normalize ();
 
-	  // calculate horizontal leveling error
-	  nav_correction[NORTH] = - nav_acceleration.e[EAST]  + GNSS_acceleration.e[EAST];
-	  nav_correction[EAST]  = + nav_acceleration.e[NORTH] - GNSS_acceleration.e[NORTH];
+  // calculate horizontal leveling error
+  nav_correction[NORTH] = -nav_acceleration.e[EAST] + GNSS_acceleration.e[EAST];
+  nav_correction[EAST] = +nav_acceleration.e[NORTH]
+      - GNSS_acceleration.e[NORTH];
 
-	  // *******************************************************************************************************
-	  // calculate heading error depending on the present circling state
-	  // on state changes handle MAG auto calibration
+  // *******************************************************************************************************
+  // calculate heading error depending on the present circling state
+  // on state changes handle MAG auto calibration
 
-	  circle_state_t old_circle_state = circle_state;
-	  circle_state_t new_circle_state = update_circling_state (gyro);
+  update_circling_state (gyro);
 
-	  switch( new_circle_state)
+  if (isnan( GNSS_acceleration.e[NORTH])) // no GNSS fix
+
+    // just keep gyro offsets but do not calculate correction
+      gyro_correction = gyro_integrator * I_GAIN;
+
+  else
+    {
+      switch ( circle_state)
+	{
+	case STRAIGHT_FLIGHT:
 	  {
-	    case STRAIGHT_FLIGHT:
-	    {
-	      nav_correction[DOWN] = nav_induction[EAST] * M_H_GAIN; // todo hier fehlt magnet-modell erde
-	      gyro_correction = nav2body * nav_correction;
-	      gyro_correction *= P_GAIN;
+	    nav_correction[DOWN] = nav_induction[EAST] * M_H_GAIN; // todo hier fehlt magnet-modell erde
+	    gyro_correction = nav2body * nav_correction;
+	    gyro_correction *= P_GAIN;
 
-	      // update integrator and use it
-	      gyro_integrator += gyro_correction;
-	      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
-	    }
-	    break;
-	    // *******************************************************************************************************
-	    case CIRCLING:
-	    {
-	      float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
-        	    nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
-		  - nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
-
-	      if( ! compass_calibration.isCalibrationDone())
-		nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG use here !
-	      else // also use mag if it has been calibrated
-		nav_correction[DOWN] = 0.5f * (cross_correction * CROSS_GAIN + nav_induction[EAST] * M_H_GAIN);
-
-	      gyro_correction = nav2body * nav_correction;
-
-	      // don't update integrator but use it
-	      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
-	      gyro_correction *= P_GAIN;
-	    }
-	    break;
-	    // *******************************************************************************************************
-	    case TRANSITION:
-	    {
-	      nav_correction[DOWN] = nav_induction[EAST] * M_H_GAIN;
-
-	      gyro_correction = nav2body * nav_correction;
-	      gyro_correction *= P_GAIN;
-
-	      // don't update integrator but use it
-	      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
-	    }
-	    break;
-	    default:
-	      ASSERT(0);
-	    break;
+	    // update integrator and use it
+	    gyro_integrator += gyro_correction;
+	    gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
 	  }
+	  break;
+	  // *******************************************************************************************************
+	case CIRCLING:
+	  {
+	    float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+		+nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
+		    - nav_acceleration.e[EAST] * GNSS_acceleration.e[NORTH];
 
-	  // feed quaternion update with corrected sensor readings
-	  update (acc, gyro + gyro_correction, mag);
+	    nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
 
-	  if (new_circle_state == CIRCLING) // only here we get fresh magnetic information
-	    {
-#if 0 // todo patch
-	      if( old_circle_state == TRANSITION)
-		  for (unsigned i = 0; i < 3; ++i)
-		      mag_calibrator[i].reset();
-#endif
-	      feed_compass_calibration (mag_sensor);
-	    }
-	  else if (old_circle_state == CIRCLING) // coming out of circling
-	    {
-	      compass_calibration.set_calibration( mag_calibrator, 'M');
-	    }
+	    gyro_correction = nav2body * nav_correction;
+	    gyro_correction *= P_GAIN;
 
+	    // don't update integrator but use it
+	    gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+
+	    feed_compass_calibration (mag_sensor);
+	  }
+	  break;
+	  // *******************************************************************************************************
+	case TRANSITION:
+	  {
+	    nav_correction[DOWN] = nav_induction[EAST] * M_H_GAIN;
+
+	    gyro_correction = nav2body * nav_correction;
+	    gyro_correction *= P_GAIN;
+
+	    // don't update integrator but use it
+	    gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+	  }
+	  break;
+	default:
+	  ASSERT(0);
+	  break;
+	}
+    }
+
+  // feed quaternion update with corrected sensor readings
+  update(acc, gyro + gyro_correction, mag);
 }
-
