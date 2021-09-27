@@ -23,6 +23,10 @@ COMMON output_data_t __ALIGNED(1024) output_data =
   { 0 };
 COMMON GNSS_type GNSS (output_data.c);
 
+#if USE_PROBES
+COMMON float * probe= output_data.probe; // debugging probes
+#endif
+
 extern RestrictedTask NMEA_task;
 
 void communicator_runnable (void*)

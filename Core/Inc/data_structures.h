@@ -68,6 +68,9 @@ typedef struct
   float3vector nav_induction_mag;
   eulerangle<float> euler_magnetic;
   quaternion<float> q_magnetic;
+#if USE_PROBES
+  float probe[3];
+#endif
 } output_data_t;
 
 #pragma pack(pop)

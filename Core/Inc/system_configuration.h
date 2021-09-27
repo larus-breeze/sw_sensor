@@ -6,6 +6,8 @@
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
+extern float * probe; // debugging probes
+
 #include "persistent_data.h"
 
 #if 1
@@ -14,6 +16,8 @@
 #define OUTFILE "simout_x.f97"
 #define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
 #endif
+
+#define USE_PROBES			0 // debugging probes somewhere in the code
 
 #define RUN_DATA_LOGGER		1
 #define LOG_OBSERVATIONS	0 // log IMU + pressure data

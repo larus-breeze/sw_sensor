@@ -1,9 +1,8 @@
-/*
- * windobservert.h
- *
- *  Created on: Sep 10, 2021
- *      Author: schaefer
- */
+/** ***********************************************************************
+ * @file		windobserver.h
+ * @brief		smart windspeed measurement
+ * @author		Dr. Klaus Schaefer
+ **************************************************************************/
 
 #ifndef WINDOBSERVER_H_
 #define WINDOBSERVER_H_
@@ -49,7 +48,10 @@ public:
 	    beta_N = 1.0f - alpha_N;
 	    beta_E = 1.0f - alpha_E;
 	  }
-
+#if USE_PROBES
+	*probe = alpha_N;
+	*(probe+1) = alpha_E;
+#endif
 	present_output.e[NORTH] = present_output.e[NORTH] * alpha_N + stage_1_N * beta_N;
 	present_output.e[EAST]  = present_output.e[EAST]  * alpha_E + stage_1_E * beta_E;
       }
@@ -59,7 +61,7 @@ public:
   }
 
  private:
-  enum { DECIMATION = 55};
+  enum { DECIMATION = 55}; // two stages -> decimation 1/100s -> 30 s; 55 = sqrt(3000)
   float stage_1_N;
   float stage_1_E;
   uint32_t decimating_counter;

@@ -14,7 +14,6 @@
 #include "embedded_math.h"
 #include "windobserver.h"
 
-#define SQR(x) ((x)*(x))
 #include "pt2.h"
 
 class flight_observer_t
