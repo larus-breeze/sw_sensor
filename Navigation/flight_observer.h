@@ -38,7 +38,8 @@ public:
 	    float GNSS_altitude,
 	    float pressure_altitude,
 	    float TAS,
-	    circle_state_t circle_state
+	    circle_state_t circle_state,
+	    const float3vector &wind_average
 	);
 
 	void reset(float pressure_altitude, float GNSS_altitude);

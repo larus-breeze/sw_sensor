@@ -44,14 +44,14 @@ public:
 		b2 = b2x / a0x;
 
 		// fine-tune DC-gain = 1.0
-		delta = (b0 + b1 + b2) / (1.0 + a1 + a2);
+		delta = (b0 + b1 + b2) / (ONE + a1 + a2);
 		b0 /= delta;
 		b1 /= delta;
 		b2 /= delta;
 	}
 	void settle( const datatype &input)
 	{
-		basetype tuning = 1.0  / ( 1.0 + a1 + a2);
+		basetype tuning = ONE  / ( ONE + a1 + a2);
 		old.setAllValues( input * tuning);
 	}
 	datatype respond( const datatype &input)

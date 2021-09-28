@@ -33,7 +33,9 @@ void navigator_t::update_IMU (
       GNSS_altitude,
       atmosphere.get_altitude(),
       TAS,
-      ahrs.get_circling_state());
+      ahrs.get_circling_state(),
+      wind_average_observer.get_value()
+      );
 }
 
 // to be called at 10 Hz
