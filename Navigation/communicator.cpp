@@ -131,14 +131,9 @@ void communicator_runnable (void*)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
 
-#ifdef INFILE // we presently run HIL/SIL
-      navigator.update_pabs (output_data.m.static_pressure);
-      navigator.update_pitot( output_data.m.pitot_pressure);
-#else // apply EEPROM configuration data
       navigator.update_pabs (output_data.m.static_pressure - QNH_offset);
       navigator.update_pitot (
 	  (output_data.m.pitot_pressure - pitot_offset) * pitot_span);
-#endif
 
       if (navigator.get_IAS () > 20.0f) // are we flying ?
 	{
