@@ -130,7 +130,13 @@ char * my_ftoa( char * target, float value)
  	*target++ = '.';
 
  	value *= 1000000.0f + 0.5f;
- 	target = my_itoa( target, (int)value);
+ 	unsigned fractional_number = (int)value;
+ 	for( unsigned digit=0; digit<6; ++digit)
+ 	  {
+ 	  target[5-digit]=fractional_number % 10 + '0';
+ 	 fractional_number /= 10;
+ 	  }
+ 	target+=6;
  	*target++='e';
  	return( my_itoa( target, (int)exponent));
  }
