@@ -20,9 +20,9 @@ typedef struct
   uint16_t year;
   uint8_t month;
   uint8_t day;
-  uint8_t hour;
-  uint8_t minute;
-  uint8_t second;
+  int8_t hour;
+  int8_t minute;
+  int8_t second;
   uint8_t valid;	// bits MSB -> LSB mag-decl tim-res time data
   uint32_t tAcc; 	// timing accuracy
   int32_t nano; 	// time fraction, signed

@@ -46,7 +46,7 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	    pvt.hour   * 3600000 +
 	    pvt.minute * 60000 +
 	    pvt.second * 1000  +
-	    pvt.nano / 1000000; // ns -> ms , see uBlox documentation
+	    pvt.nano   / 1000000; // ns -> ms , see uBlox documentation. nano is SIGNED !
 
 	float delta_t = (float)(day_time_ms - old_timestamp_ms) * 0.001f;
 	old_timestamp_ms = day_time_ms;
