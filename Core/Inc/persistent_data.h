@@ -13,15 +13,6 @@ typedef union
     int16_t  i16;
   } EEPROM_data_t;
 
-class persistent_data_t
-{
-public:
-  enum { MNEMONIC_LENGTH=16};
-  uint16_t id;
-  char mnemonic[MNEMONIC_LENGTH];
-  EEPROM_data_t value;
-};
-
 enum GNSS_configration_t
 {
   GNSS_NONE, // not really useful
@@ -66,12 +57,25 @@ enum EEPROM_PARAMETER_ID
   EEPROM_PARAMETER_ID_END // 1 behind last parameter ID
 };
 
-// standard function to read configratin data rem EEPROM
+class persistent_data_t
+{
+public:
+  enum { MNEMONIC_LENGTH=16};
+  EEPROM_PARAMETER_ID id;
+  char mnemonic[MNEMONIC_LENGTH];
+  EEPROM_data_t value;
+};
+
+
+// standard function to read configuration data from EEPROM
 float configuration( EEPROM_PARAMETER_ID id);
 bool write_EEPROM_value( EEPROM_PARAMETER_ID id, float value);
 bool read_EEPROM_value( EEPROM_PARAMETER_ID id, float &value);
 bool lock_EEPROM( bool lockit);
 bool EEPROM_initialize( void);
+
+extern const persistent_data_t PERSISTENT_DATA[];
+extern const unsigned PERSISTENT_DATA_ENTRIES;
 
 #endif ///#ifdef __cplusplus
 

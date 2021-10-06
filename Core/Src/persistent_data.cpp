@@ -4,7 +4,7 @@
 #include "embedded_memory.h"
 #include "persistent_data.h"
 
-ROM persistent_data_t persistent_data[]=
+ROM persistent_data_t PERSISTENT_DATA[]=
     {
 	{BOARD_ID, 	"Board_ID", 0},	 	//! Board ID Hash to avoid board confusion
 
@@ -12,7 +12,7 @@ ROM persistent_data_t persistent_data[]=
 	{SENS_TILT_NICK,"SensTilt_Nick", 0}, 	//! IMU Sensor tilt angle signed / (pi / 32768)
 	{SENS_TILT_YAW, "SensTilt_Yaw", 0},  	//! IMU Sensor tilt angle signed / (pi / 32768)
 
-	{PITOT_OFFSET,	"Pitot_Offest", 0},	//! Pitot offset signed / ( ADC readings )
+	{PITOT_OFFSET,	"Pitot_Offset", 0},	//! Pitot offset signed / ( ADC readings )
 	{PITOT_SPAN, 	"Pitot_Span", 0},	//! Pitot Span signed ( scale-factor  = value / 32768 + 1.0f)
 	{QNH_OFFSET, 	"QNH-delta", 0},	//! Absolute pressure sensor offset signed / Pa
 
@@ -37,6 +37,8 @@ ROM persistent_data_t persistent_data[]=
 	{ANT_SLAVE_DOWN, "ANT_SLAVE_DOWN", 0},	//! Slave DGNSS antenna lower / mm
 	{ANT_SLAVE_RIGHT,"ANT_SLAVE_RIGHT", 0},	//! Slave DGNSS antenna more right /mm
     };
+
+ROM unsigned PERSISTENT_DATA_ENTRIES = sizeof(PERSISTENT_DATA) / sizeof(persistent_data_t);
 
 #define READ true
 #define WRITE false
