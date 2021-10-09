@@ -10,14 +10,14 @@ extern float * probe; // debugging probes
 
 #include "persistent_data.h"
 
-#if 1
+#if 0
 #define INFILE "20211001.f46" // switches on offline calculation and defines filename
 #define IN_DATA_LENGTH 46
 #define OUTFILE "20211001.f100"
 #define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
 #endif
 
-#define USE_PROBES		1 // debugging probes somewhere in the code
+#define USE_PROBES		0 // debugging probes somewhere in the code
 
 #define RUN_DATA_LOGGER		1
 #define LOG_OBSERVATIONS	0 // log IMU + pressure data
@@ -26,8 +26,8 @@ extern float * probe; // debugging probes
 
 #define OLD_COORD_FORMAT 	0
 
-#define LOG_MAGNETIC_CALIBRATION 	0
-#define WRITE_EEPROM_DEFAULTS		1
+#define LOG_MAGNETIC_CALIBRATION 	1
+#define WRITE_EEPROM_DEFAULTS		0
 
 #define DKCOM 1
 

@@ -49,6 +49,7 @@ void flight_observer_t::update (
     		      (KalmanVario_GNSS.get_x(KalmanVario_t::VARIO) * KalmanVario_GNSS.get_x(KalmanVario_t::ACCELERATION_OBSERVED))
     		   ) * RECIP_GRAVITY;
 
+#if USE_PROBES
       // todo patch testing...
       const float3vector &wind = windspeed_instant_observer.get_output();
       probe[2] =
@@ -57,7 +58,7 @@ void flight_observer_t::update (
     		      ((gnss_velocity.e[EAST]  - wind.e[EAST])  * gnss_acceleration.e[EAST])  +
     		      (KalmanVario_GNSS.get_x(KalmanVario_t::VARIO) * KalmanVario_GNSS.get_x(KalmanVario_t::ACCELERATION_OBSERVED))
     		   ) * RECIP_GRAVITY;
-
+#endif
       vario_averager_GNSS.respond(     speed_compensation_GNSS - vario_uncompensated_GNSS);
     }
 }

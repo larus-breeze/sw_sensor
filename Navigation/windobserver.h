@@ -48,7 +48,7 @@ public:
 	    beta_N = 1.0f - alpha_N;
 	    beta_E = 1.0f - alpha_E;
 	  }
-#if 0
+#if 0 // #if USE_PROBES
 	probe[0] = alpha_N;
 	probe[1] = alpha_E;
 #endif
