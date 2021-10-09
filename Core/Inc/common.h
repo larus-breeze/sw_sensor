@@ -14,6 +14,7 @@ extern uint32_t __common_data_end__[];
 extern GNSS_type GNSS;
 #include "data_structures.h"
 extern output_data_t output_data;
+extern uint32_t UNIQUE_ID[4];
 
 #endif // __cplusplus
 

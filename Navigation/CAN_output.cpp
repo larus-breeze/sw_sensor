@@ -85,17 +85,17 @@ void CAN_output ( const output_data_t &x)
   p.id=c_CAN_Id_Wind;			// 0x108
   p.dlc =8;
 
-  float wind_direction = ATAN2( - x.wind_average.e[EAST], - x.wind_average.e[NORTH]);
-  if( wind_direction < 0.0f)
-    wind_direction += 6.2832f;
-  p.data_sh[2] = (int16_t)(round(wind_direction * 1000.0f)); // 1/1000 rad
-  p.data_h[3] = (int16_t)(round(VSQRTF( SQR(x.wind_average.e[EAST])+ SQR(x.wind_average.e[NORTH])) * 3.6f));
-
-  wind_direction = ATAN2( - x.wind.e[EAST], - x.wind.e[NORTH]);
+  float wind_direction = ATAN2( - x.wind.e[EAST], - x.wind.e[NORTH]);
   if( wind_direction < 0.0f)
     wind_direction += 6.2832f;
   p.data_sh[0] = (int16_t)(round(wind_direction * 1000.0f)); // 1/1000 rad
   p.data_h[1] = (int16_t)(round(VSQRTF( SQR(x.wind.e[EAST])+ SQR(x.wind.e[NORTH])) * 3.6f));
+
+  wind_direction = ATAN2( - x.wind_average.e[EAST], - x.wind_average.e[NORTH]);
+  if( wind_direction < 0.0f)
+    wind_direction += 6.2832f;
+  p.data_sh[2] = (int16_t)(round(wind_direction * 1000.0f)); // 1/1000 rad
+  p.data_h[3] = (int16_t)(round(VSQRTF( SQR(x.wind_average.e[EAST])+ SQR(x.wind_average.e[NORTH])) * 3.6f));
 
   CAN_driver.send(p, 1);
 

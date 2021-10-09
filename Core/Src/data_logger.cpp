@@ -61,10 +61,16 @@ void write_EEPROM_dump( const char * filename)
   if (fresult != FR_OK)
     return; // silently give up
 
+  f_write (&fp, GIT_COMMIT_HASH, strlen(GIT_COMMIT_HASH), (UINT*) &writtenBytes);
+  f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
+  utox( UNIQUE_ID[0], buffer, 8);
+  buffer[8]='\r';
+  buffer[9]='\n';
+  f_write (&fp, buffer, 10, (UINT*) &writtenBytes);
+
   for( unsigned index = 1; index < PERSISTENT_DATA_ENTRIES; ++index)
     {
       float value;
-      char buffer[50];
       bool result = read_EEPROM_value( PERSISTENT_DATA[index].id, value);
       if( result == HAL_OK)
 	{

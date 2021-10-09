@@ -104,7 +104,7 @@ private:
 
   flight_observer_t 	flight_observer;
   smart_averager< float> 	vario_integrator;
-  smart_averager< float3vector> wind_average_observer;
+  smart_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
 };
 
 #endif /* NAVIGATORT_H_ */

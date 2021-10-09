@@ -120,6 +120,8 @@ void communicator_runnable (void*)
     }
 #else
     double old_latitude; // used to trigger on new input
+    float3vector old_velocity;
+    float3vector old_acceleration;
 #endif
 
   navigator.update_pabs (output_data.m.static_pressure);
@@ -157,8 +159,17 @@ void communicator_runnable (void*)
 	    {
 	      old_latitude = GNSS.coordinates.latitude;
 	      GNSS.fix_type = FIX_3d; // has not been recorded ...
+
+	      // todo remove me, bugfix for bad acceleration data 1.10.2021
+	      old_acceleration = (GNSS.coordinates.velocity - old_velocity) * 0.1f;
+	      GNSS.coordinates.acceleration = old_acceleration;
+	      old_velocity = GNSS.coordinates.velocity;
+
 	      navigator.update_GNSS (GNSS.coordinates);
 	    }
+	  else
+	      GNSS.coordinates.acceleration = old_acceleration; // keep OUR acceleration !
+
 #else
 	  if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
 	    {
@@ -170,7 +181,7 @@ void communicator_runnable (void*)
       acc = sensor_mapping * output_data.m.acc;
       mag = sensor_mapping * output_data.m.mag;
 
-#if OLD_COORD_FORMAT // todo remove me some day...
+#if 1 // todo remove me some day...
       for( int i=0; i<3; ++i)
 	{
 	    if ( ! isnormal(output_data.m.gyro.e[i]) )

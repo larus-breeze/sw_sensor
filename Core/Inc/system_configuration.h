@@ -11,20 +11,20 @@ extern float * probe; // debugging probes
 #include "persistent_data.h"
 
 #if 1
-#define INFILE "simin.f46" // switches on offline calculation and defines filename
+#define INFILE "20211001.f46" // switches on offline calculation and defines filename
 #define IN_DATA_LENGTH 46
-#define OUTFILE "simout_x.f97"
+#define OUTFILE "20211001.f100"
 #define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
 #endif
 
-#define USE_PROBES			0 // debugging probes somewhere in the code
+#define USE_PROBES		1 // debugging probes somewhere in the code
 
 #define RUN_DATA_LOGGER		1
 #define LOG_OBSERVATIONS	0 // log IMU + pressure data
 #define LOG_COORDINATES		0 // log GNSS data
 #define LOG_OUTPUT_DATA		1 // logging all inclusive
 
-#define OLD_COORD_FORMAT 	1
+#define OLD_COORD_FORMAT 	0
 
 #define LOG_MAGNETIC_CALIBRATION 	0
 #define WRITE_EEPROM_DEFAULTS		1
@@ -42,6 +42,8 @@ extern float * probe; // debugging probes
 #define CIRCLE_LIMIT 		(10 * 100) //!< 10 * 1/100 s delay into / out of circling state
 #define STABLE_CIRCLING_LIMIT	(30 * 100) // seconds @ 100 Hz for MAG auto calibration
 #endif
+
+#define USE_CROSS_ACCELERATION_WHILE_CIRCLING false
 
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
 #define MAG_CALIB_LETHARGY	0.8f // percentage of remaining old calibration info

@@ -48,9 +48,9 @@ public:
 	    beta_N = 1.0f - alpha_N;
 	    beta_E = 1.0f - alpha_E;
 	  }
-#if USE_PROBES
-	*probe = alpha_N;
-	*(probe+1) = alpha_E;
+#if 0
+	probe[0] = alpha_N;
+	probe[1] = alpha_E;
 #endif
 	present_output.e[NORTH] = present_output.e[NORTH] * alpha_N + stage_1_N * beta_N;
 	present_output.e[EAST]  = present_output.e[EAST]  * alpha_E + stage_1_E * beta_E;
