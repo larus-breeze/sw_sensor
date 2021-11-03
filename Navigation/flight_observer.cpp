@@ -42,12 +42,17 @@ void flight_observer_t::update (
 
       // non TEC compensated vario, negative if *climbing* !
       vario_uncompensated_GNSS = KalmanVario_GNSS.update ( GNSS_altitude, ahrs_acceleration.e[DOWN]);
-      speed_compensation_GNSS =
+
+      float speed_compensation =
     		  (
     		      ((gnss_velocity.e[NORTH] - wind_average.e[NORTH]) * gnss_acceleration.e[NORTH]) +
     		      ((gnss_velocity.e[EAST]  - wind_average.e[EAST])  * gnss_acceleration.e[EAST])  +
     		      (KalmanVario_GNSS.get_x(KalmanVario_t::VARIO) * KalmanVario_GNSS.get_x(KalmanVario_t::ACCELERATION_OBSERVED))
     		   ) * RECIP_GRAVITY;
+
+      speed_compensation_GNSS = speed_compensation;
+
+      probe[0] = speed_compensation_fusioner.respond( speed_compensation, speed_compensation_TAS);
 
 #if USE_PROBES
       // todo patch testing...
@@ -59,7 +64,7 @@ void flight_observer_t::update (
     		      (KalmanVario_GNSS.get_x(KalmanVario_t::VARIO) * KalmanVario_GNSS.get_x(KalmanVario_t::ACCELERATION_OBSERVED))
     		   ) * RECIP_GRAVITY;
 #endif
-      vario_averager_GNSS.respond(     speed_compensation_GNSS - vario_uncompensated_GNSS);
+      vario_averager_GNSS.respond( speed_compensation_GNSS - vario_uncompensated_GNSS);
     }
 }
 

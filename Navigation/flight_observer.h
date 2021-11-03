@@ -15,6 +15,7 @@
 #include "windobserver.h"
 
 #include "pt2.h"
+#include "HP_LP_fusion.h"
 
 class flight_observer_t
 {
@@ -25,6 +26,7 @@ public:
   vario_averager_GNSS( configuration( VARIO_TC)),
   windspeed_instant_observer( configuration( WIND_TC)),
   kinetic_energy_differentiator( 1.0f, 1.0f / 100.0f),
+  speed_compensation_fusioner( 0.998f),
   KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, -9.81f),
   KalmanVario_pressure( 0.0f, 0.0f, 0.0f, -9.81f)
   {
@@ -92,6 +94,8 @@ private:
 	float speed_compensation_GNSS;
 	float vario_uncompensated_GNSS;
 	float vario_uncompensated_pressure;
+
+	HP_LP_fusion <float> speed_compensation_fusioner;
 
 	KalmanVario_t KalmanVario_GNSS;
 	KalmanVario_t KalmanVario_pressure;
