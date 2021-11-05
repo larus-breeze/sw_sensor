@@ -161,7 +161,7 @@ void communicator_runnable (void*)
 	      GNSS.fix_type = FIX_3d; // has not been recorded ...
 
 	      // todo remove me, bugfix for bad acceleration data 1.10.2021
-	      old_acceleration = (GNSS.coordinates.velocity - old_velocity) * 0.1f;
+	      old_acceleration = (GNSS.coordinates.velocity - old_velocity) * 10.0f;
 	      GNSS.coordinates.acceleration = old_acceleration;
 	      old_velocity = GNSS.coordinates.velocity;
 
