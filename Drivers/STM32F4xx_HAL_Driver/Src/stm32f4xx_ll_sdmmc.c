@@ -158,13 +158,18 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 #include "my_assert.h"
+#include "embedded_memory.h"
 
-#if 0
+//COMMON volatile unsigned loopcount;
+
+#if 1
 void vTaskDelay( uint32_t);
-volatile uint32_t NICE()
+inline volatile uint32_t NICE()
 {
-  ASSERT( __get_IPSR() == 0);
-  vTaskDelay(1);
+  if( __get_IPSR() == 0)
+    vTaskDelay(1);
+//  else
+//    ++loopcount;
   return 1;
 }
 #else

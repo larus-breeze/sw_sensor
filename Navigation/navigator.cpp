@@ -59,7 +59,7 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
   float3vector relative_wind_BODY =  ahrs.get_nav2body() * relative_wind_NAV;
 #if USE_PROBES
   probe[1] = relative_wind_BODY.e[0];
-  probe[2] = relative_wind_BODY.e[1];
+  probe[2] = relative_wind_BODY.e[1] / COS(ahrs.get_euler().r);
 #endif
   vario_integrator.update (flight_observer.get_vario_GNSS(), // here because of the update rate 10Hz
 			   ahrs.get_euler ().y,
