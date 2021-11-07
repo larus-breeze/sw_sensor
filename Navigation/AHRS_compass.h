@@ -123,7 +123,7 @@ public:
 private:
 	void feed_compass_calibration(const float3vector &mag);
 	circle_state_t circle_state;
-	circle_state_t update_circling_state( const float3vector &gyro);
+	circle_state_t update_circling_state( void);
 	void update( const float3vector &acc, const float3vector &gyro, const float3vector &mag);
 	float3vector nav_correction;
 	float3vector gyro_correction;

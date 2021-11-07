@@ -13,7 +13,7 @@ extern float * probe; // debugging probes
 #if 1
 #define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
 #define IN_DATA_LENGTH 46
-#define OUTFILE "simout_20210530_test.f102"
+#define OUTFILE "simout_20210530_swavg.f102"
 #define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
 #endif
 
@@ -43,7 +43,7 @@ extern float * probe; // debugging probes
 #define STABLE_CIRCLING_LIMIT	(30 * 100) // seconds @ 100 Hz for MAG auto calibration
 #endif
 
-#define USE_CROSS_ACCELERATION_WHILE_CIRCLING false
+#define USE_CROSS_ACCELERATION_WHILE_CIRCLING true
 
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
 #define MAG_CALIB_LETHARGY	0.8f // percentage of remaining old calibration info

@@ -72,7 +72,7 @@ void AHRS_compass_type::attitude_setup( const float3vector & acceleration, const
 /**
  * @brief  decide about circling state
 */
-circle_state_t AHRS_compass_type::update_circling_state( const float3vector &gyro)
+circle_state_t AHRS_compass_type::update_circling_state( void)
 {
 #if DISABLE_CIRCLING_STATE == 1
   return STRAIGHT_FLIGHT;
@@ -177,7 +177,7 @@ AHRS_compass_type::update_compass (const float3vector &gyro, const float3vector 
   // calculate heading error depending on the present circling state
   // on state changes handle MAG auto calibration
 
-  update_circling_state (gyro);
+  update_circling_state();
 
   if (isnan( GNSS_acceleration.e[NORTH])) // no GNSS fix
 

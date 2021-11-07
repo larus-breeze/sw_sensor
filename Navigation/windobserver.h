@@ -36,7 +36,8 @@ public:
 
 	float alpha_N, beta_N, alpha_E, beta_E;
 
-	if( state == STRAIGHT_FLIGHT)
+	if( true)
+//	if( state == STRAIGHT_FLIGHT) // todo patch
 	  {
 	    beta_N = beta_E = beta_max;
 	    alpha_N = alpha_E = 1.0f - beta_max;

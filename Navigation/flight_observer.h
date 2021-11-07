@@ -36,7 +36,7 @@ public:
 	    const float3vector &gnss_velocity,
 	    const float3vector &gnss_acceleration,
 	    const float3vector &ahrs_acceleration,
-	    const float3vector &air_velocity,
+	    const float3vector &heading_vector,
 	    float GNSS_altitude,
 	    float pressure_altitude,
 	    float TAS,
