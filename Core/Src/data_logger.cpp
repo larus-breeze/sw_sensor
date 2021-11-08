@@ -323,7 +323,7 @@ data_logger_runnable (void*)
       /* TODO: decide what to do if disk is full.  Simple: Stop Logging.  Better: Remove older files until e.g. 1GB is free
        at startup. FATFS configuration is not up to that. */
 
-      if( ! (fresult == FR_OK) && (writtenBytes == BUFSIZE))
+      if( ! ((fresult == FR_OK) && (writtenBytes == BUFSIZE)))
 	    while(true)
 	      suspend (); // give up, logger can not work
 

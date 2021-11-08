@@ -8,7 +8,6 @@
 
 #include <system_configuration.h>
 #include <AHRS.h>
-#include <AHRS_compass.h>
 #include "GNSS.h"
 #include "differentiator.h"
 #include "smart_averager.h"
@@ -89,18 +88,18 @@ public:
   }
 
 private:
-  AHRS_type 		ahrs;
-  AHRS_compass_type	ahrs_magnetic;
+  AHRS_type 	ahrs;
+  AHRS_type	ahrs_magnetic;
 
-  atmosphere_t 		atmosphere;
-  float 		pitot_pressure;
-  float 		TAS;
-  float 		IAS;
-  float3vector 		GNSS_velocity;
-  float			GNSS_speed;
-  float3vector 		GNSS_acceleration;
-  float 		GNSS_heading;
-  float 		GNSS_altitude;
+  atmosphere_t 	atmosphere;
+  float 	pitot_pressure;
+  float 	TAS;
+  float 	IAS;
+  float3vector 	GNSS_velocity;
+  float		GNSS_speed;
+  float3vector 	GNSS_acceleration;
+  float 	GNSS_heading;
+  float 	GNSS_altitude;
 
   flight_observer_t 	flight_observer;
   smart_averager< float> 	vario_integrator;

@@ -13,7 +13,7 @@ extern float * probe; // debugging probes
 #if 1
 #define INFILE "simin_20210530.f46" // switches on offline calculation and defines filename
 #define IN_DATA_LENGTH 46
-#define OUTFILE "simout_20210530_swavg.f102"
+#define OUTFILE "simout_20210530_magtest.f102"
 #define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
 #endif
 
