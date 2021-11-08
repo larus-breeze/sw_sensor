@@ -22,8 +22,8 @@ void navigator_t::update_IMU (
 
   float3vector heading_vector;
   heading_vector[NORTH] = ahrs.get_north (); // todo which special ins to use = ???
-  heading_vector[EAST]  = ahrs.get_east ();
-  heading_vector[DOWN]  = ahrs.get_down (); // todo: do we need this one ?
+  heading_vector[EAST]  = ahrs.get_east  ();
+  heading_vector[DOWN]  = ahrs.get_down  (); // todo: do we need this one ?
 
   flight_observer.update (
       GNSS_velocity,
@@ -72,10 +72,10 @@ void navigator_t::report_data(output_data_t &d)
     d.IAS 			= IAS;
 
     d.euler			= ahrs.get_euler();
-    d.q				= ahrs.attitude;
+    d.q				= ahrs.get_attitude();
 
     d.euler_magnetic		= ahrs_magnetic.get_euler();
-    d.q_magnetic		= ahrs_magnetic.attitude;
+    d.q_magnetic		= ahrs_magnetic.get_attitude();
 
 #if USE_GNSS_VARIO
     d.vario			= flight_observer.get_vario_GNSS(); // todo pick one vario

@@ -51,6 +51,10 @@ public:
 	{
 		return euler;
 	}
+	inline quaternion<ftype> get_attitude(void) const
+	{
+		return attitude;
+	}
 	inline const float3vector &get_nav_acceleration(void) const
 	{
 		return acceleration_nav_frame;
@@ -128,7 +132,6 @@ public:
     return nick_angle_averager.get_output();
   }
 
-  quaternion<ftype>attitude;
   float get_turn_rate( void ) const
   {
     return turn_rate;
@@ -136,41 +139,44 @@ public:
 
   void handle_magnetic_calibration( void) const;
 
+  void update_compass(
+		  const float3vector &gyro, const float3vector &acc, const float3vector &mag,
+		  const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
+
 private:
-	float turn_rate;
-	void feed_compass_calibration(const float3vector &mag);
-	circle_state_t circle_state;
-	circle_state_t update_circling_state( void);
+  quaternion<ftype>attitude;
+  float turn_rate;
+  void feed_compass_calibration(const float3vector &mag);
+  circle_state_t circle_state;
+  circle_state_t update_circling_state( void);
 
-	void update_diff_GNSS( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
-		const float3vector &GNSS_acceleration,
-		float GNSS_heading);
+  void update_diff_GNSS( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
+	  const float3vector &GNSS_acceleration,
+	  float GNSS_heading);
 
-	void update_compass(
-			const float3vector &gyro, const float3vector &acc, const float3vector &mag,
-			const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
+  void update_attitude( const float3vector &acc, const float3vector &gyro, const float3vector &mag);
 
-	void update_attitude( const float3vector &acc, const float3vector &gyro, const float3vector &mag);
-	float3vector nav_correction;
-	float3vector gyro_correction;
-	float3vector gyro_integrator;
-	float3vector acceleration_nav_frame;
-	float3vector induction_nav_frame; 	//!< observed NAV induction
-	float3vector expected_nav_induction;	 //!< expected NAV induction
-	float3matrix body2nav;
-	float3matrix nav2body;
-	eulerangle<ftype> euler;
-	float3vector control_body;
-	ftype Ts;
-	ftype Ts_div_2;
-	unsigned circling_counter;
-	pt2<float,float> slip_angle_averager;
-	pt2<float,float> nick_angle_averager;
-	linear_least_square_fit<float> mag_calibrator[3];
-	compass_calibration_t compass_calibration;
-	bool DGNSS_available;
-	float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
-	float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
+  float3vector nav_correction;
+  float3vector gyro_correction;
+  float3vector gyro_integrator;
+  float3vector acceleration_nav_frame;
+  float3vector induction_nav_frame; 	//!< observed NAV induction
+  float3vector expected_nav_induction;	//!< expected NAV induction
+  float expected_nav_induction_east;	//!< normalized version
+  float3matrix body2nav;
+  float3matrix nav2body;
+  eulerangle<ftype> euler;
+  float3vector control_body;
+  ftype Ts;
+  ftype Ts_div_2;
+  unsigned circling_counter;
+  pt2<float,float> slip_angle_averager;
+  pt2<float,float> nick_angle_averager;
+  linear_least_square_fit<float> mag_calibrator[3];
+  compass_calibration_t compass_calibration;
+  bool DGNSS_available;
+  float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
+  float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
 };
 
 #endif /* AHRS_H_ */
