@@ -121,9 +121,9 @@ void CAN_output ( const output_data_t &x)
 
   p.id=c_CAN_Id_TurnCoord;				// 0x10c
   p.dlc=6;
-  p.data_sh[0] = (int16_t)(round(x.slip_angle * 1000.0f));	// mm/s^2
-  p.data_sh[1] = (int16_t)(round(x.turn_rate  * 1000.0f)); 	// mm/s^2
-  p.data_sh[2] = (int16_t)(round(x.nick_angle * 1000.0f));	// mm/s^2
+  p.data_sh[0] = (int16_t)(round(x.slip_angle * 1000.0f));	// slipwinkel in rad aus Scheinlot
+  p.data_sh[1] = (int16_t)(round(x.turn_rate  * 1000.0f)); 	// drehrate in rad/s
+  p.data_sh[2] = (int16_t)(round(x.nick_angle * 1000.0f));	// nickwinkel in rad aus Scheinlot
   if( CAN_driver.send(p, 1)) // check CAN for timeout this time
 	system_state |= CAN_OUTPUT_ACTIVE;
 
