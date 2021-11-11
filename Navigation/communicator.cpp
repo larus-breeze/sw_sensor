@@ -122,6 +122,8 @@ void communicator_runnable (void*)
     double old_latitude; // used to trigger on new input
     float3vector old_velocity;
     float3vector old_acceleration;
+    int32_t measurement_ticks;
+    int32_t last_GNSS_update_at;
 #endif
 
   navigator.update_pabs (output_data.m.static_pressure);
@@ -155,17 +157,21 @@ void communicator_runnable (void*)
 	}
 
 #ifdef INFILE // we presently run HIL/SIL
+	  ++measurement_ticks;
 	  if (GNSS.coordinates.latitude != old_latitude) // todo this is a dirty workaround
 	    {
 	      old_latitude = GNSS.coordinates.latitude;
 	      GNSS.fix_type = FIX_3d; // has not been recorded ...
 
 	      // todo remove me, bugfix for bad acceleration data 1.10.2021
-	      old_acceleration = (GNSS.coordinates.velocity - old_velocity) * 10.0f;
+	      float instant_sample_frequency = 100.0f / (float)( measurement_ticks - last_GNSS_update_at);
+	      old_acceleration = (GNSS.coordinates.velocity - old_velocity) * instant_sample_frequency;
 	      GNSS.coordinates.acceleration = old_acceleration;
 	      old_velocity = GNSS.coordinates.velocity;
 
 	      navigator.update_GNSS (GNSS.coordinates);
+
+	      last_GNSS_update_at = measurement_ticks;
 	    }
 	  else
 	      GNSS.coordinates.acceleration = old_acceleration; // keep OUR acceleration !
