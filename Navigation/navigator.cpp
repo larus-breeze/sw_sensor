@@ -52,14 +52,18 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
   GNSS_speed 		= coordinates.speed_motion;
 
   wind_average_observer.update( flight_observer.get_instant_wind(), // do this here because of the update rate 10Hz
-			ahrs.get_euler ().y,
-			ahrs.get_circling_state ());
+				ahrs.get_euler ().y,
+				ahrs.get_circling_state ());
 
   float3vector relative_wind_NAV = flight_observer.get_instant_wind() - wind_average_observer.get_value();
   float3vector relative_wind_BODY =  ahrs.get_nav2body() * relative_wind_NAV;
+  relative_wind_observer.update(relative_wind_BODY,
+				ahrs.get_euler ().y,
+				ahrs.get_circling_state ());
+
 #if USE_PROBES
-  probe[1] = relative_wind_BODY.e[0];
-  probe[2] = relative_wind_BODY.e[1] / COS(ahrs.get_euler().r);
+  probe[1] = relative_wind_observer.get_value().e[0];
+  probe[2] = relative_wind_observer.get_value().e[1] / COS(ahrs.get_euler().r);
 #endif
   vario_integrator.update (flight_observer.get_vario_GNSS(), // here because of the update rate 10Hz
 			   ahrs.get_euler ().y,
