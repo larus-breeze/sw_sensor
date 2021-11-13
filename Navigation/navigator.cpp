@@ -64,7 +64,7 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
 #if N_PROBES == 5
   probe[1] = relative_wind_observer.get_value().e[FRONT];
   probe[2] = relative_wind_observer.get_value().e[RIGHT] / COS(ahrs.get_euler().r);
-  float3vector wind_correction_nav = ahrs.get_nav2body() * relative_wind_observer.get_value();
+  float3vector wind_correction_nav = ahrs.get_body2nav() * relative_wind_observer.get_value();
   float3vector instant_wind_corrected = flight_observer.get_instant_wind() - wind_correction_nav;
   probe[3] = instant_wind_corrected.e[NORTH];
   probe[4] = instant_wind_corrected.e[EAST];
