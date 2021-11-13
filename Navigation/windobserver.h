@@ -36,7 +36,7 @@ public:
 
 	float alpha_N, beta_N, alpha_E, beta_E;
 
-	if( true)
+	if( true) // todo smart filtering shortcut !
 //	if( state == STRAIGHT_FLIGHT) // todo patch
 	  {
 	    beta_N = beta_E = beta_max;
@@ -49,7 +49,7 @@ public:
 	    beta_N = 1.0f - alpha_N;
 	    beta_E = 1.0f - alpha_E;
 	  }
-#if 0 // #if USE_PROBES
+#if 0 // todo remove test
 	probe[0] = alpha_N;
 	probe[1] = alpha_E;
 #endif

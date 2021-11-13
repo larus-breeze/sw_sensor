@@ -61,9 +61,13 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
 				ahrs.get_euler ().y,
 				ahrs.get_circling_state ());
 
-#if USE_PROBES
-  probe[1] = relative_wind_observer.get_value().e[0];
-  probe[2] = relative_wind_observer.get_value().e[1] / COS(ahrs.get_euler().r);
+#if N_PROBES == 5
+  probe[1] = relative_wind_observer.get_value().e[FRONT];
+  probe[2] = relative_wind_observer.get_value().e[RIGHT] / COS(ahrs.get_euler().r);
+  float3vector wind_correction_nav = ahrs.get_nav2body() * relative_wind_observer.get_value();
+  float3vector instant_wind_corrected = flight_observer.get_instant_wind() - wind_correction_nav;
+  probe[3] = instant_wind_corrected.e[NORTH];
+  probe[4] = instant_wind_corrected.e[EAST];
 #endif
   vario_integrator.update (flight_observer.get_vario_GNSS(), // here because of the update rate 10Hz
 			   ahrs.get_euler ().y,

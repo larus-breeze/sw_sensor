@@ -23,7 +23,7 @@ COMMON output_data_t __ALIGNED(1024) output_data =
   { 0 };
 COMMON GNSS_type GNSS (output_data.c);
 
-#if USE_PROBES
+#if N_PROBES > 0
 COMMON float * probe= output_data.probe; // debugging probes
 #endif
 
