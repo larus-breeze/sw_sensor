@@ -36,8 +36,8 @@ public:
 
 	float alpha_N, beta_N, alpha_E, beta_E;
 
-	if( true) // todo smart filtering shortcut !
-//	if( state == STRAIGHT_FLIGHT) // todo patch
+//	if( true) // todo smart filtering shortcut !
+	if( state == STRAIGHT_FLIGHT) // todo patch
 	  {
 	    beta_N = beta_E = beta_max;
 	    alpha_N = alpha_E = 1.0f - beta_max;
