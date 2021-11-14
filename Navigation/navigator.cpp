@@ -55,17 +55,23 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
 				ahrs.get_euler ().y,
 				ahrs.get_circling_state ());
 
-  float3vector relative_wind_NAV = flight_observer.get_instant_wind() - wind_average_observer.get_value();
+  float3vector relative_wind_NAV  = flight_observer.get_instant_wind() - wind_average_observer.get_value();
   float3vector relative_wind_BODY =  ahrs.get_nav2body() * relative_wind_NAV;
   relative_wind_observer.update(relative_wind_BODY,
 				ahrs.get_euler ().y,
 				ahrs.get_circling_state ());
 
+  float3vector wind_correction_nav    = ahrs.get_body2nav() * relative_wind_observer.get_value();
+  float3vector instant_wind_corrected = flight_observer.get_instant_wind() - wind_correction_nav;
+
+  if( ahrs.get_circling_state () == CIRCLING)
+    corrected_wind_averager.respond( instant_wind_corrected);
+  else
+    corrected_wind_averager.respond( flight_observer.get_instant_wind()); // todo bad: cascaded lowpass filters !
+
 #if N_PROBES == 5
   probe[1] = relative_wind_observer.get_value().e[FRONT];
   probe[2] = relative_wind_observer.get_value().e[RIGHT] / COS(ahrs.get_euler().r);
-  float3vector wind_correction_nav = ahrs.get_body2nav() * relative_wind_observer.get_value();
-  float3vector instant_wind_corrected = flight_observer.get_instant_wind() - wind_correction_nav;
   if( ahrs.get_circling_state () != STRAIGHT_FLIGHT)
     {
       probe[3] = instant_wind_corrected.e[NORTH];
@@ -102,7 +108,7 @@ void navigator_t::report_data(output_data_t &d)
     d.integrator_vario		= vario_integrator.get_value();
     d.vario_uncompensated 	= flight_observer.get_vario_uncompensated_GNSS();
 
-    d.wind			= flight_observer.get_instant_wind(); // short-term avg
+    d.wind			= corrected_wind_averager.get_output(); // short-term avg
     d.wind_average		= wind_average_observer.get_value();  // smart long-term avg
 
     d.speed_compensation_TAS 	= flight_observer.get_speed_compensation_TAS();

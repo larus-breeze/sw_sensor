@@ -24,7 +24,8 @@ public:
 	 atmosphere (101325.0f),
 	 vario_integrator( configuration( VARIO_INT_TC)),
 	 wind_average_observer( configuration( MEAN_WIND_TC)),
-	 relative_wind_observer( configuration( MEAN_WIND_TC))
+	 relative_wind_observer( configuration( MEAN_WIND_TC)),
+	 corrected_wind_averager( 1.0f / 15.0f / 10.0f) 	// 15s @ 10Hz
   {
     GNSS_heading = NAN;
   };
@@ -106,6 +107,7 @@ private:
   smart_averager< float> 	vario_integrator;
   smart_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
   smart_averager< float3vector> relative_wind_observer; // configure wind average clamping on first circle
+  pt2<float3vector,float> corrected_wind_averager;
 };
 
 #endif /* NAVIGATORT_H_ */
