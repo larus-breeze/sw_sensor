@@ -17,7 +17,7 @@ extern float * probe; // debugging probes
 #define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
 #endif
 
-#define N_PROBES		5 // debugging probes somewhere in the code
+#define N_PROBES		0 // debugging probes somewhere in the code
 
 #define RUN_DATA_LOGGER		1
 #define LOG_OBSERVATIONS	0 // log IMU + pressure data

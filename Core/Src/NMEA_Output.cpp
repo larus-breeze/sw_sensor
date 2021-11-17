@@ -24,7 +24,7 @@ static void runnable (void*)
   update_system_state_set( USART_2_OUTPUT_ACTIVE);
 #endif
 
-  suspend(); // wait until we are needed
+//  suspend(); // wait until we are needed
 
   for (synchronous_timer t (NMEA_REPORTING_PERIOD); true; t.sync ())
     {

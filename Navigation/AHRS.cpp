@@ -185,6 +185,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 			     const float3vector &GNSS_acceleration,
 			     float GNSS_heading)
 {
+  circle_state_t old_circle_state = circle_state;
   update_circling_state ();
 
   float3vector mag;
@@ -229,8 +230,14 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
   update_attitude (acc, gyro + gyro_correction, mag);
 
-  if (circle_state == CIRCLING) // only here we get fresh magnetic entropy
+  // only here we get fresh magnetic entropy
+  // and: wait for low control loop error
+  if ( (circle_state == CIRCLING) && ( nav_correction.abs() < 5.0f)) // value 5.0 observed from flight data
       feed_compass_calibration (mag_sensor);
+
+  // todo check me: experimental calibration procedure
+  if( ( old_circle_state == CIRCLING) && (circle_state == TRANSITION))
+    compass_calibration.set_calibration( mag_calibrator, 'S', true);
 }
 
 /**
@@ -258,7 +265,8 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   // calculate heading error depending on the present circling state
   // on state changes handle MAG auto calibration
 
-  update_circling_state();
+  circle_state_t old_circle_state = circle_state;
+  update_circling_state ();
 
   if (isnan( GNSS_acceleration.e[NORTH])) // no GNSS fix
 
@@ -316,8 +324,14 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   // feed quaternion update with corrected sensor readings
   update_attitude(acc, gyro + gyro_correction, mag);
 
-  if (circle_state == CIRCLING) // only here we get fresh magnetic entropy
+  // only here we get fresh magnetic entropy
+  // and: wait for low control loop error
+  if ( (circle_state == CIRCLING) && ( nav_correction.abs() < 5.0f)) // value 5.0 observed from flight data
       feed_compass_calibration (mag_sensor);
+
+  // todo check me: experimental calibration procedure
+  if( ( old_circle_state == CIRCLING) && (circle_state == TRANSITION))
+    compass_calibration.set_calibration( mag_calibrator, 'M', true);
 }
 
 //! to be called after landing: eventually make calibration permanent
