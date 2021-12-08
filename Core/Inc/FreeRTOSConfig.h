@@ -59,6 +59,17 @@ extern uint8_t __FreeRTOS_heap_end__;
 #define configENABLE_FPU                         1
 #define configENABLE_MPU                         1
 
+#define portREMOVE_STATIC_QUALIFIER		1
+
+#define configGENERATE_RUN_TIME_STATS		1
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() {;}
+
+extern uint64_t getTime_usec_privileged(void);
+#define portGET_RUN_TIME_COUNTER_VALUE() 	getTime_usec_privileged()
+
+#define INCLUDE_uxTaskGetStackHighWaterMark	1
+#define configRECORD_STACK_HIGH_ADDRESS		1
+
 #define configENFORCE_SYSTEM_CALLS_FROM_KERNEL_ONLY 0
 
 #define configUSE_PREEMPTION                     1
@@ -110,7 +121,6 @@ to exclude the API function. */
 #define INCLUDE_xTaskGetSchedulerState       1
 #define INCLUDE_xTimerPendFunctionCall       0
 #define INCLUDE_xQueueGetMutexHolder         0
-#define INCLUDE_uxTaskGetStackHighWaterMark  0
 #define INCLUDE_eTaskGetState                1
 
 /* 

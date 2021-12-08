@@ -100,10 +100,12 @@ class Queue
 public:
 //!  Queue constructor
 //! \param  length Number of items that can be stored
-	Queue(unsigned length)
+	Queue(unsigned length, const char *name=0)
 	: the_queue( xQueueCreate(length, sizeof(items)))
 	{
 		ASSERT(the_queue != 0);
+		if( name != 0)
+		  vQueueAddToRegistry( the_queue, name);
 	}
 protected:
 	// support for Semaphore wanting item size = 0
@@ -260,9 +262,11 @@ class Semaphore
 public:
 //!  Semaphore constructor
 //! \param  length counting semaphore size (optional), length=1 or missing: create binary semaphore
-	Semaphore(unsigned max_count=1, unsigned init_count=0)
+	Semaphore(unsigned max_count=1, unsigned init_count=0, char *name=(char *)"SEMA")
 	: sema( xSemaphoreCreateCounting( max_count, init_count))
 	{
+		if( name != 0)
+		  vQueueAddToRegistry( sema, name);
 	}
 
 	//!  signal method for use within tasks
@@ -294,11 +298,13 @@ class Mutex
 {
 public:
 	//!  Mutex constructor
-	Mutex(void) :
+	Mutex(char *name=(char *)"MUTEX") :
 			the_mutex(0)
 	{
 		the_mutex = xSemaphoreCreateMutex();
 		ASSERT(the_mutex != 0);
+		if( name != 0)
+		  vQueueAddToRegistry( the_mutex, name);
 	}
 	//!  Lock method for Mutex
 //! \param TicksToWait maximum time to wait to gain access (optional)

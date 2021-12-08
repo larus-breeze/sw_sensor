@@ -13,8 +13,8 @@ extern float * probe; // debugging probes
 #if 1
 #define INFILE "infile.f46" // switches on offline calculation and defines filename
 #define IN_DATA_LENGTH 46
-#define OUTFILE "outfile.f104"
-#define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
+#define OUTFILE "outfile.f99"
+#define MAXSPEED_CALCULATION	0 // not realtime but 100% CPU duty cycle
 #endif
 
 #define N_PROBES		0 // debugging probes somewhere in the code
@@ -26,7 +26,7 @@ extern float * probe; // debugging probes
 
 #define OLD_COORD_FORMAT 	0
 
-#define LOG_MAGNETIC_CALIBRATION 	1
+#define LOG_MAGNETIC_CALIBRATION 	0
 #define WRITE_EEPROM_DEFAULTS		0
 
 #define DKCOM 1

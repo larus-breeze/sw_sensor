@@ -57,7 +57,8 @@ class compass_calibration_t
 {
 public:
   compass_calibration_t( void)
-    :calibration_done(false)
+    : completeness( HAVE_NONE),
+      calibration_done( false)
   {}
 
   float3vector calibrate( const float3vector &in)
@@ -72,9 +73,16 @@ public:
       out.e[i]=calibration[i].calibrate( in.e[i]);
     return out;
   }
-  void set_calibration( linear_least_square_fit<float> mag_calibrator[3], char id, bool check_samples=true)
+  void set_calibration( linear_least_square_fit<float> mag_calibrator[3], char id, bool turning_right, bool check_samples=true)
   {
-    if( check_samples && ( mag_calibrator[0].get_count() < MINIMUM_MAG_CALIBRATION_SAMPLES))
+    if( turning_right)
+      completeness |= HAVE_RIGHT;
+    else
+      completeness |= HAVE_LEFT;
+
+    if( check_samples && !
+	( (completeness == HAVE_BOTH) && ( mag_calibrator[0].get_count() > MINIMUM_MAG_CALIBRATION_SAMPLES) )
+	)
       return; // not enough entropy
 
     linear_least_square_result<float> new_calibration[3];
@@ -82,10 +90,12 @@ public:
 
     for (unsigned i = 0; i < 3; ++i)
       {
-        mag_calibrator[i].evaluate( new_calibration[i]);
+	mag_calibrator[i].evaluate( new_calibration[i]);
         calibration[i].refresh ( new_calibration[i]);
+        mag_calibrator[i].reset();
       }
     calibration_done = true; // at least one calibration has been done now
+    completeness = HAVE_NONE; // restart acquisition
     magnetic_calibration_queue.send(new_calibration, 0);
   }
 
@@ -106,6 +116,8 @@ public:
   void write_into_EEPROM( void) const;
   bool read_from_EEPROM( void); // false if OK
 private:
+  enum completeness_type { HAVE_NONE=0, HAVE_RIGHT=1, HAVE_LEFT=2, HAVE_BOTH=3};
+  unsigned completeness; // bits from completeness_type
   bool calibration_done;
   calibration_t calibration[3];
 };

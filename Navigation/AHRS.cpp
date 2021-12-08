@@ -109,7 +109,6 @@ AHRS_type::AHRS_type (float sampling_time)
   expected_nav_induction[NORTH] = COS( inclination);
   expected_nav_induction[EAST]  = COS( inclination) * SIN( declination);
   expected_nav_induction[DOWN]  = SIN( inclination);
-  expected_nav_induction_east 	= SIN( declination);
 
   GNSS_configration_t GNSS_configuration =
       (GNSS_configration_t) ROUND (configuration (GNSS_CONFIGURATION));
@@ -237,7 +236,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
 
   // todo check me: experimental calibration procedure
   if( ( old_circle_state == CIRCLING) && (circle_state == TRANSITION))
-    compass_calibration.set_calibration( mag_calibrator, 'S', true);
+    compass_calibration.set_calibration( mag_calibrator, 'S', (turn_rate > 0.0f), true);
 }
 
 /**
@@ -331,7 +330,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 
   // todo check me: experimental calibration procedure
   if( ( old_circle_state == CIRCLING) && (circle_state == TRANSITION))
-    compass_calibration.set_calibration( mag_calibrator, 'M', true);
+    compass_calibration.set_calibration( mag_calibrator, 'M', (turn_rate > 0.0f), true);
 }
 
 //! to be called after landing: eventually make calibration permanent

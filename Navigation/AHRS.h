@@ -162,7 +162,6 @@ private:
   float3vector acceleration_nav_frame;
   float3vector induction_nav_frame; 	//!< observed NAV induction
   float3vector expected_nav_induction;	//!< expected NAV induction
-  float expected_nav_induction_east;	//!< normalized version
   float3matrix body2nav;
   float3matrix nav2body;
   eulerangle<ftype> euler;
