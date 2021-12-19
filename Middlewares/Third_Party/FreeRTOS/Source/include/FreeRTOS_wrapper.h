@@ -89,9 +89,12 @@ template<typename x> void wipe(x &that)
 		*ptr = 0;
 }
 
-extern "C" BaseType_t xPortRaisePrivilege(void);
+inline BaseType_t acquire_privileges(void)
+{
+  __asm volatile ( "svc %0 \n" ::"i" ( portSVC_RAISE_PRIVILEGE ) : "memory" );
+}
+
 #define drop_privileges() portSWITCH_TO_USER_MODE()
-#define acquire_privileges() xPortRaisePrivilege()
 
 //! Template for a queue for arbitrary data
 template<typename items>

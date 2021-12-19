@@ -2,8 +2,6 @@
 #include "main.h"
 #include "FreeRTOS_wrapper.h"
 
-#define WATCHDOG_STATISTICS 1
-
 static COMMON WWDG_HandleTypeDef WwdgHandle;
 
 void
@@ -16,16 +14,17 @@ heartbeat (void)
 //	HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, set ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
+#if WATCHDOG_STATISTICS
+COMMON volatile uint32_t watchdog_min=0xffffffff;
+COMMON volatile uint32_t watchdog_max=0;
+#endif
+
 void
 blink (void*)
 {
 #if ACTIVATE_WATCHDOG
 
-#if WATCHDOG_STATISTICS
-  volatile uint32_t watchdog_min=0xffffffff;
-  volatile uint32_t watchdog_max=0;
-#endif
-  acquire_privileges();
+//  acquire_privileges(); // ...coming in privileged
 
   __HAL_RCC_WWDG_CLK_ENABLE();
   WwdgHandle.Instance = WWDG;
@@ -40,9 +39,10 @@ blink (void*)
   if (HAL_WWDG_Init (&WwdgHandle) != HAL_OK)
     Error_Handler ();
 
+#endif // ACTIVATE_WATCHDOG
+
   drop_privileges();
 
-#endif
   uint8_t rythm = 0;
   for (synchronous_timer t (40); true;)
     {
@@ -64,7 +64,7 @@ blink (void*)
     }
 }
 
-RestrictedTask alife_blinker (blink, "BLINK", configMINIMAL_STACK_SIZE, 0, STANDARD_TASK_PRIORITY);
+RestrictedTask alife_blinker (blink, "BLINK", configMINIMAL_STACK_SIZE, 0, STANDARD_TASK_PRIORITY | portPRIVILEGE_BIT);
 
 extern "C" void WWDG_IRQHandler(void)
 {

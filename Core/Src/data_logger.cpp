@@ -347,7 +347,7 @@ data_logger_runnable (void*)
 }
 
 
-#define STACKSIZE 1024
+#define STACKSIZE (1024*2)
 static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 
 static TaskParameters_t p =

@@ -64,6 +64,7 @@ extern float * probe; // debugging probes
 #endif // **************************************************************************
 
 #define ACTIVATE_WATCHDOG	1
+#define WATCHDOG_STATISTICS 	1
 
 #ifdef INFILE
 #define RUN_GNSS		0
