@@ -23,8 +23,7 @@ void
 blink (void*)
 {
 #if ACTIVATE_WATCHDOG
-
-//  acquire_privileges(); // ...coming in privileged
+  acquire_privileges();
 
   __HAL_RCC_WWDG_CLK_ENABLE();
   WwdgHandle.Instance = WWDG;
@@ -39,9 +38,10 @@ blink (void*)
   if (HAL_WWDG_Init (&WwdgHandle) != HAL_OK)
     Error_Handler ();
 
+  drop_privileges();
+
 #endif // ACTIVATE_WATCHDOG
 
-  drop_privileges();
 
   uint8_t rythm = 0;
   for (synchronous_timer t (40); true;)
@@ -64,7 +64,7 @@ blink (void*)
     }
 }
 
-RestrictedTask alife_blinker (blink, "BLINK", configMINIMAL_STACK_SIZE, 0, STANDARD_TASK_PRIORITY | portPRIVILEGE_BIT);
+RestrictedTask alife_blinker (blink, "BLINK", configMINIMAL_STACK_SIZE, 0, STANDARD_TASK_PRIORITY);
 
 extern "C" void WWDG_IRQHandler(void)
 {

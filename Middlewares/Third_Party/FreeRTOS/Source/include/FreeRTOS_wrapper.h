@@ -92,6 +92,7 @@ template<typename x> void wipe(x &that)
 inline BaseType_t acquire_privileges(void)
 {
   __asm volatile ( "svc %0 \n" ::"i" ( portSVC_RAISE_PRIVILEGE ) : "memory" );
+  return 0; // dummy
 }
 
 #define drop_privileges() portSWITCH_TO_USER_MODE()
