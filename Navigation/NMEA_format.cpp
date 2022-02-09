@@ -225,14 +225,16 @@ char *format_GGA(const GNSS_type &gnss, char *p)
   *p++ = '0';
   *p++ = ',';
 
-  uint32_t altitude_msl = gnss.coordinates.position.e[DOWN] * -10.0;
-  *p++ = altitude_msl / 1000 + '0';
-  altitude_msl %= 1000;
-  *p++ = altitude_msl / 100 + '0';
-  altitude_msl %= 100;
-  *p++ = altitude_msl / 10 + '0';
+  uint32_t altitude_msl_dm = gnss.coordinates.position.e[DOWN] * -10.0;
+  *p++ = altitude_msl_dm / 10000 + '0';
+  altitude_msl_dm %= 10000;
+  *p++ = altitude_msl_dm / 1000 + '0';
+  altitude_msl_dm %= 1000;
+  *p++ = altitude_msl_dm / 100 + '0';
+  altitude_msl_dm %= 100;
+  *p++ = altitude_msl_dm / 10 + '0';
   *p++ = '.';
-  *p++ = altitude_msl % 10 + '0';
+  *p++ = altitude_msl_dm % 10 + '0';
   *p++ = ',';
   *p++ = 'M';
   *p++ = ',';
