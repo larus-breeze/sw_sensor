@@ -14,11 +14,11 @@ template<typename type>
   class linear_least_square_result
   {
   public:
-    type a;	//!< y offset
-    type b;	//!< slope
-    type var_a; //!< variance offset
-    type var_b; //!< variance slope
-    char id; 	//!< optional identifier
+    type y_offset;
+    type slope;
+    type variance_offset;
+    type variance_slope;
+    uint32_t id; //!< channel identifier (for logging)
   };
 
 //! @brief linear fit y = a + b * x
@@ -67,7 +67,7 @@ template<typename type>
     void
     evaluate (linear_least_square_result<type> &r) const
     {
-      evaluate (r.a, r.b, r.var_a, r.var_b);
+      evaluate (r.y_offset, r.slope, r.variance_offset, r.variance_slope);
     }
     unsigned
     get_count (void) const
