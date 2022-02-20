@@ -134,11 +134,12 @@ BusFault_Handler(void)
   Bus_Fault_Address=*(uint32_t *)0xe000ed38;
   Bus_Fault_Status =*(uint8_t *) 0xe000ed29;
 	// bus fault status:
+	// 0x92 stacking error address valid
 	// 0x80 Bus_Fault_Address valid
-	// 0x10 stacking error
+	// 0x10 stacking error address INvalid
 	// 0x08 un-stacking error
 	// 0x04 imprecise error
-	// 0x02 bus error during data access size incorrect, disallowed in user mode ...
+	// 0x02 bus error during data access, size incorrect, disallowed in user mode ...
 	// 0x01 branch to invalid memory, invalid EXC. return code, vector table error ...
   __asm volatile
   (
