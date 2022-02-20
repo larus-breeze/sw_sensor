@@ -126,13 +126,13 @@ void write_magnetic_calibration_file (const coordinates_t &c)
   for( unsigned i=0; i<3; ++i)
     {
       char *next = buffer;
-      next = my_ftoa (next, data[i].a);
+      next = my_ftoa (next, data[i].y_offset);
       *next++='\t';
-      next = my_ftoa (next, data[i].b);
+      next = my_ftoa (next, data[i].slope);
       *next++='\t';
-      next = my_ftoa (next, data[i].var_a);
+      next = my_ftoa (next, data[i].variance_offset);
       *next++='\t';
-      next = my_ftoa (next, data[i].var_b);
+      next = my_ftoa (next, data[i].variance_slope);
       *next++='\t';
       fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
       if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))

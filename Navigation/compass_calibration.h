@@ -30,15 +30,15 @@ public:
     {
     if( ! is_initialized()) // first calibration coming in
 	{
-	  offset = result.a;
-	  scale = 1.0f / result.b;
-	  variance = result.var_a + result.var_b;
+	  offset = result.y_offset;
+	  scale = 1.0f / result.slope;
+	  variance = result.variance_offset + result.variance_slope;
 	}
       else
 	{
-	  offset   = offset   * MAG_CALIB_LETHARGY + ( result.a          * (1.0f - MAG_CALIB_LETHARGY));
-	  scale    = scale    * MAG_CALIB_LETHARGY + ( (1.0f / result.b) * (1.0f - MAG_CALIB_LETHARGY)) ;
-	  variance = variance * MAG_CALIB_LETHARGY + ( (result.var_a + result.var_b)
+	  offset   = offset   * MAG_CALIB_LETHARGY + ( result.y_offset          * (1.0f - MAG_CALIB_LETHARGY));
+	  scale    = scale    * MAG_CALIB_LETHARGY + ( (1.0f / result.slope) * (1.0f - MAG_CALIB_LETHARGY)) ;
+	  variance = variance * MAG_CALIB_LETHARGY + ( (result.variance_offset + result.variance_slope)
 									 * (1.0f - MAG_CALIB_LETHARGY));
 	}
     }
