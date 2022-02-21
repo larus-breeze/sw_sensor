@@ -12,7 +12,7 @@ echo //echo -n \" >> Core/Inc/git-commit-version.h
 echo //echo -n \" >> Core/Inc/git-commit-version.h
 echo //echo -e "\n" >> Core/Inc/git-commit-version.h
 echo //echo -n "#define GIT_COMMIT_TIME \"" >> Core/Inc/git-commit-version.h
-echo //git show --no-patch --no-notes --pretty='%cd' >> Core/Inc/git-commit-version.h
+echo //git show --no-patch --no-notes --pretty='%cI' >> Core/Inc/git-commit-version.h
 echo //truncate -s -1 Core/Inc/git-commit-version.h
 echo //echo -n \" >> Core/Inc/git-commit-version.h
 
@@ -23,7 +23,7 @@ truncate -s -1 Core/Inc/git-commit-version.h
 echo -n \" >> Core/Inc/git-commit-version.h
 echo -e "\n" >> Core/Inc/git-commit-version.h
 echo -n "#define GIT_COMMIT_TIME \"" >> Core/Inc/git-commit-version.h
-git show --no-patch --no-notes --pretty='%cd' >> Core/Inc/git-commit-version.h
+git show --no-patch --no-notes --pretty='%cI' >> Core/Inc/git-commit-version.h
 truncate -s -1 Core/Inc/git-commit-version.h
 echo -n \" >> Core/Inc/git-commit-version.h
 
