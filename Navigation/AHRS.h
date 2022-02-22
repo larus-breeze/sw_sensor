@@ -7,15 +7,12 @@
 #ifndef AHRS_H_
 #define AHRS_H_
 
-typedef float ftype;
-//typedef float ftype;
-
+#include "embedded_math.h"
 #include "quaternion.h"
 #include "float3vector.h"
 #include "float3matrix.h"
 #include "integrator.h"
 #include "compass_calibration.h"
-#include "embedded_math.h"
 
 #include "pt2.h"
 
@@ -25,7 +22,8 @@ enum { ROLL, NICK, YAW};
 enum { FRONT, RIGHT, BOTTOM};
 typedef enum  { STRAIGHT_FLIGHT, TRANSITION, CIRCLING} circle_state_t;
 
-#define ANGLE_F_BY_FS ( 1.0 / 0.5f / 100.0f)      // 0.5s
+#define ANGLE_F_BY_FS  ( 1.0f / 0.5f / 100.0f) // 0.5s
+#define G_LOAD_F_BY_FS ( 1.0f / 0.25f / 100.0f) // 0.25s
 
 typedef integrator<float, float3vector> vector3integrator;
 
@@ -136,7 +134,10 @@ public:
   {
     return turn_rate;
   }
-
+  float get_G_load( void ) const
+  {
+    return G_load_averager.get_output();
+  }
   void handle_magnetic_calibration( void) const;
 
   void update_compass(
@@ -171,6 +172,7 @@ private:
   unsigned circling_counter;
   pt2<float,float> slip_angle_averager;
   pt2<float,float> nick_angle_averager;
+  pt2<float,float> G_load_averager;
   linear_least_square_fit<float> mag_calibrator[3];
   compass_calibration_t compass_calibration;
   bool DGNSS_available;

@@ -13,8 +13,9 @@ extern float * probe; // debugging probes
 #if 1
 #define INFILE "infile.f46" // switches on offline calculation and defines filename
 #define IN_DATA_LENGTH 46
-#define OUTFILE "outfile.f99"
+#define OUTFILE "outfile.f100"
 #define MAXSPEED_CALCULATION	0 // not realtime but 100% CPU duty cycle
+#define LOG_FORMAT_2020		0
 #endif
 
 #define N_PROBES		0 // debugging probes somewhere in the code

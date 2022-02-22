@@ -239,7 +239,12 @@ char *format_GGA(const GNSS_type &gnss, char *p)
   *p++ = 'M';
   *p++ = ',';
 
-  uint32_t geo_sep = gnss.coordinates.geo_sep_dm;
+  int32_t geo_sep = gnss.coordinates.geo_sep_dm;
+  if( geo_sep < 0)
+    {
+      geo_sep = -geo_sep;
+      *p++ = '-';
+    }
   *p++ = geo_sep / 1000 + '0';
   geo_sep %= 1000;
   *p++ = geo_sep / 100 + '0';

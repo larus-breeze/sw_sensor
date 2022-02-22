@@ -127,6 +127,7 @@ void navigator_t::report_data(output_data_t &d)
     d.turn_rate			= ahrs.get_turn_rate();
     d.slip_angle		= ahrs.getSlipAngle();
     d.nick_angle		= ahrs.getNickAngle();
+    d.G_load			= ahrs.get_G_load();
 }
 
 //! eventually make magnetic calibration permanent

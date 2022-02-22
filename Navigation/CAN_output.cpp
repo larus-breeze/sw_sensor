@@ -27,7 +27,7 @@ enum CAN_ID_SENSOR
   c_CAN_Id_Wind		= 0x108,	//!< int16_t 1/1000 rad , uint16_t km/h
   c_CAN_Id_Atmosphere	= 0x109,	//!< uint16_t pressure / Pa uint16_t density / g/m^3
   c_CAN_Id_GPS_Sats	= 0x10a,	//!< uin8_t No of Sats, Fix-Type NO=0 2D=1 3D=2 RTK=3
-  c_CAN_Id_Acceleration = 0x10b,	//!< int16_t G-force mm / s^2 // fixme: changed to int16_t  HMR 17.11.20
+  c_CAN_Id_Acceleration = 0x10b,	//!< int16_t G-force mm / s^2
   c_CAN_Id_TurnCoord	= 0x10c,	//!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s
   c_CAN_Id_SystemState	= 0x10d		//!< slip angle int16_t 1/1000 rad, turn rate int16_t 1/1000 rad/s
 };
@@ -38,7 +38,7 @@ void CAN_output ( const output_data_t &x)
 
   p.id=c_CAN_Id_EulerAngles;		// 0x101
   p.dlc=6;
-  p.data_sh[0] = (int16_t)(round( x.euler.r * 1000.0f)); 	// unit = 1/1000 RAD
+  p.data_sh[0] = (int16_t)(round(x.euler.r * 1000.0f)); 	// unit = 1/1000 RAD
   p.data_sh[1] = (int16_t)(round(x.euler.n * 1000.0f));
   p.data_sh[2] = (int16_t)(round(x.euler.y * 1000.0f));
   CAN_driver.send(p, 1);
@@ -107,13 +107,18 @@ void CAN_output ( const output_data_t &x)
 
   p.id=c_CAN_Id_GPS_Sats;		// 0x10a
   p.dlc=2;
+#if LOG_FORMAT_2020
   p.data_b[0] = 30; // todo: fixme: dummy
   p.data_b[1] = 2; // todo: fixme: dummy
+#else
+  p.data_b[0] = x.c.SATS_number;
+  p.data_b[1] = x.c.fix_type;
+#endif
   CAN_driver.send(p, 1);
 
   p.id=c_CAN_Id_Acceleration;		// 0x10b
   p.dlc=7;
-  p.data_sh[0] = (int16_t)(round(x.m.acc.e[DOWN] * -1000.0f)); // mm/s^2
+  p.data_sh[0] = (int16_t)(round(x.G_load * 1000.0f));	// G-Belastung mm/s^2 nach oben pos.
   p.data_sh[1] = (int16_t)(round(x.effective_vertical_acceleration * -1000.0f)); // mm/s^2
   p.data_sh[2] = (int16_t)(round(x.vario_uncompensated * -1000.0f)); // mm/s
   p.data_sb[6] = x.circle_mode;

@@ -100,6 +100,7 @@ AHRS_type::AHRS_type (float sampling_time)
   circling_counter(0),
   slip_angle_averager( ANGLE_F_BY_FS),
   nick_angle_averager( ANGLE_F_BY_FS),
+  G_load_averager(     G_LOAD_F_BY_FS),
   antenna_DOWN_correction(  configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH)),
   antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH))
 {
@@ -172,6 +173,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
 
   slip_angle_averager.respond( ATAN2( -acc.e[RIGHT], -acc.e[DOWN]));
   nick_angle_averager.respond( ATAN2( +acc.e[FRONT], -acc.e[DOWN]));
+  G_load_averager.respond( acc.abs());
 }
 
 /**

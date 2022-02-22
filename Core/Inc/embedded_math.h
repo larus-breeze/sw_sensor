@@ -9,6 +9,8 @@
 #include "vsqrtf.h"
 #include "asin_atan.h"
 
+typedef float ftype;
+
 #define M_PI_F 3.14159265358979323846f
 #define M_PI   3.14159265358979323846
 

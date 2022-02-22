@@ -89,16 +89,26 @@ typedef struct
   double longitude;		//!< degrees
 //  uint32_t time; 		// time of day / ms
 //  uint32_t date; 		// calendar date 1000*year + day of year
+
   uint8_t year;
   uint8_t month;
   uint8_t day;
   uint8_t hour;
+
   uint8_t minute;
   uint8_t second;
-#if OLD_COORD_FORMAT == 0
+#if LOG_FORMAT_2020
   int32_t nano;		// nanoseconds from time stamp
-#endif
   int16_t geo_sep_dm;		// (WGS ellipsoid height - elevation MSL) in 0.1m units
+#else
+  uint8_t SATS_number;
+  uint8_t fix_type;
+
+  int32_t nano;		// nanoseconds from time stamp
+
+  int16_t geo_sep_dm; // (WGS ellipsoid height - elevation MSL) in 0.1m units
+  uint16_t dummy;
+#endif
 } coordinates_t;
 
 

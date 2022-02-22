@@ -69,9 +69,12 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	  return GNSS_NO_FIX;
 	  }
 
-	// all other data not valid now
-
+#if LOG_FORMAT_2020
 	num_SV=pvt.num_SV;
+#else
+	coordinates.SATS_number=pvt.num_SV;
+	coordinates.fix_type=pvt.fix_type;
+#endif
 
 	if (latitude_reference == 0)
 	{
