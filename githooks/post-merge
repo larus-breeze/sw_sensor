@@ -13,7 +13,7 @@ truncate -s -1 Core/Inc/git-commit-version.h
 echo -n \" >> Core/Inc/git-commit-version.h
 echo -e "\n" >> Core/Inc/git-commit-version.h
 echo -n "#define GIT_TAG_INFO \"" >> Core/Inc/git-commit-version.h
-git describe --tags >> Core/Inc/git-commit-version.h
+git describe --always --dirty --tags >> Core/Inc/git-commit-version.h
 truncate -s -1 Core/Inc/git-commit-version.h
 echo -n \" >> Core/Inc/git-commit-version.h
 echo -e "\n" >> Core/Inc/git-commit-version.h
