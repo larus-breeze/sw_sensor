@@ -9,6 +9,7 @@
 #define LINEAR_LEAST_SQUARE_FIT_H_
 
 #include "my_assert.h"
+#include "embedded_math.h"
 
 template<typename type>
   class linear_least_square_result
@@ -43,25 +44,26 @@ template<typename type>
     void
     reset (void)
     {
-      sum_x = sum_xx = sum_y = sum_yy = sum_xy = n = 0.0;
+      sum_x = sum_xx = sum_y = sum_yy = sum_xy = n = ZERO;
     }
     void
     evaluate (type &a, type &b, type &variance_a, type &variance_b) const
     {
-      type inv_n = 1.0 / n;
+      type inv_n = ONE / n;
 
+      type x_mean = sum_x * inv_n;
       type Qx = sum_xx - inv_n * sum_x * sum_x;
-      type invQx = 1.0 / Qx; // performance tuning
+      type invQx = ONE / Qx;
       type Qy = sum_yy - inv_n * sum_y * sum_y;
       type Qxy = sum_xy - inv_n * sum_x * sum_y;
 
-      ASSERT( n > 2.0);
-      type Vyx = (Qy - Qxy * Qxy / Qx) / (n - 2.0);
+      ASSERT( n > TWO);
+      type Vyx = (Qy - Qxy * Qxy / Qx) / (n - TWO);
 
       b = Qxy * invQx;
-      a = sum_y * inv_n - b * sum_x * inv_n;
+      a = sum_y * inv_n - b * x_mean;
 
-      variance_a = Vyx * (inv_n + (sum_xx * inv_n) * (sum_xx * inv_n) * invQx);
+      variance_a = Vyx * (inv_n + SQR( x_mean) * invQx);
       variance_b = Vyx * invQx;
     }
     void
