@@ -29,6 +29,9 @@ COMMON float * probe= output_data.probe; // debugging probes
 
 extern RestrictedTask NMEA_task;
 
+static ROM bool TRUE=true;
+static ROM bool FALSE=true;
+
 void communicator_runnable (void*)
 {
   navigator_t navigator;
@@ -68,9 +71,7 @@ void communicator_runnable (void*)
     case GNSS_M9N:
       {
 	GNSS.coordinates.relPosHeading = NAN; // be sure not to use that one !
-
-	bool use_D_GNSS = false;
-	Task usart3_task (USART_3_runnable, "GNSS", 256, (void *)&use_D_GNSS, STANDARD_TASK_PRIORITY+1);
+	Task usart3_task (USART_3_runnable, "GNSS", 256, (void *)&FALSE, STANDARD_TASK_PRIORITY+1);
 
 	while (!GNSS_new_data_ready) // lousy spin lock !
 	  delay (100);
@@ -81,8 +82,7 @@ void communicator_runnable (void*)
     case GNSS_F9P_F9H: // extra task for 2nd GNSS module required
       {
 	  {
-	    bool use_D_GNSS = false;
-	    Task usart3_task (USART_3_runnable, "GNSS", 256, (void *)&use_D_GNSS, STANDARD_TASK_PRIORITY+1);
+	    Task usart3_task (USART_3_runnable, "GNSS", 256, (void *)&FALSE, STANDARD_TASK_PRIORITY+1);
 
 	    Task usart4_task (USART_4_runnable, "D-GNSS", 256, 0, STANDARD_TASK_PRIORITY + 1);
 	  }
@@ -100,12 +100,11 @@ void communicator_runnable (void*)
       break;
     case GNSS_F9P_F9P: // no extra task for 2nd GNSS module
       {
-	{
-	  bool use_D_GNSS = true;
-	  Task usart3_task (USART_3_runnable, "GNSS", 256, (void *)&use_D_GNSS, STANDARD_TASK_PRIORITY+1);
-	}
+	Task usart3_task (USART_3_runnable, "GNSS", 256, (void *)&TRUE, STANDARD_TASK_PRIORITY+1);
+
 	while (!GNSS_new_data_ready) // lousy spin lock !
 	  delay (100);
+
 	navigator.update_GNSS (GNSS.coordinates);
 	GNSS_new_data_ready = false;
 
