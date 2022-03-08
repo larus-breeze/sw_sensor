@@ -5,6 +5,7 @@
  **************************************************************************/
 
 #include "embedded_memory.h"
+#include "embedded_math.h"
 #include "ascii_support.h"
 #include "my_assert.h"
 
@@ -129,12 +130,12 @@ char * my_ftoa( char * target, float value)
  	*target++ = (char)(digit + '0');
  	*target++ = '.';
 
- 	value *= 1000000.0f + 0.5f;
- 	unsigned fractional_number = (int)value;
+ 	value *= 1000000.0f;
+ 	unsigned fractional_number = ROUND( value);
  	for( unsigned digit=0; digit<6; ++digit)
  	  {
- 	  target[5-digit]=fractional_number % 10 + '0';
- 	 fractional_number /= 10;
+ 	    target[5-digit] = (char)(fractional_number % 10 + '0');
+ 	    fractional_number /= 10;
  	  }
  	target+=6;
  	*target++='e';

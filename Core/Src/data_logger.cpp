@@ -36,15 +36,6 @@ inline char *append_string( char *target, const char *source)
   return target;
 }
 
-inline char * format_2_digits( char * target, uint32_t data)
-{
-  data %= 100;
-  *target++ = data / 10 + '0';
-  *target++ = data % 10 + '0';
-  *target = 0; // just be sure string is terminated
-  return target;
-}
-
 void write_EEPROM_dump( const char * filename)
 {
   FRESULT fresult;

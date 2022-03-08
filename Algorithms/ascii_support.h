@@ -25,6 +25,16 @@ float string2float(char *input);
 char* ftoa(float Value, char* Buffer);
 char* itoa(int value, char* result, int base=10);
 
+inline char * format_2_digits( char * target, uint32_t data)
+{
+  data %= 100;
+  *target++ = (char)(data / 10 + '0');
+  *target++ = (char)(data % 10 + '0');
+  *target = 0; // just be sure string is terminated
+  return target;
+}
+
+
 #ifdef __cplusplus
  }
 #endif /* __cplusplus */
