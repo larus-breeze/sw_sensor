@@ -36,7 +36,8 @@ assert_failed(uint8_t* file, uint32_t line)
 
 void FPU_IRQHandler( void)
 {
-  asm("bkpt 0");
+  while( 1) // todo patch: this loop will be ended by the watchdog.
+    asm("bkpt 0");
   asm("bx lr");
 }
 
