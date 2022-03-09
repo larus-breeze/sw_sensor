@@ -8,26 +8,54 @@
 #include "embedded_math.h"
 #include "ascii_support.h"
 #include "my_assert.h"
+#include <stdlib.h>
 
 float string2float(char *input)
 {
 	float result = 0.0;
-	while( *input != '.')
+	bool negative;
+
+	while( *input && ((*input == ' ') || (*input == '\t')))
+	  ++input;
+
+	if( *input == '-')
+	  {
+	    negative = true;
+	    ++input;
+	  }
+	else
+	  negative = false;
+
+	while( *input && (*input != '.'))
 	{
 		if( (*input < '0') || (*input > '9'))
 			return result;
-		result = result * 10.0 + (*input - '0');
+		result = result * 10.0f + (float)(*input - '0');
 		++input;
 	}
 	++input;
-	float factor = 0.1;
+	float factor = 0.1f;
 	while( (*input >= '0') && (*input <= '9'))
 	{
-		result = result + factor * (*input - '0');
-		factor *= 0.1;
+		result = result + factor * (float)(*input - '0');
+		factor *= 0.1f;
 		++input;
 	}
-	return result;
+	if( *input == 'e')
+	  {
+	    int exponent=atoi( input+1);
+	    while( exponent > 0)
+	      {
+		result *= 10.0f;
+		--exponent;
+	      }
+	    while( exponent < 0)
+	      {
+		result /= 10.0f;
+		++exponent;
+	      }
+	  }
+	return negative ? -result : result;
 }
 
 static ROM char ASCIItable[]="zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz";
@@ -71,7 +99,7 @@ void utox(uint32_t value, char* result, uint8_t nibbles)
 }
 void lutox(uint64_t value, char* result)
 {
-  utox( value>>32, result, 8);
+  utox( (uint32_t)(value >> 32), result, 8);
   utox( value & 0xffffffff, result+8, 8);
 }
 
@@ -169,7 +197,7 @@ void portable_ftoa ( float value, char* res, unsigned  no_of_decimals, unsigned 
 
 	for( i=no_of_decimals; i; --i)
 	{
-		*target-- = number % 10 + '0';
+		*target-- = (char)(number % 10 + '0');
 		number /= 10;
 	}
 
@@ -180,7 +208,7 @@ void portable_ftoa ( float value, char* res, unsigned  no_of_decimals, unsigned 
 	}
 	else while(( number > 0) && ( target > res+1))
 	{
-		*target-- = number % 10 + '0';
+		*target-- = (char)(number % 10 + '0');
 		number /= 10;
 	}
 

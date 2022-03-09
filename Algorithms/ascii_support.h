@@ -34,6 +34,13 @@ inline char * format_2_digits( char * target, uint32_t data)
   return target;
 }
 
+inline char *append_string( char *target, const char *source)
+{
+  while( *source)
+      *target++ = *source++;
+  *target = 0; // just to be sure :-)
+  return target;
+}
 
 #ifdef __cplusplus
  }
