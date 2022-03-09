@@ -66,6 +66,7 @@ public:
   EEPROM_data_t value;
 };
 
+const persistent_data_t * find_parameter_from_ID( EEPROM_PARAMETER_ID id);
 
 // standard function to read configuration data from EEPROM
 float configuration( EEPROM_PARAMETER_ID id);

@@ -40,6 +40,14 @@ ROM persistent_data_t PERSISTENT_DATA[]=
 
 ROM unsigned PERSISTENT_DATA_ENTRIES = sizeof(PERSISTENT_DATA) / sizeof(persistent_data_t);
 
+const persistent_data_t * find_parameter_from_ID( EEPROM_PARAMETER_ID id)
+{
+  for( const persistent_data_t *parameter = PERSISTENT_DATA; parameter < (PERSISTENT_DATA+PERSISTENT_DATA_ENTRIES); ++parameter )
+    if( parameter->id == id)
+      return parameter;
+  return 0;
+}
+
 #define READ true
 #define WRITE false
 
