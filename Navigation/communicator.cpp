@@ -64,13 +64,14 @@ void communicator_runnable (void*)
   for (unsigned i = 0; i < 200; ++i) // wait 200 IMU loops
     notify_take (true);
 
+  GNSS.coordinates.sat_fix_type = SAT_FIX_NONE; // just to be sure
+
   switch (GNSS_configuration)
     {
     case GNSS_NONE:
       break;
     case GNSS_M9N:
       {
-	GNSS.coordinates.relPosHeading = NAN; // be sure not to use that one !
 	Task usart3_task (USART_3_runnable, "GNSS", 256, (void *)&FALSE, STANDARD_TASK_PRIORITY+1);
 
 	while (!GNSS_new_data_ready) // lousy spin lock !
@@ -93,7 +94,7 @@ void communicator_runnable (void*)
 	GNSS_new_data_ready = false;
 
 	float present_heading = 0.0f;
-	if (D_GNSS_new_data_ready)
+	if (D_GNSS_new_data_ready && (GNSS.coordinates.sat_fix_type & SAT_HEADING))
 	  present_heading = output_data.c.relPosHeading;
 	navigator.set_attitude (0.0f, 0.0f, present_heading);
       }
@@ -108,10 +109,10 @@ void communicator_runnable (void*)
 	navigator.update_GNSS (GNSS.coordinates);
 	GNSS_new_data_ready = false;
 
-	if (D_GNSS_new_data_ready && ! isnan( output_data.c.relPosHeading))
-	  navigator.set_attitude (0.0f, 0.0f, output_data.c.relPosHeading);
-	else
-	  navigator.set_attitude (0.0f, 0.0f, 0.0f); // todo improve me !
+	float present_heading = 0.0f;
+	if (GNSS.coordinates.sat_fix_type & SAT_HEADING)
+	  present_heading = output_data.c.relPosHeading;
+	navigator.set_attitude (0.0f, 0.0f, present_heading);
       }
       break;
     default:
@@ -176,43 +177,33 @@ void communicator_runnable (void*)
 	      GNSS.coordinates.acceleration = old_acceleration; // keep OUR acceleration !
 
 #else
-	  if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
-	    {
-	      GNSS_new_data_ready = false;
-	      navigator.update_GNSS (GNSS.coordinates);
-	    }
+      if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
+	{
+	  GNSS_new_data_ready = false;
+	  navigator.update_GNSS (GNSS.coordinates);
+	}
 #endif
-      // rotate sensor coordinates into airframe coordinates
-      acc = sensor_mapping * output_data.m.acc;
-      mag = sensor_mapping * output_data.m.mag;
 
 #if 1 // todo remove me some day...
       for( int i=0; i<3; ++i)
-	{
-	    if ( ! isnormal(output_data.m.gyro.e[i]) )
-	      output_data.m.gyro.e[i]=0.0f;
-	    if ( ! isnormal(output_data.wind.e[i]) )
-	      output_data.wind.e[i]=0.0f;
-	}
+	if ( ! isnormal(output_data.m.gyro.e[i]) )
+	  output_data.m.gyro.e[i]=0.0f;
 #endif
+
+      // rotate sensor coordinates into airframe coordinates
+      acc = sensor_mapping * output_data.m.acc;
+      mag = sensor_mapping * output_data.m.mag;
       gyro = sensor_mapping * output_data.m.gyro;
-
       navigator.update_IMU (acc, mag, gyro);
-
       navigator.report_data (output_data);
 
-#if 0 // locost gyro test
-      HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin,
-	  output_data.m.lowcost_gyro[2] < 0.0f ? GPIO_PIN_RESET : GPIO_PIN_SET);
-#else
       if(
 	  (((GNSS_configuration == GNSS_F9P_F9H) || (GNSS_configuration == GNSS_F9P_F9P))
-	      && ! isnan( GNSS.coordinates.relPosHeading))
+	      && (output_data.c.sat_fix_type & SAT_HEADING))
 	  ||
 	  ((GNSS_configuration == GNSS_M9N)
-	      && ! isnan( GNSS.coordinates.acceleration.e[NORTH]))
+	      && (output_data.c.sat_fix_type & SAT_FIX))
 	)
-
 	{
 	  ++GNSS_count;
 	  HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin,
@@ -220,8 +211,6 @@ void communicator_runnable (void*)
 	}
       else
 	HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
-
-#endif
 
 #if RUN_CAN_OUTPUT == 1
       if (++count_10Hz >= 10)
@@ -243,9 +232,9 @@ static ROM TaskParameters_t p =
   STACKSIZE, 0,
   COMMUNICATOR_PRIORITY, stack_buffer,
     {
-      { COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
-      { (void*) 0x80f8000, 0x10000, portMPU_REGION_READ_WRITE }, // EEPROM access
-	  { 0, 0, 0 } } };
+      { COMMON_BLOCK, COMMON_SIZE,  portMPU_REGION_READ_WRITE },
+      { (void*) 0x80f8000, 0x08000, portMPU_REGION_READ_ONLY }, // EEPROM access
+      { 0, 0, 0 } } };
 
 COMMON RestrictedTask communicator_task (p);
 
