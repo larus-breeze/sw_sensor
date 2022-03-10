@@ -20,7 +20,9 @@ class navigator_t
 public:
   navigator_t (void)
 	:ahrs (0.01f),
+#if PARALLEL_MAGNETIC_AHRS
 	 ahrs_magnetic (0.01f),
+#endif
 	 atmosphere (101325.0f),
 	 vario_integrator( configuration( VARIO_INT_TC)),
 	 wind_average_observer( configuration( MEAN_WIND_TC)),
@@ -82,7 +84,9 @@ public:
   void set_attitude( float roll, float nick, float yaw)
   {
     ahrs.set_from_euler(roll, nick, yaw);
+#if PARALLEL_MAGNETIC_AHRS
     ahrs_magnetic.set_from_euler(roll, nick, yaw);
+#endif
   }
   float get_IAS( void) const
   {
@@ -91,17 +95,20 @@ public:
 
 private:
   AHRS_type 	ahrs;
+#if PARALLEL_MAGNETIC_AHRS
   AHRS_type	ahrs_magnetic;
-
+#endif
   atmosphere_t 	atmosphere;
   float 	pitot_pressure;
   float 	TAS;
   float 	IAS;
+
   float3vector 	GNSS_velocity;
   float		GNSS_speed;
   float3vector 	GNSS_acceleration;
   float 	GNSS_heading;
   float 	GNSS_altitude;
+  unsigned	GNSS_fix_type;
 
   flight_observer_t 	flight_observer;
   smart_averager< float> 	vario_integrator;

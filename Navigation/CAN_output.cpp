@@ -112,7 +112,7 @@ void CAN_output ( const output_data_t &x)
   p.data_b[1] = 2; // todo: fixme: dummy
 #else
   p.data_b[0] = x.c.SATS_number;
-  p.data_b[1] = x.c.fix_type;
+  p.data_b[1] = x.c.sat_fix_type;
 #endif
   CAN_driver.send(p, 1);
 

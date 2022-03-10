@@ -14,14 +14,16 @@ void navigator_t::update_IMU (
 {
   ahrs.update( gyro, acc, mag,
 	    GNSS_acceleration,
-	    GNSS_heading);
+	    GNSS_heading,
+	    GNSS_fix_type == (SAT_FIX | SAT_HEADING));
 
+#if PARALLEL_MAGNETIC_AHRS
   ahrs_magnetic.update_compass(
 	  gyro, acc, mag,
 	  GNSS_acceleration);
-
+#endif
   float3vector heading_vector;
-  heading_vector[NORTH] = ahrs.get_north (); // todo which special ins to use = ???
+  heading_vector[NORTH] = ahrs.get_north ();
   heading_vector[EAST]  = ahrs.get_east  ();
   heading_vector[DOWN]  = ahrs.get_down  (); // todo: do we need this one ?
 
@@ -41,10 +43,10 @@ void navigator_t::update_IMU (
 // to be called at 10 Hz
 void navigator_t::update_GNSS (const coordinates_t &coordinates)
 {
-  if( isnan( coordinates.acceleration.e[NORTH])) // presently no GNSS fix
-    {
+  if( coordinates.sat_fix_type == SAT_FIX_NONE) // presently no GNSS fix
       return; // todo needs to be improved
-    }
+
+  GNSS_fix_type		= coordinates.sat_fix_type;
   GNSS_velocity 	= coordinates.velocity;
   GNSS_acceleration	= coordinates.acceleration;
   GNSS_heading 		= coordinates.relPosHeading;
@@ -96,9 +98,10 @@ void navigator_t::report_data(output_data_t &d)
     d.euler			= ahrs.get_euler();
     d.q				= ahrs.get_attitude();
 
+#if PARALLEL_MAGNETIC_AHRS
     d.euler_magnetic		= ahrs_magnetic.get_euler();
     d.q_magnetic		= ahrs_magnetic.get_attitude();
-
+#endif
 #if USE_GNSS_VARIO
     d.vario			= flight_observer.get_vario_GNSS(); // todo pick one vario
 #else
@@ -120,9 +123,12 @@ void navigator_t::report_data(output_data_t &d)
     d.nav_correction		= ahrs.get_nav_correction();
     d.gyro_correction		= ahrs.get_gyro_correction();
     d.nav_acceleration_gnss 	= ahrs.get_nav_acceleration();
-    d.nav_acceleration_mag 	= ahrs_magnetic.get_nav_acceleration();
     d.nav_induction_gnss 	= ahrs.get_nav_induction();
+
+#if PARALLEL_MAGNETIC_AHRS
+    d.nav_acceleration_mag 	= ahrs_magnetic.get_nav_acceleration();
     d.nav_induction_mag 	= ahrs_magnetic.get_nav_induction();
+#endif
 
     d.turn_rate			= ahrs.get_turn_rate();
     d.slip_angle		= ahrs.getSlipAngle();
@@ -133,5 +139,5 @@ void navigator_t::report_data(output_data_t &d)
 //! eventually make magnetic calibration permanent
 void navigator_t::handle_magnetic_calibration (void) const
 {
-  ahrs.handle_magnetic_calibration(); // todo: eventually do this with the magnetic AHRS
+  ahrs.handle_magnetic_calibration();
 }

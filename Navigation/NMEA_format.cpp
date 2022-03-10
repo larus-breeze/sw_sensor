@@ -125,7 +125,7 @@ char *format_RMC (const GNSS_type &gnss, char *p)
   *p++ = '0';
   *p++ = '0';
   *p++ = ',';
-  *p++ = gnss.fix_type >= FIX_2d ? 'A' : 'V';
+  *p++ = gnss.get_fix_type() >= FIX_2d ? 'A' : 'V';
   *p++ = ',';
 
   p = angle_format (gnss.coordinates.latitude, p, 'N', 'S');
@@ -213,11 +213,11 @@ char *format_GGA(const GNSS_type &gnss, char *p)
   p = angle_format (gnss.coordinates.longitude, p, 'E', 'W');
   *p++ = ',';
 
-  *p++ = gnss.fix_type >= FIX_2d ? '1' : '0';
+  *p++ = gnss.get_fix_type() >= FIX_2d ? '1' : '0';
   *p++ = ',';
 
-  *p++ = (gnss.num_SV) / 10 + '0';
-  *p++ = (gnss.num_SV) % 10 + '0';
+  *p++ = (gnss.get_num_SV()) / 10 + '0';
+  *p++ = (gnss.get_num_SV()) % 10 + '0';
   *p++ = ',';
 
   *p++ = '0'; // fake HDOP

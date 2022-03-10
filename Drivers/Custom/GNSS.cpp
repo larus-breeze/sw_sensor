@@ -73,7 +73,11 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	num_SV=pvt.num_SV;
 #else
 	coordinates.SATS_number=pvt.num_SV;
-	coordinates.fix_type=pvt.fix_type;
+	if( pvt.fix_type == 3) // 3 -> 3D-fix
+	  coordinates.sat_fix_type |= SAT_FIX;
+	else
+	  coordinates.sat_fix_type &= ! SAT_FIX;
+
 #endif
 
 	if (latitude_reference == 0)
@@ -161,10 +165,16 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 	GNSS_Result res = ( (p.flags & 0x1ff) == 0x137) ? GNSS_HAVE_FIX : GNSS_NO_FIX;
 
 	if( res == GNSS_HAVE_FIX) // patch
-	  coordinates.relPosHeading = (float)(p.relPosheading) * 1.745329252e-7f; // 1e-5 deg -> rad
+	  {
+	    // 1e-5 deg -> rad
+	    coordinates.relPosHeading = (float)(p.relPosheading) * 1.745329252e-7f;
+	    coordinates.sat_fix_type |= SAT_HEADING;
+	  }
 	else
-	  coordinates.relPosHeading = NAN; // report missing D-GNSS heading
-
+	  {
+	    coordinates.relPosHeading = NAN;
+	    coordinates.sat_fix_type &= ! SAT_HEADING;
+	  }
 	D_GNSS_new_data_ready = true;
 	return res;
 }

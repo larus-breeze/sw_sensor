@@ -65,10 +65,13 @@ typedef struct
   float nick_angle;
   float G_load;
 
+#if PARALLEL_MAGNETIC_AHRS
   float3vector nav_acceleration_mag;
   float3vector nav_induction_mag;
   eulerangle<float> euler_magnetic;
   quaternion<float> q_magnetic;
+#endif
+
 #if N_PROBES > 0
   float probe[N_PROBES];
 #endif

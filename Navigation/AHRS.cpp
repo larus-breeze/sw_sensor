@@ -111,23 +111,6 @@ AHRS_type::AHRS_type (float sampling_time)
   expected_nav_induction[EAST]  = COS( inclination) * SIN( declination);
   expected_nav_induction[DOWN]  = SIN( inclination);
 
-  GNSS_configration_t GNSS_configuration =
-      (GNSS_configration_t) ROUND (configuration (GNSS_CONFIGURATION));
-
-  switch( GNSS_configuration)
-  {
-    case GNSS_F9P_F9H:
-    case GNSS_F9P_F9P:
-      DGNSS_available = true;
-      break;
-
-    case GNSS_M9N:
-    case GNSS_NONE:
-    default:
-      DGNSS_available = false;
-      break;
-  }
-
   compass_calibration.read_from_EEPROM();
 }
 
@@ -136,12 +119,13 @@ AHRS_type::update (const float3vector &gyro,
 		   const float3vector &acc,
 		   const float3vector &mag,
 		   const float3vector &GNSS_acceleration,
-		   float GNSS_heading)
+		   float GNSS_heading,
+		   bool GNSS_heading_valid)
 {
-  if( (! DGNSS_available) || ( isnan( GNSS_heading)))
-    update_compass(gyro, acc, mag, GNSS_acceleration);
-  else
+  if( GNSS_heading_valid)
     update_diff_GNSS (gyro, acc, mag, GNSS_acceleration, GNSS_heading);
+  else
+    update_compass(gyro, acc, mag, GNSS_acceleration);
 }
 
 /**

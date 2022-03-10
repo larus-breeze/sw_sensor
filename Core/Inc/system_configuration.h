@@ -18,6 +18,7 @@ extern float * probe; // debugging probes
 #define LOG_FORMAT_2020		1
 #endif
 
+#define PARALLEL_MAGNETIC_AHRS	0 // run second AHRS without SAT compass usage
 #define N_PROBES		0 // debugging probes somewhere in the code
 
 #define RUN_DATA_LOGGER		1

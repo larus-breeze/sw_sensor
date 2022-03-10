@@ -36,7 +36,9 @@ public:
 
 	void update( const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		const float3vector &GNSS_acceleration,
-		float GNSS_heading);
+		float GNSS_heading,
+		bool GNSS_heading_valid
+		);
 
 	inline void set_from_euler( float r, float n, float y)
 	{
@@ -175,7 +177,6 @@ private:
   pt2<float,float> G_load_averager;
   linear_least_square_fit<float> mag_calibrator[3];
   compass_calibration_t compass_calibration;
-  bool DGNSS_available;
   float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
   float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
 };
