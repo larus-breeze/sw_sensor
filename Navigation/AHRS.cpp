@@ -221,9 +221,11 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   if ( (circle_state == CIRCLING) && ( nav_correction.abs() < 5.0f)) // value 5.0 observed from flight data
       feed_compass_calibration (mag_sensor);
 
-  // todo check me: experimental calibration procedure
   if( ( old_circle_state == CIRCLING) && (circle_state == TRANSITION))
+    {
     compass_calibration.set_calibration( mag_calibrator, 'S', (turn_rate > 0.0f), true);
+    handle_magnetic_calibration();
+    }
 }
 
 /**
@@ -254,7 +256,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   circle_state_t old_circle_state = circle_state;
   update_circling_state ();
 
-  if (isnan( GNSS_acceleration.e[NORTH])) // no GNSS fix
+  if (isnan( GNSS_acceleration.e[NORTH])) // no GNSS fix, fixme todo remove this section
 
     // just keep gyro offsets but do not calculate correction
       gyro_correction = gyro_integrator * I_GAIN;
@@ -315,12 +317,13 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
   if ( (circle_state == CIRCLING) && ( nav_correction.abs() < 5.0f)) // value 5.0 observed from flight data
       feed_compass_calibration (mag_sensor);
 
-  // todo check me: experimental calibration procedure
   if( ( old_circle_state == CIRCLING) && (circle_state == TRANSITION))
+    {
     compass_calibration.set_calibration( mag_calibrator, 'M', (turn_rate > 0.0f), true);
+    handle_magnetic_calibration();
+    }
 }
 
-//! to be called after landing: eventually make calibration permanent
 void AHRS_type::handle_magnetic_calibration (void) const
 {
   if( false == compass_calibration.isCalibrationDone())
