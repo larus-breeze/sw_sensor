@@ -43,7 +43,8 @@ AHRS_type::attitude_setup (const float3vector &acceleration,
 
   // create rotation matrix from unity direction vectors
   float fcoordinates[] =
-    { north.e[0], north.e[1], north.e[2], east.e[0], east.e[1], east.e[2],
+    { 	north.e[0], north.e[1], north.e[2],
+	east.e[0], east.e[1], east.e[2],
 	down.e[0], down.e[1], down.e[2] };
 
   float3matrix coordinates (fcoordinates);

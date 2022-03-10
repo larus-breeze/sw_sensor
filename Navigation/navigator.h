@@ -28,12 +28,13 @@ public:
 	 wind_average_observer( configuration( MEAN_WIND_TC)),
 	 relative_wind_observer( configuration( MEAN_WIND_TC)),
 	 corrected_wind_averager( 1.0f / 15.0f / 10.0f) 	// 15s @ 10Hz
-  {
-    GNSS_heading = NAN;
-  };
+  {  };
 
   void report_data( output_data_t &d);
-  void handle_magnetic_calibration( void) const;
+  void set_from_add_mag ( const float3vector &acc, const float3vector &mag)
+  {
+    ahrs.attitude_setup(acc, mag);
+  }
   void set_from_euler ( float r, float n, float y)
   {
     ahrs.set_from_euler(r, n, y);

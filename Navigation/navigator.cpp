@@ -136,8 +136,3 @@ void navigator_t::report_data(output_data_t &d)
     d.G_load			= ahrs.get_G_load();
 }
 
-//! eventually make magnetic calibration permanent
-void navigator_t::handle_magnetic_calibration (void) const
-{
-  ahrs.handle_magnetic_calibration();
-}

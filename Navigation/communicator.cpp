@@ -37,7 +37,6 @@ void communicator_runnable (void*)
   navigator_t navigator;
   float3vector acc, mag, gyro;
 
-  unsigned airborne_counter = 0;
   unsigned GNSS_count = 0;
 
   GNSS_configration_t GNSS_configuration = (GNSS_configration_t) ROUND (
@@ -129,6 +128,12 @@ void communicator_runnable (void*)
   navigator.update_pabs (output_data.m.static_pressure);
   navigator.reset_altitude ();
 
+  notify_take (true); // wait for synchronization by IMU @ 100 Hz
+  // setup initial attitude
+  acc = sensor_mapping * output_data.m.acc;
+  mag = sensor_mapping * output_data.m.mag;
+  navigator.set_from_add_mag( acc, mag);
+
   NMEA_task.resume();
 
   while (true)
@@ -138,23 +143,6 @@ void communicator_runnable (void*)
       navigator.update_pabs (output_data.m.static_pressure - QNH_offset);
       navigator.update_pitot (
 	  (output_data.m.pitot_pressure - pitot_offset) * pitot_span);
-
-      if (navigator.get_IAS () > 20.0f) // are we flying ?
-	{
-	  if (airborne_counter < 500)
-	    airborne_counter = 500;
-	  else if (airborne_counter < 2000)
-	    ++airborne_counter;
-	}
-      else
-	{
-	  if (airborne_counter > 0)
-	    {
-	      --airborne_counter;
-	      if (airborne_counter == 0) // event: landed
-		navigator.handle_magnetic_calibration ();
-	    }
-	}
 
 #ifdef INFILE // we presently run HIL/SIL
 	  ++measurement_ticks;
@@ -233,7 +221,7 @@ static ROM TaskParameters_t p =
   COMMUNICATOR_PRIORITY, stack_buffer,
     {
       { COMMON_BLOCK, COMMON_SIZE,  portMPU_REGION_READ_WRITE },
-      { (void*) 0x80f8000, 0x08000, portMPU_REGION_READ_ONLY }, // EEPROM access
+      { (void*) 0x80f8000, 0x08000, portMPU_REGION_READ_WRITE }, // EEPROM access for MAG calib.
       { 0, 0, 0 } } };
 
 COMMON RestrictedTask communicator_task (p);
