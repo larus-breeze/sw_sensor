@@ -134,6 +134,10 @@ void communicator_runnable (void*)
   mag = sensor_mapping * output_data.m.mag;
   navigator.set_from_add_mag( acc, mag);
 
+#ifdef INFILE // we presently run HIL/SIL
+  sync_logger (); // kick logger @ 100 Hz
+#endif
+
   NMEA_task.resume();
 
   while (true)
@@ -187,10 +191,10 @@ void communicator_runnable (void*)
 
       if(
 	  (((GNSS_configuration == GNSS_F9P_F9H) || (GNSS_configuration == GNSS_F9P_F9P))
-	      && (output_data.c.sat_fix_type & SAT_HEADING))
+	      && (GNSS.fix_type & SAT_HEADING))
 	  ||
 	  ((GNSS_configuration == GNSS_M9N)
-	      && (output_data.c.sat_fix_type & SAT_FIX))
+	      && (GNSS.fix_type & SAT_FIX))
 	)
 	{
 	  ++GNSS_count;

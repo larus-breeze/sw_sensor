@@ -199,7 +199,6 @@ public:
 		float tmp;
 		tmp = ONE + rotm.e[0][0] + rotm.e[1][1] + rotm.e[2][2];
 		//! formula from roenbaeck p35
-		assert(( tmp > 0.0f) && (tmp != 0.0f/0.0f /* NAN */));
 		tmp = SQRT( tmp);
 		tmp *= HALF;
 		vector<datatype, 4>::e[0] = tmp;

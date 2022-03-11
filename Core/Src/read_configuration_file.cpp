@@ -33,6 +33,8 @@ public:
     if( (fresult != FR_OK) || (bytesread == 0))
       return;
 
+    f_close( &infile);
+
     end = file_buffer + bytesread;
     current = file_buffer;
     eof=false;
@@ -51,7 +53,10 @@ public:
     eof = current >= end;
     return true;
   }
-
+  bool is_eof( void)
+  {
+    return eof;
+  }
 private:
   FIL infile;
   char file_buffer[BUFLEN];
@@ -80,6 +85,9 @@ unsigned write_EEPROM_value_dummy( EEPROM_PARAMETER_ID identifier, float value)
 void read_configuration_file(void)
 {
   ASCII_file_reader file_reader((char *)"sensor_config.txt");
+  if( file_reader.is_eof())
+    return;
+
   char *linebuffer;
   unsigned status;
 

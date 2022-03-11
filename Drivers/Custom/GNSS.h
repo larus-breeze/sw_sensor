@@ -143,6 +143,7 @@ public:
   {
     return FAT_time;
   }
+  FIX_TYPE fix_type;
 private:
   inline bool checkSumCheck ( const uint8_t *buffer, uint8_t length)
   {
@@ -160,7 +161,6 @@ private:
   }
 
   int64_t FAT_time;
-  FIX_TYPE fix_type;
   uint8_t num_SV;
   int32_t latitude_reference;
   int32_t longitude_reference;

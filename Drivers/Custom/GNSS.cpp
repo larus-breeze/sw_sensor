@@ -168,12 +168,16 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 	  {
 	    // 1e-5 deg -> rad
 	    coordinates.relPosHeading = (float)(p.relPosheading) * 1.745329252e-7f;
+#ifndef LOG_FORMAT_2020
 	    coordinates.sat_fix_type |= SAT_HEADING;
+#endif
 	  }
 	else
 	  {
 	    coordinates.relPosHeading = NAN;
+#ifndef LOG_FORMAT_2020
 	    coordinates.sat_fix_type &= ! SAT_HEADING;
+#endif
 	  }
 	D_GNSS_new_data_ready = true;
 	return res;
