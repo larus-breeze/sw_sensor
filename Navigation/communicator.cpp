@@ -16,16 +16,13 @@
 #include "usart3_driver.h"
 #include "usart4_driver.h"
 
-void
-sync_logger (void);
+void sync_logger (void);
+
+COMMON Semaphore setup_file_handling_completed;
 
 COMMON output_data_t __ALIGNED(1024) output_data =
   { 0 };
 COMMON GNSS_type GNSS (output_data.c);
-
-#if N_PROBES > 0
-COMMON float * probe= output_data.probe; // debugging probes
-#endif
 
 extern RestrictedTask NMEA_task;
 
@@ -39,12 +36,16 @@ void communicator_runnable (void*)
 
   unsigned GNSS_count = 0;
 
-  GNSS_configration_t GNSS_configuration = (GNSS_configration_t) ROUND (
-      configuration (GNSS_CONFIGURATION));
+  // if configuration file given:
+  // wait until configuration file read
+  setup_file_handling_completed.wait();
 
-  float pitot_offset = configuration (PITOT_OFFSET);
-  float pitot_span = configuration (PITOT_SPAN);
-  float QNH_offset = configuration (QNH_OFFSET);
+  GNSS_configration_t GNSS_configuration =
+      (GNSS_configration_t) ROUND (configuration (GNSS_CONFIGURATION));
+
+  float pitot_offset 	= configuration (PITOT_OFFSET);
+  float pitot_span 	= configuration (PITOT_SPAN);
+  float QNH_offset	= configuration (QNH_OFFSET);
 
   float3matrix sensor_mapping;
     {
@@ -55,13 +56,7 @@ void communicator_runnable (void*)
       q.get_rotation_matrix (sensor_mapping);
     }
 
-#if RUN_CAN_OUTPUT == 1
   uint8_t count_10Hz = 1; // de-synchronize CAN output by 1 cycle
-#endif
-
-#ifndef INFILE // only outside of the offline mode
-  for (unsigned i = 0; i < 200; ++i) // wait 200 IMU loops
-    notify_take (true);
 
   GNSS.coordinates.sat_fix_type = SAT_FIX_NONE; // just to be sure
 
@@ -117,29 +112,21 @@ void communicator_runnable (void*)
     default:
       ASSERT(false);
     }
-#else
-    double old_latitude; // used to trigger on new input
-    float3vector old_velocity;
-    float3vector old_acceleration;
-    int32_t measurement_ticks;
-    int32_t last_GNSS_update_at;
-#endif
 
   navigator.update_pabs (output_data.m.static_pressure);
   navigator.reset_altitude ();
 
-  notify_take (true); // wait for synchronization by IMU @ 100 Hz
+  for( int i=0; i<100; ++i) // wait 1 s until measurement stable
+    notify_take (true);
+
   // setup initial attitude
   acc = sensor_mapping * output_data.m.acc;
   mag = sensor_mapping * output_data.m.mag;
-  navigator.set_from_add_mag( acc, mag);
-
-#ifdef INFILE // we presently run HIL/SIL
-  sync_logger (); // kick logger @ 100 Hz
-#endif
+  navigator.set_from_add_mag( acc, mag); // initialize attitude from acceleration + compass
 
   NMEA_task.resume();
 
+  // this is the MAIN data acquisition and processing loop
   while (true)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
@@ -148,35 +135,13 @@ void communicator_runnable (void*)
       navigator.update_pitot (
 	  (output_data.m.pitot_pressure - pitot_offset) * pitot_span);
 
-#ifdef INFILE // we presently run HIL/SIL
-	  ++measurement_ticks;
-	  if (GNSS.coordinates.latitude != old_latitude) // todo this is a dirty workaround
-	    {
-	      old_latitude = GNSS.coordinates.latitude;
-	      GNSS.fix_type = FIX_3d; // has not been recorded ...
-
-	      // todo remove me, bugfix for bad acceleration data 1.10.2021
-	      float instant_sample_frequency = 100.0f / (float)( measurement_ticks - last_GNSS_update_at);
-	      old_acceleration = (GNSS.coordinates.velocity - old_velocity) * instant_sample_frequency;
-	      GNSS.coordinates.acceleration = old_acceleration;
-	      old_velocity = GNSS.coordinates.velocity;
-
-	      navigator.update_GNSS (GNSS.coordinates);
-
-	      last_GNSS_update_at = measurement_ticks;
-	    }
-	  else
-	      GNSS.coordinates.acceleration = old_acceleration; // keep OUR acceleration !
-
-#else
       if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
 	{
 	  GNSS_new_data_ready = false;
 	  navigator.update_GNSS (GNSS.coordinates);
 	}
-#endif
 
-#if 1 // todo remove me some day...
+#if 0 // todo remove me some day...
       for( int i=0; i<3; ++i)
 	if ( ! isnormal(output_data.m.gyro.e[i]) )
 	  output_data.m.gyro.e[i]=0.0f;
@@ -204,13 +169,11 @@ void communicator_runnable (void*)
       else
 	HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
 
-#if RUN_CAN_OUTPUT == 1
-      if (++count_10Hz >= 10)
+      if (++count_10Hz >= 10) // resample 100Hz -> 10Hz
 	{
 	  count_10Hz = 0;
 	  trigger_CAN ();
 	}
-#endif
 
       sync_logger (); // kick logger @ 100 Hz
     }
@@ -235,4 +198,3 @@ sync_communicator (void) // global synchronization service function
 {
   communicator_task.notify_give ();
 }
-

@@ -10,32 +10,9 @@ extern float * probe; // debugging probes
 
 #include "persistent_data.h"
 
-#if 1 // must be set for simulation
-#define INFILE "infile.f46" // switches on offline calculation and defines filename
-#define IN_DATA_LENGTH 46
-#define OUTFILE "outfile.f100"
-#define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
-
-#define LOG_FORMAT_2020		1
-
 #define RUN_DATA_LOGGER		1
-#define LOG_OBSERVATIONS	0 // log IMU + pressure data
-#define LOG_COORDINATES		0 // log GNSS data
-#define LOG_OUTPUT_DATA		1 // logging all inclusive
-
-#else
-
-#define RUN_DATA_LOGGER		1
-#define LOG_OBSERVATIONS	1 // log IMU + pressure data
-#define LOG_COORDINATES		1 // log GNSS data
-#define LOG_OUTPUT_DATA		0 // logging all inclusive
-
-#endif
 
 #define PARALLEL_MAGNETIC_AHRS	0 // run second AHRS without SAT compass usage
-#define N_PROBES		0 // debugging probes somewhere in the code
-
-#define OLD_COORD_FORMAT 	0
 
 #define LOG_MAGNETIC_CALIBRATION 	1
 #define WRITE_EEPROM_DEFAULTS		0
@@ -74,27 +51,12 @@ extern float * probe; // debugging probes
 
 #endif // **************************************************************************
 
-#define ACTIVATE_WATCHDOG	1
-#define WATCHDOG_STATISTICS 	0
-
-#ifdef INFILE
-#define RUN_GNSS		0
-#define RUN_GNSS_HEADING	0
-#define RUN_MTi_1_MODULE 	0
-#define RUN_MS5611_MODULE 	0
-#define RUN_L3GD20 		0
-#define RUN_FXOS8700		0
-#define RUN_PITOT_MODULE 	0
-
-#else
 #define RUN_GNSS		1
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
 #define RUN_L3GD20 		1
 #define RUN_FXOS8700		1
 #define RUN_PITOT_MODULE 	1
-
-#endif
 
 #define RUN_CAN_TESTER		0
 #define TEST_EEPROM		0
@@ -137,6 +99,8 @@ extern float * probe; // debugging probes
 
 #define ACTIVATE_FPU_EXCEPTION_TRAP 1 // todo I want to be SET !
 #define SET_FPU_FLUSH_TO_ZERO	1
+#define ACTIVATE_WATCHDOG	1
+#define WATCHDOG_STATISTICS 	0
 
 enum
 {

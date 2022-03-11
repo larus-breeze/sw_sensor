@@ -16,6 +16,7 @@
 #include "read_configuration_file.h"
 
 COMMON Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue(4);
+extern Semaphore setup_file_handling_completed;
 
 #if RUN_DATA_LOGGER
 
@@ -42,7 +43,7 @@ void write_EEPROM_dump( const char * filename)
 
   fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)
-    return; // silently give up
+    return;
 
   f_write (&fp, GIT_TAG_INFO, strlen(GIT_TAG_INFO), (UINT*) &writtenBytes);
   f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
@@ -98,7 +99,7 @@ void write_magnetic_calibration_file (const coordinates_t &c)
   next = format_2_digits(next, c.minute);
   next = format_2_digits(next, c.second);
 
-  *next++ = data[0].id;
+  *next++ = (char)(data[0].id);
 
   append_string(next, ".mcl");
 
@@ -136,32 +137,22 @@ data_logger_runnable (void*)
   FIL outfile;
 
   // wait until sd card is detected
-  while (!BSP_PlatformIsDetected ())
-    {
+  for( int i=10; i>0 && (! BSP_PlatformIsDetected()); --i)
       delay (1000);
-    }
-  delay (500); // wait until card is plugged correctly
+  delay (100); // wait until card is plugged correctly
 
   fresult = f_mount (&fatfs, "", 0);
 
   if (fresult != FR_OK)
-    while(true)
-      suspend (); // give up, logger can not work
+    {
+      setup_file_handling_completed.signal();
+      while(true)
+	suspend (); // give up, logger can not work
+    }
 
   read_configuration_file();
+  setup_file_handling_completed.signal();
 
-#ifdef INFILE // SIL simulation requested
-  FIL infile;
-  fresult = f_open(&infile, INFILE, FA_READ);
-  if (fresult != FR_OK)
-  {
-	    asm("bkpt 0");
-  }
-#endif
-
-#ifdef OUTFILE // SIL simulation requested
-  strcpy( out_filename, OUTFILE);
-#else
   // wait until a GNSS timestamp is available.
   while (output_data.c.year == 0)
     {
@@ -221,20 +212,8 @@ data_logger_runnable (void*)
   out_filename[idx] = '.';
   out_filename[idx + 1] = 'f';
 
-#if LOG_OBSERVATIONS
-  itoa ( sizeof(measurement_data_t) / sizeof(float),
-	out_filename + idx + 2);
-#endif
-#if LOG_COORDINATES
   itoa ((sizeof(coordinates_t) + sizeof(measurement_data_t)) / sizeof(float),
 	out_filename + idx + 2, 10);
-#endif
-
-#if LOG_OUTPUT_DATA
-  itoa (sizeof(output_data_t) / sizeof(float), out_filename + idx + 2, 10);
-#endif
-
-#endif // simulation requested
 
   GPIO_PinState led_state = GPIO_PIN_RESET;
 
@@ -249,68 +228,20 @@ data_logger_runnable (void*)
 
   int32_t sync_counter=0;
 
-#ifdef INFILE
-#if MAXSPEED_CALCULATION  // simulation at max speed
-  while( true)
-#else // simulation in real time
-    for (synchronous_timer t (10); true; t.sync ())
-#endif
+  while( true) // logger loop synchronized by communicator
     {
-      UINT bytesread;
-      fresult = f_read(&infile, (void *)&output_data, IN_DATA_LENGTH*4, &bytesread); // todo PATCH
-      if( ! ((fresult == FR_OK) && (bytesread == IN_DATA_LENGTH*4)) ) // probably end of file
-	{
-	      f_close(&infile);
-	      f_close(&outfile);
-#if uSD_LED_STATUS
-	      while( true)
-		{
-		  delay(100);
-		    HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, led_state);
-		    led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
-		  delay(500);
-		    HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, led_state);
-		    led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
-		}
-#else
-	      suspend();
-#endif
-	}
-
-      void sync_communicator (void);
-      sync_communicator (); // comes from the sensors if not simulated
       notify_take (true); // wait for synchronization by from communicator
 
-#else
-      // logging loop @ 100 Hz
-      while( true)
-       {
-	  notify_take (true); // wait for synchronization by from communicator
-#endif
+      memcpy (buf_ptr, (uint8_t*) &output_data.m, sizeof(measurement_data_t)+sizeof(coordinates_t));
+      buf_ptr += sizeof(measurement_data_t)+sizeof(coordinates_t);
 
-#if LOG_OBSERVATIONS
-      memcpy (buf_ptr, (uint8_t*) &output_data.m, sizeof(measurement_data_t));
-      buf_ptr += sizeof(measurement_data_t);
-#endif
-#if LOG_COORDINATES
-      memcpy (buf_ptr, (uint8_t*) &(output_data.c), sizeof(coordinates_t));
-      buf_ptr += sizeof(coordinates_t);
-#endif
-#if LOG_OUTPUT_DATA
-      memcpy (buf_ptr, (uint8_t*) &(output_data), sizeof(output_data));
-      buf_ptr += sizeof(output_data);
-#endif
       if (buf_ptr < buffer + BUFSIZE)
 	continue; // buffer only filled partially
 
-      fresult = f_write (&outfile, buffer, BUFSIZE, (UINT*) &writtenBytes); /*Shall return FR_DENIED if disk is full.*/
- //     ASSERT((fresult == FR_OK) && (writtenBytes == BUFSIZE)); /* Returns writtenBytes = 0 if disk is full. */
-      /* TODO: decide what to do if disk is full.  Simple: Stop Logging.  Better: Remove older files until e.g. 1GB is free
-       at startup. FATFS configuration is not up to that. */
-
+      fresult = f_write (&outfile, buffer, BUFSIZE, (UINT*) &writtenBytes);
       if( ! ((fresult == FR_OK) && (writtenBytes == BUFSIZE)))
-	    while(true)
-	      suspend (); // give up, logger can not work
+	while(true)
+	  suspend (); // give up, logger can not work
 
       uint32_t rest = buf_ptr - (buffer + BUFSIZE);
       memcpy (buffer, buffer + BUFSIZE, rest);
@@ -318,19 +249,18 @@ data_logger_runnable (void*)
 
       if( ++sync_counter >= 16)
 	{
-	      f_sync (&outfile);
-	      sync_counter = 0;
+	  f_sync (&outfile);
+	  sync_counter = 0;
 #if uSD_LED_STATUS
-      HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, led_state);
-      led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
+	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, led_state);
+	  led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
 #endif
 #if LOG_MAGNETIC_CALIBRATION
-	write_magnetic_calibration_file ( output_data.c);
+	  write_magnetic_calibration_file ( output_data.c);
 #endif
 	}
     }
 }
-
 
 #define STACKSIZE (1024*2)
 static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];

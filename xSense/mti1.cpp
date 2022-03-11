@@ -260,7 +260,7 @@ run (void*)
     }
 }
 
-#define STACKSIZE 128
+#define STACKSIZE 256
 
 static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 

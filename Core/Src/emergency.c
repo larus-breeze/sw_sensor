@@ -36,8 +36,9 @@ assert_failed(uint8_t* file, uint32_t line)
 
 void FPU_IRQHandler( void)
 {
-//  while( 1) // todo patch: this loop will be ended by the watchdog.
-//    asm("bkpt 0");
+  while( 1)	  // todo patch: this loop will be ended by the watchdog.
+    asm("bkpt 0");// ...need to look for a more intelligent method
+		  // to recover from NAN situations !
   asm("bx lr");
 }
 
