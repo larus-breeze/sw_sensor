@@ -5,8 +5,6 @@
  **************************************************************************/
 #include "system_configuration.h"
 
-#if RUN_CAN_OUTPUT == 1
-
 #include <FreeRTOS_wrapper.h>
 #include "navigator.h"
 #include "flight_observer.h"
@@ -149,5 +147,3 @@ void CAN_task_runnable( void *)
 }
 
 COMMON RestrictedTask CAN_task( CAN_task_runnable, "CAN", 256, 0, CAN_PRIORITY);
-
-#endif

@@ -69,9 +69,6 @@ extern float * probe; // debugging probes
 
 #define uSD_LED_STATUS		1
 
-#define RUN_COMMUNICATOR	1 // normal mode
-#define RUN_CAN_OUTPUT		1
-
 #define RUN_SPI_TESTER		0
 #define RUN_SDIO_TEST		0
 #define RUN_USART_2_TEST	0
