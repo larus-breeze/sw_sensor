@@ -24,15 +24,22 @@
  */
 void
 AHRS_type::attitude_setup (const float3vector &acceleration,
-			   const float3vector &induction)
+			   const float3vector &mag)
 {
   float3vector north, east, down;
 
-  down = acceleration;
-  down.negate ();
-  north = induction;
+  float3vector induction;
+  if( compass_calibration.isCalibrationDone()) // use calibration if available
+    induction = compass_calibration.calibrate(mag);
+  else
+    induction = mag;
 
+  down = acceleration;
+
+  down.negate ();
   down.normalize ();
+
+  north = induction; // deviation neglected here
   north.normalize ();
 
   // setup world coordinate system
