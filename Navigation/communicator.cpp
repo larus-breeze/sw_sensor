@@ -141,7 +141,7 @@ void communicator_runnable (void*)
 	  navigator.update_GNSS (GNSS.coordinates);
 	}
 
-#if 0 // todo remove me some day...
+#if 1 // appears to be necessary (Flight 3.4.2022 D-KCOM)
       for( int i=0; i<3; ++i)
 	if ( ! isnormal(output_data.m.gyro.e[i]) )
 	  output_data.m.gyro.e[i]=0.0f;
