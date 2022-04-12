@@ -1,4 +1,14 @@
-# the_soar_instrument
-STM32F407 vario firmware.  Firmware for https://github.com/MaxBaex/Hardware_STM32F4_Vario
+# Firmware Sensor
+- Firmware for https://github.com/larus-breeze/hw_sensor 
 
-STM32F407VG, FreeRTOS, FATFS, STM32CubeIDE, 
+## Facts
+- STM32CubeIDE
+- STM32F407VG
+- FreeRTOS
+- IMU 
+- GNSS 
+- Static pressure 
+- Differential pressure
+- CAN interface
+- Bluetooth
+- RS232
