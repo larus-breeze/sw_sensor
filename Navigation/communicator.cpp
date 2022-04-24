@@ -25,6 +25,8 @@ COMMON output_data_t __ALIGNED(1024) output_data =
   { 0 };
 COMMON GNSS_type GNSS (output_data.c);
 
+COMMON float declination;
+
 extern RestrictedTask NMEA_task;
 
 static ROM bool TRUE=true;
@@ -34,6 +36,8 @@ void communicator_runnable (void*)
 {
   navigator_t navigator;
   float3vector acc, mag, gyro;
+
+  declination = navigator.get_declination();
 
   unsigned air_density_sensor_counter = 0;
   unsigned GNSS_count = 0;

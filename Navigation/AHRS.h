@@ -145,10 +145,16 @@ public:
   void update_compass(
 		  const float3vector &gyro, const float3vector &acc, const float3vector &mag,
 		  const float3vector &GNSS_acceleration); //!< rotate quaternion taking angular rate readings
+  float get_declination( void) const
+  {
+    return declination;
+  }
+
 
 private:
   quaternion<ftype>attitude;
   float turn_rate;
+  float declination;
   void feed_compass_calibration(const float3vector &mag);
   circle_state_t circle_state;
   circle_state_t update_circling_state( void);

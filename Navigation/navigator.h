@@ -107,7 +107,10 @@ public:
   {
     return IAS;
   }
-
+  float get_declination( void) const
+  {
+    return ahrs.get_declination();
+  }
 private:
   AHRS_type 	ahrs;
 #if PARALLEL_MAGNETIC_AHRS

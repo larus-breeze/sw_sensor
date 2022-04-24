@@ -113,7 +113,7 @@ AHRS_type::AHRS_type (float sampling_time)
   antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH))
 {
   float inclination=configuration(INCLINATION);
-  float declination=configuration(DECLINATION);
+  declination=configuration(DECLINATION);
 
   expected_nav_induction[NORTH] = COS( inclination);
   expected_nav_induction[EAST]  = COS( inclination) * SIN( declination);

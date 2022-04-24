@@ -399,6 +399,30 @@ char *append_POV( float humidity, float temperature, char *p)
   return p;
 }
 
+ROM char HCHDM[]="$HCHDM,";
+
+char *append_HCHDM( float magnetic_heading, char *p) // report magnetic heading
+{
+  int heading = (int)(magnetic_heading * 573.0f); // -> 1/10 degree
+  if( heading < 0)
+    heading += 3600;
+
+  p = append_string( p, HCHDM);
+
+  *p++ = (char)(heading % 1000 + '0');
+  heading /= 1000;
+  *p++ = heading % 100 + '0';
+  heading /= 100;
+  *p++ = heading % 10 + '0';
+  heading /= 10;
+  *p++ = '.';
+  *p++ = heading + '0';
+  *p++ = ',';
+  *p++ = 'M';
+
+  *p++ = 0;
+  return p;
+}
 
 inline char hex4( uint8_t data)
 {

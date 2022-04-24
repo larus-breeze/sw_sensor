@@ -11,6 +11,7 @@
 
 COMMON NMEA_buffer_t NMEA_buf;
 extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c
+extern float declination;
 
 static void runnable (void*)
 {
@@ -53,6 +54,10 @@ static void runnable (void*)
 
       if( output_data.m.outside_air_humidity > 0.0f) // report AIR data if available
 	append_POV( output_data.m.outside_air_humidity*100.0f, output_data.m.outside_air_temperature, next);
+
+      next = NMEA_append_tail (next);
+
+      append_HCHDM( output_data.euler.y - declination, next); // report magnetic heading
 
       next = NMEA_append_tail (next);
 
