@@ -37,12 +37,10 @@ extern float * probe; // debugging probes
 #define MAG_CALIB_LETHARGY	0.8f // percentage of remaining old calibration info
 #define MAG_CALIBRATION_CHANGE_LIMIT 5.0e-4f // variance average of changes: 3 * { offset, scale }
 
-#define USE_GNSS_VARIO		1 // else pressure-vario
-
 #if DKCOM == 1 // *******************************************************************
 
 #define BLUETOOTH_NAME		"AT+NAMED-KCOM"
-#define ACTIVATE_USB_NMEA	1
+#define ACTIVATE_USB_NMEA	0
 
 #else // **************************************************************************
 

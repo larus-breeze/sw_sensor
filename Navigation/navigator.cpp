@@ -104,11 +104,7 @@ void navigator_t::report_data(output_data_t &d)
     d.euler_magnetic		= ahrs_magnetic.get_euler();
     d.q_magnetic		= ahrs_magnetic.get_attitude();
 #endif
-#if USE_GNSS_VARIO
     d.vario			= flight_observer.get_vario_GNSS(); // todo pick one vario
-#else
-    d.vario			= flight_observer.get_vario_pressure();
-#endif
     d.vario_pressure		= flight_observer.get_vario_pressure();
     d.integrator_vario		= vario_integrator.get_value();
     d.vario_uncompensated 	= flight_observer.get_vario_uncompensated_GNSS();
