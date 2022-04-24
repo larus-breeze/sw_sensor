@@ -30,7 +30,21 @@ public:
 	 corrected_wind_averager( 1.0f / 15.0f / 10.0f) 	// 15s @ 10Hz
   {  };
 
+  void set_density_data( float temperature, float humidity)
+  {
+    if( ! isnan( temperature) && ! isnan( humidity) )
+      atmosphere.set_ambient_air_data( CLIP( temperature, -40.0f, 50.0f), CLIP( humidity, 0.0f, 1.0f));
+    else
+      atmosphere.disregard_ambient_air_data();
+  }
+
+  void disregard_density_data( void)
+  {
+    atmosphere.disregard_ambient_air_data();
+  }
+
   void report_data( output_data_t &d);
+
   void set_from_add_mag ( const float3vector &acc, const float3vector &mag)
   {
     ahrs.attitude_setup(acc, mag);

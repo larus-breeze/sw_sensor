@@ -30,6 +30,8 @@ typedef struct
   float static_sensor_temperature;  //log temperature to monitor temperature in enclosure
   float absolute_sensor_temperature;
   float supply_voltage;  //Measuring the supply voltage. Might be related to sensor noise.
+  float outside_air_temperature; //!< OAT from external sensor if installed
+  float outside_air_humidity; //!< 0.0 -> 1.0 NOT percent
 } measurement_data_t;
 
 typedef struct

@@ -7,7 +7,7 @@
 #ifndef APPLICATION_ATMOSPHERE_H_
 #define APPLICATION_ATMOSPHERE_H_
 
-#include "vsqrtf.h"
+#include "embedded_math.h"
 
 #define RECIP_STD_DENSITY_TIMES_2 1.632f
 

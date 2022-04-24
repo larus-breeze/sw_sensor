@@ -28,5 +28,6 @@ typedef float ftype;
 #define ATAN2(y, x) my_atan2f(y, x)
 
 inline int ROUND(float x) { return (int)((x) + 0.5f);}
+#define CLIP( x, min, max) ((x) < (min) ? (min) : (x) > (max) ? (max) : (x))
 
 #endif /* INC_EMBEDDED_MATH_H_ */

@@ -15,6 +15,7 @@
 #include "CAN_output.h"
 #include "usart3_driver.h"
 #include "usart4_driver.h"
+#include "CAN_distributor.h"
 
 void sync_logger (void);
 
@@ -34,11 +35,21 @@ void communicator_runnable (void*)
   navigator_t navigator;
   float3vector acc, mag, gyro;
 
+  unsigned air_density_sensor_counter = 0;
   unsigned GNSS_count = 0;
 
   // if configuration file given:
   // wait until configuration file read
   setup_file_handling_completed.wait();
+
+  Queue<CANpacket> air_density_sensor_Q (2);
+
+    {
+      CAN_distributor_entry cde =
+	{ 0xffff, 0x120, &air_density_sensor_Q };
+      bool result = subscribe_CAN_messages (cde);
+      ASSERT(result);
+    }
 
   GNSS_configration_t GNSS_configuration =
       (GNSS_configration_t) ROUND (configuration (GNSS_CONFIGURATION));
@@ -173,6 +184,31 @@ void communicator_runnable (void*)
 	{
 	  count_10Hz = 0;
 	  trigger_CAN ();
+
+	  // take care of ambient air data if sensor reports any
+	  CANpacket p;
+	  if( air_density_sensor_Q.receive( p, 0) && p.dlc == 8)
+	    {
+	      air_density_sensor_counter = 0;
+	      navigator.set_density_data(p.data_f[0], p.data_f[1]);
+	      update_system_state_set( AIR_SENSOR_AVAILABLE);
+	      output_data.m.outside_air_temperature = p.data_f[0];
+	      output_data.m.outside_air_humidity = p.data_f[1];
+	    }
+	  else
+	    {
+	      if( air_density_sensor_counter < 10)
+		  ++air_density_sensor_counter;
+	      else
+		{
+		navigator.disregard_density_data();
+		output_data.m.outside_air_humidity = -1.0f; // means: disregard humidity and temperature
+		update_system_state_clear( AIR_SENSOR_AVAILABLE);
+		output_data.m.outside_air_temperature = ZERO;
+
+		output_data.m.outside_air_humidity = ZERO;
+		}
+	    }
 	}
 
       sync_logger (); // kick logger @ 100 Hz

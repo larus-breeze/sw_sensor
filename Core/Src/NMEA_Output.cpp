@@ -49,7 +49,11 @@ static void runnable (void*)
       next = NMEA_append_tail (next);
 #endif
       format_POV( output_data.TAS, output_data.m.static_pressure,
-			 output_data.m.pitot_pressure, output_data.vario, next);
+			 output_data.m.pitot_pressure, output_data.m.supply_voltage, output_data.vario, next);
+
+      if( output_data.m.outside_air_humidity > 0.0f) // report AIR data if available
+	append_POV( output_data.m.outside_air_humidity*100.0f, output_data.m.outside_air_temperature, next);
+
       next = NMEA_append_tail (next);
 
       NMEA_buf.length = next - NMEA_buf.string;

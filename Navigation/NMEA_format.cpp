@@ -362,7 +362,7 @@ char *format_PTAS1 ( float vario, float avg_vario, float altitude, float TAS, ch
 
 ROM char POV[]="$POV,S,";
 
-char *format_POV( float TAS, float pabs, float pitot, float TEK_vario, char *p)
+char *format_POV( float TAS, float pabs, float pitot, float TEK_vario, float voltage, char *p)
 {
   p = append_string( p, POV);
   p = integer_to_ascii_2_decimals( (int)(TAS * 360.0f), p); // m/s -> 1/100 km/h
@@ -373,15 +373,32 @@ char *format_POV( float TAS, float pabs, float pitot, float TEK_vario, char *p)
   if( pitot < 0.0f)
     pitot = 0.0f;
   p = append_string( p, ",Q,");
-  p = integer_to_ascii_2_decimals( (int)pitot, p);// pressure already in Pa = 100 hPa
+  p = integer_to_ascii_2_decimals( (int)(pitot * 100.0f), p); // dynamic pressure / Pa
 
   p = append_string( p, ",E,");
   p = integer_to_ascii_2_decimals( (int)(TEK_vario * 100.0f), p);
+
+  p = append_string( p, ",V,");
+  p = integer_to_ascii_2_decimals( (int)(voltage * 100.0f), p);
 
   *p++ = 0;
 
   return p;
 }
+
+char *append_POV( float humidity, float temperature, char *p)
+{
+  p = append_string( p, ",H,");
+  p = integer_to_ascii_2_decimals( (int)(humidity * 100.0f), p);
+
+  p = append_string( p, ",T,");
+  p = integer_to_ascii_2_decimals( (int)(temperature * 100.0f), p);
+
+  *p++ = 0;
+
+  return p;
+}
+
 
 inline char hex4( uint8_t data)
 {

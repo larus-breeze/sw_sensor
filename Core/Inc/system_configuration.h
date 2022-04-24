@@ -110,6 +110,7 @@ enum
 	MS5611_STATIC_AVAILABLE = 0x80,
 	MS5611_PITOT_AVAILABLE  = 0x100,
 	PITOT_SENSOR_AVAILABLE 	= 0x200,
+	AIR_SENSOR_AVAILABLE 	= 0x400,
 
 	USB_OUTPUT_ACTIVE	= 0x1000,
 	BLUEZ_OUTPUT_ACTIVE	= 0x2000,
@@ -122,6 +123,11 @@ extern volatile unsigned system_state;
 inline void update_system_state_set( unsigned value)
 {
 	__atomic_or_fetch ( &system_state, value, __ATOMIC_ACQUIRE);
+}
+
+inline void update_system_state_clear( unsigned value)
+{
+	__atomic_and_fetch ( &system_state, ~value, __ATOMIC_ACQUIRE);
 }
 
 #endif /* SRC_SYSTEM_CONFIGURATION_H_ */
