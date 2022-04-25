@@ -34,17 +34,17 @@ static ROM bool FALSE=true;
 
 void communicator_runnable (void*)
 {
+  // wait until configuration file read
+  setup_file_handling_completed.wait();
+
+  // construct NAV objects after reading setup data
   navigator_t navigator;
   float3vector acc, mag, gyro;
 
   declination = navigator.get_declination();
 
-  unsigned air_density_sensor_counter = 0;
-  unsigned GNSS_count = 0;
-
-  // if configuration file given:
-  // wait until configuration file read
-  setup_file_handling_completed.wait();
+  uint16_t air_density_sensor_counter = 0;
+  uint16_t GNSS_count = 0;
 
   Queue<CANpacket> air_density_sensor_Q (2);
 
