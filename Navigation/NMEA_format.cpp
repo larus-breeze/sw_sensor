@@ -409,12 +409,12 @@ char *append_HCHDM( float magnetic_heading, char *p) // report magnetic heading
 
   p = append_string( p, HCHDM);
 
-  *p++ = (char)(heading % 1000 + '0');
-  heading /= 1000;
-  *p++ = heading % 100 + '0';
-  heading /= 100;
-  *p++ = heading % 10 + '0';
-  heading /= 10;
+  *p++ = (char)(heading / 1000 + '0');
+  heading %= 1000;
+  *p++ = heading / 100 + '0';
+  heading %= 100;
+  *p++ = heading / 10 + '0';
+  heading %= 10;
   *p++ = '.';
   *p++ = heading + '0';
   *p++ = ',';
