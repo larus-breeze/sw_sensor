@@ -127,14 +127,21 @@ void USART_3_runnable (void* using_DGNSS)
       else
 	result = GNSS.update(buffer);
 
-      if( result == GNSS_ERROR)
+      switch( result)
       {
+	case GNSS_HAVE_FIX:
+  	  update_system_state_set( GNSS_AVAILABLE);
+	  break;
+	case GNSS_NO_FIX:
+  	  update_system_state_clear( GNSS_AVAILABLE);
+	  break;
+	case GNSS_ERROR:
+	default:
+  	  update_system_state_clear( GNSS_AVAILABLE);
 	  HAL_UART_Abort (&huart3);
 	  delay (50);
-	  continue;
-	}
-      if(  result == GNSS_HAVE_FIX)
-  	  update_system_state_set( GNSS_AVAILABLE);
+	  break;
+      }
     }
 }
 
