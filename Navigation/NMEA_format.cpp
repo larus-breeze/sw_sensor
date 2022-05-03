@@ -376,10 +376,10 @@ char *format_POV( float TAS, float pabs, float pitot, float TEK_vario, float vol
   p = integer_to_ascii_2_decimals( (int)(pitot * 100.0f), p); // dynamic pressure / Pa
 
   p = append_string( p, ",E,");
-  p = integer_to_ascii_2_decimals( (int)(TEK_vario * 100.0f), p);
+  p = integer_to_ascii_2_decimals( (int)(voltage * 100.0f), p);
 
   p = append_string( p, ",V,");
-  p = integer_to_ascii_2_decimals( (int)(voltage * 100.0f), p);
+  p = integer_to_ascii_2_decimals( (int)(TEK_vario * 100.0f), p);
 
   *p++ = 0;
 
