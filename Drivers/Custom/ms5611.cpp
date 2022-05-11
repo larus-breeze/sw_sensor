@@ -81,9 +81,11 @@ inline uint32_t MS5611::read_24_bits (void)
 
 	uint8_t Buffer_Rx[RX_BUFLEN];
 	uint32_t data = 0;
-
-	I2C_ReadRegister (MS5611_I2C, I2C_address, CMD_ADC_READ, 1, Buffer_Rx,
-			RX_BUFLEN);
+	I2C_StatusTypeDef I2C_state;
+	I2C_state = I2C_ReadRegister (MS5611_I2C, I2C_address, CMD_ADC_READ, 1, Buffer_Rx,
+				RX_BUFLEN);
+	if( I2C_state != I2C_OK)
+		  return 0xffffffff;
 
 	for (uint8_t i = 0; i < RX_BUFLEN; i++)
 		data = (data << 8) + Buffer_Rx[i];
@@ -147,40 +149,43 @@ inline void MS5611::calibrate (const uint32_t d1, const uint32_t d2)
 	  pressure_octapascal = pressure_raw;
 }
 
-void MS5611::update (void)
+bool MS5611::update (void)
 {
 	uint32_t tmp;
+	unsigned errorcount = 0;
+
 	if (measure_temperature)
 	{
-		tmp = read_24_bits ();
-		if (tmp)
-			ADC_temperature_reading = tmp;
-		else
-		{
+		do
+		  {
+			tmp = read_24_bits ();
 			++errorcount;
-			start_temperature_conversion ();
-			measure_temperature = true;
-			return;
-		}
+			if( errorcount > 4)
+			  return false;
+		  }
+		while( tmp == 0xffffffff);
+
+		ADC_temperature_reading = tmp;
 		start_pressure_conversion ();
 		measure_temperature = false;
 	}
 	else
 	{
-		tmp = read_24_bits ();
-		if (tmp)
-			ADC_pressure_reading = tmp;
-		else
-		{
+		do
+		  {
+			tmp = read_24_bits ();
 			++errorcount;
-			start_pressure_conversion ();
-			measure_temperature = false;
-			return;
-		}
+			if( errorcount > 4)
+			  return false;
+		  }
+		while( tmp == 0xffffffff);
+
+		ADC_pressure_reading = tmp;
 		start_temperature_conversion ();
 		measure_temperature = true;
 		calibrate (ADC_pressure_reading, ADC_temperature_reading);
 	}
+	return true;
 }
 
 inline uint16_t MS5611::read_coef (uint8_t coef_num)
@@ -203,7 +208,6 @@ inline uint32_t MS5611::getRawDx (uint8_t cmd)
 
 bool MS5611::initialize (void)
 {
-	errorcount = 0;
 	uint8_t reg = CMD_RESET;
 	if(I2C_OK == I2C_Write (MS5611_I2C, I2C_address, &reg, 1))
 	{

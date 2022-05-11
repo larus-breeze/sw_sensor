@@ -12,7 +12,7 @@ public:
 	  I2C_address = i2c_address;
   }
   bool initialize(void);
-  void update( void);
+  bool update( void);
   inline float get_pressure( void) const //!< getter function
   {
     return pressure_octapascal * 0.125f;
@@ -43,7 +43,6 @@ private:
   int32_t  temperature_celsius;		//!< sensor temperature in 1/100 Degrees Celsius
   uint16_t PromData[8]; 		//!< coefficients table for pressure sensor PROM values
   bool measure_temperature;	//!< Measurement cycle flip-flop
-  uint32_t errorcount;
 };
 
 #endif /* MS5611_01BA01_H_ */

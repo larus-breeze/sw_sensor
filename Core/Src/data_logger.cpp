@@ -281,4 +281,9 @@ void sync_logger(void)
     data_logger.notify_give ();
   }
 
+void emergency_write_crashdump( char * file, int line)
+  {
+    data_logger.notify_give ();
+  }
+
 #endif

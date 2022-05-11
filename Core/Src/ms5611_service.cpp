@@ -14,53 +14,66 @@
 
 void getPressure (void*)
 {
-	I2C_Init (MS5611_I2C);
-	drop_privileges();
+  while (true) // re-initialization loop
+    {
+      update_system_state_clear(MS5611_STATIC_AVAILABLE);
+      update_system_state_clear(MS5611_PITOT_AVAILABLE);
 
-	MS5611 ms5611_static (0xEE);
-	MS5611 ms5611_pitot (0xEC);  // Second ms5611 sensor on PCB.
+      delay (2);
 
-	bool static_ms5611_available = false;
-	bool pitot_ms5611_available = false;
+      acquire_privileges ();
+      I2C_Init (MS5611_I2C);
+      drop_privileges();
 
-	static_ms5611_available = ms5611_static.initialize();
-	if( static_ms5611_available)
-		update_system_state_set( MS5611_STATIC_AVAILABLE);
+      MS5611 ms5611_static (0xEE);
+      MS5611 ms5611_pitot (0xEC);  // Second ms5611 sensor on PCB.
 
-	pitot_ms5611_available = ms5611_pitot.initialize();
-	if( pitot_ms5611_available)
-		update_system_state_set( MS5611_PITOT_AVAILABLE);
+      bool static_ms5611_available = false;
+      bool pitot_ms5611_available = false;
 
-	synchronous_timer t(10);
-	while( true)
+      static_ms5611_available = ms5611_static.initialize ();
+      if (static_ms5611_available)
+	update_system_state_set (MS5611_STATIC_AVAILABLE);
+
+      pitot_ms5611_available = ms5611_pitot.initialize ();
+      if (pitot_ms5611_available)
+	update_system_state_set (MS5611_PITOT_AVAILABLE);
+
+      for( synchronous_timer t (10); true; t.sync()) // measurement loop
 	{
-		if (true == static_ms5611_available)
-			ms5611_static.update();
+	  if ( static_ms5611_available)
+	    if (ms5611_static.update () == false)
+	      break;;
 
-		if (true == pitot_ms5611_available)
-			ms5611_pitot.update();
+	  if ( pitot_ms5611_available)
+	    if (ms5611_pitot.update () == false)
+	      break;;
 
-		t.sync();
+	  t.sync ();
 
-		if (true == static_ms5611_available)
-			ms5611_static.update ();
+	  if ( static_ms5611_available)
+	    if (ms5611_static.update () == false)
+	      break;;
 
-		if (true == pitot_ms5611_available)
-			ms5611_pitot.update();
+	  if (pitot_ms5611_available)
+	    if (ms5611_pitot.update () == false)
+	      break;;
 
-		if (true == static_ms5611_available)
-		{
-			output_data.m.static_pressure = ms5611_static.get_pressure();
-			output_data.m.static_sensor_temperature = ms5611_static.get_temperature();
-		}
+	  if ( static_ms5611_available)
+	    {
+	      output_data.m.static_pressure = ms5611_static.get_pressure ();
+	      output_data.m.static_sensor_temperature =
+		  ms5611_static.get_temperature ();
+	    }
 
-		if (true == pitot_ms5611_available)
-		{
-			output_data.m.absolute_pressure = ms5611_pitot.get_pressure();
-			output_data.m.absolute_sensor_temperature = ms5611_pitot.get_temperature();
-		}
-		t.sync();
+	  if (true == pitot_ms5611_available)
+	    {
+	      output_data.m.absolute_pressure = ms5611_pitot.get_pressure ();
+	      output_data.m.absolute_sensor_temperature =
+		  ms5611_pitot.get_temperature ();
+	    }
 	}
+    }
 }
 
 RestrictedTask ms5611_reading (getPressure, "P_ABS", 256, 0, MS5611_PRIORITY + portPRIVILEGE_BIT);
