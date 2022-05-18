@@ -365,6 +365,10 @@ public:
 	{
 		vTaskSuspend(task_handle);
 	}
+	inline void set_priority( UBaseType_t uxNewPriority)
+	{
+	  vTaskPrioritySet( task_handle, uxNewPriority);
+	}
 	//! Resume task execution, callable ONLY from a task !
 	inline void resume(void) const
 	{
