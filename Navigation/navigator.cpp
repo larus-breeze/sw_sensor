@@ -43,12 +43,10 @@ void navigator_t::update_IMU (
 // to be called at 10 Hz
 void navigator_t::update_GNSS (const coordinates_t &coordinates)
 {
-#ifndef LOG_FORMAT_2020
   if( coordinates.sat_fix_type == SAT_FIX_NONE) // presently no GNSS fix
       return; // todo needs to be improved
 
   GNSS_fix_type		= coordinates.sat_fix_type;
-#endif
   GNSS_velocity 	= coordinates.velocity;
   GNSS_acceleration	= coordinates.acceleration;
   GNSS_heading 		= coordinates.relPosHeading;
