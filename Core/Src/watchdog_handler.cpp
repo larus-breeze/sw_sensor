@@ -7,10 +7,9 @@ static COMMON WWDG_HandleTypeDef WwdgHandle;
 void heartbeat (void)
 {
   bool set = GPIO_PIN_SET
-      == HAL_GPIO_ReadPin ( LED_STATUS1_GPIO_Port, LED_STATUS2_Pin);
-  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin,
+      == HAL_GPIO_ReadPin ( LED_STATUS3_GPIO_Port, LED_STATUS3_Pin);
+  HAL_GPIO_WritePin (LED_STATUS3_GPIO_Port, LED_STATUS3_Pin,
 		     set ? GPIO_PIN_RESET : GPIO_PIN_SET);
-//	HAL_GPIO_WritePin(LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, set ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 #if WATCHDOG_STATISTICS
@@ -46,7 +45,7 @@ void blink (void*)
     {
       t.sync ();
       if( (++rythm & 0x0f) ==0)
-	  HAL_GPIO_TogglePin (LED_STATUS1_GPIO_Port, LED_STATUS3_Pin);
+	  HAL_GPIO_TogglePin (LED_STATUS3_GPIO_Port, LED_STATUS3_Pin);
 
 #if ACTIVATE_WATCHDOG
 #if WATCHDOG_STATISTICS
@@ -64,15 +63,7 @@ void blink (void*)
 
 RestrictedTask watchdog_handler (blink, "WATCHDOG", configMINIMAL_STACK_SIZE, 0, WATCHDOG_TASK_PRIORITY);
 
-unsigned watchdog_delay = 10;
-
 extern "C" void WWDG_IRQHandler(void)
 {
-  if( watchdog_delay == 10)
-      emergency_write_crashdump( (char *)"WATCHDOG", __LINE__, WwdgHandle.Instance->CR & 0x7f);
-  if( watchdog_delay > 0)
-    {
-    --watchdog_delay;
-    HAL_WWDG_Refresh (&WwdgHandle);
-    }
+  asm("bkpt 0");
 }
