@@ -106,16 +106,12 @@ readDataFrom_MTI (MtsspInterface *device, uint8_t *buf)
 	  x.u = __REV (*(uint32_t*) (buf + 0x07 + 8));
 	  output_data.m.acc[2] = x.f;
 
-	  // keep old reading in (rare) case of NAN output from sensor
 	  x.u = __REV (*(uint32_t*) (buf + 0x16 + 0));
-	  if( isnormal(x.f))
-	    output_data.m.gyro[0] =  x.f;
+	  output_data.m.gyro[0] = isnormal(x.f) ? x.f : 0.0f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x16 + 4));
-	  if( isnormal(x.f))
-	    output_data.m.gyro[1] = x.f;
+	  output_data.m.gyro[1] = isnormal(x.f) ? x.f : 0.0f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x16 + 8));
-	  if( isnormal(x.f))
-	    output_data.m.gyro[2] = x.f;
+	  output_data.m.gyro[2] = isnormal(x.f) ? x.f : 0.0f;
 
 	  x.u = __REV (*(uint32_t*) (buf + 0x25 + 0));
 	  output_data.m.mag[0] = x.f;
@@ -271,7 +267,7 @@ static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 static ROM TaskParameters_t p =
   { run, "IMU",
   STACKSIZE, 0,
-  MTI_PRIORITY + 2, stack_buffer,
+  MTI_PRIORITY, stack_buffer,
     {
       { COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
       { 0, 0, 0 },
