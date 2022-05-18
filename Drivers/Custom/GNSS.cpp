@@ -69,7 +69,7 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	  return GNSS_NO_FIX;
 	  }
 
-	coordinates.SATS_number=pvt.num_SV;
+	coordinates.SATS_number = num_SV = pvt.num_SV;
 	if( pvt.fix_type == 3) // 3 -> 3D-fix
 	  coordinates.sat_fix_type |= SAT_FIX;
 	else
