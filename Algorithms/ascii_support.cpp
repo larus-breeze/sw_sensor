@@ -87,7 +87,7 @@ char* itoa(int value, char* result, int base)
 
 static ROM char hexdigits[] = "0123456789abcdef";
 
-void utox(uint32_t value, char* result, uint8_t nibbles)
+char * utox(uint32_t value, char* result, uint8_t nibbles)
 {
 	for( int i=0; i < nibbles; ++i)
 	{
@@ -96,11 +96,15 @@ void utox(uint32_t value, char* result, uint8_t nibbles)
 		++result;
 	}
 	*result=0;
+	return result;
 }
-void lutox(uint64_t value, char* result)
+
+char * lutox(uint64_t value, char* result)
 {
   utox( (uint32_t)(value >> 32), result, 8);
   utox( value & 0xffffffff, result+8, 8);
+  result[16]=0;
+  return result+16;
 }
 
 char * my_itoa( char * target, int value)

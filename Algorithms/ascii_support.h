@@ -14,8 +14,8 @@ char * my_ftoa( char * target, float value);
 
 #ifdef __cplusplus
 
-void utox(uint32_t value, char* result, uint8_t nibbles = 8);
-void lutox(uint64_t value, char* result);
+char * utox(uint32_t value, char* result, uint8_t nibbles = 8);
+char * lutox(uint64_t value, char* result);
 
 extern "C"
  {
