@@ -33,17 +33,14 @@ static void runnable (void*)
     }
 }
 
-#define STACKSIZE 128
-static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
-
 static ROM TaskParameters_t p =
 {
     runnable,
     "CHIPSNS",
-    STACKSIZE,
+    128,
     0,
     L3GD20_PRIORITY,
-    stack_buffer,
+    0,
 	{
 		{ COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
 		{ 0, 0, 0 },
