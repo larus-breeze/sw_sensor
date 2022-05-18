@@ -86,35 +86,41 @@ DMA1_Stream1_IRQHandler (void)
 
 static uint8_t __ALIGNED(256) buffer[RECEIVE_BUFFER_SIZE];
 
-void USART_3_runnable (void* using_DGNSS)
+void
+USART_3_runnable (void *using_DGNSS)
 {
-  unsigned buffer_size = *(bool *)using_DGNSS
-      ? GPS_DMA_buffer_SIZE + GPS_RELPOS_DMA_buffer_SIZE
-      : GPS_DMA_buffer_SIZE;
+  unsigned buffer_size =
+      *(bool*) using_DGNSS ?
+	  GPS_DMA_buffer_SIZE + GPS_RELPOS_DMA_buffer_SIZE :
+	  GPS_DMA_buffer_SIZE;
 
-  USART3_task_Id = xTaskGetCurrentTaskHandle();
+  USART3_task_Id = xTaskGetCurrentTaskHandle ();
   MX_USART3_UART_Init ();
   volatile HAL_StatusTypeDef result;
 
   while (true)
     {
       result = HAL_UART_Receive_DMA (&huart3, buffer, buffer_size);
-      if( result != HAL_OK)
+      if (result != HAL_OK)
 	{
 	  HAL_UART_Abort (&huart3);
 	  continue;
 	}
       // wait for half transfer interrupt
       uint32_t pulNotificationValue;
-      BaseType_t notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, DATA_PACKET_TIMEOUT_MS);
-      if( notify_result != pdTRUE)
+      BaseType_t notify_result = xTaskNotifyWait(0xffffffff, 0xffffffff,
+						 &pulNotificationValue,
+						 DATA_PACKET_TIMEOUT_MS);
+      if (notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart3);
 	  continue;
 	}
       // wait for transfer complete interrupt
-      notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, DATA_PACKET_TIMEOUT_MS);
-      if( notify_result != pdTRUE)
+      notify_result = xTaskNotifyWait(0xffffffff, 0xffffffff,
+				      &pulNotificationValue,
+				      DATA_PACKET_TIMEOUT_MS);
+      if (notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart3);
 	  continue;
@@ -122,26 +128,16 @@ void USART_3_runnable (void* using_DGNSS)
       HAL_UART_Abort (&huart3);
 
       GNSS_Result result;
-      if(buffer_size == GPS_DMA_buffer_SIZE+GPS_RELPOS_DMA_buffer_SIZE)
-	result = GNSS.update_combined(buffer);
+      if (buffer_size == GPS_DMA_buffer_SIZE + GPS_RELPOS_DMA_buffer_SIZE)
+	result = GNSS.update_combined (buffer);
       else
-	result = GNSS.update(buffer);
+	result = GNSS.update (buffer);
 
-      switch( result)
-      {
-	case GNSS_HAVE_FIX:
-  	  update_system_state_set( GNSS_AVAILABLE);
-	  break;
-	case GNSS_NO_FIX:
-  	  update_system_state_clear( GNSS_AVAILABLE);
-	  break;
-	case GNSS_ERROR:
-	default:
-  	  update_system_state_clear( GNSS_AVAILABLE);
+      if (result == GNSS_ERROR)
+	{
 	  HAL_UART_Abort (&huart3);
 	  delay (50);
-	  break;
-      }
+	}
     }
 }
 

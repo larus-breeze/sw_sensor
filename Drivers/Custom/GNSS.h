@@ -8,8 +8,11 @@
 
 #include "system_configuration.h"
 #include "float3vector.h"
+#include "embedded_memory.h"
 
 enum { NORTH, EAST, DOWN};
+
+extern int64_t FAT_time; //!< DOS FAT time for file usage
 
 extern bool GNSS_new_data_ready;
 extern bool D_GNSS_new_data_ready;
@@ -74,7 +77,7 @@ typedef enum { FIX_none, FIX_dead, FIX_2d, FIX_3d} FIX_TYPE;
 typedef enum { GNSS_HAVE_FIX, GNSS_NO_FIX, GNSS_ERROR} GNSS_Result;
 
 #define SAT_FIX_NONE 	0
-#define SAT_FIX 		1 // bits within sat_fix
+#define SAT_FIX 	1 // bits within sat_fix
 #define SAT_HEADING 	2
 
 typedef struct
@@ -101,10 +104,6 @@ typedef struct
 
   uint8_t minute;
   uint8_t second;
-#if LOG_FORMAT_2020
-  int32_t nano;		// nanoseconds from time stamp
-  int16_t geo_sep_dm;	// (WGS ellipsoid height - elevation MSL) in 0.1m units
-#else
   uint8_t SATS_number;
   uint8_t sat_fix_type;	// bit 0: SAT FIX, bit 1: SAT HEADING
 
@@ -112,7 +111,6 @@ typedef struct
 
   int16_t geo_sep_dm; 	// (WGS ellipsoid height - elevation MSL) in 0.1m units
   uint16_t dummy;
-#endif
 } coordinates_t;
 
 
@@ -160,7 +158,6 @@ private:
    return ((CK_A == buffer[length + 4]) && (CK_B == buffer[length + 5]));
   }
 
-  int64_t FAT_time;
   uint8_t num_SV;
   int32_t latitude_reference;
   int32_t longitude_reference;
