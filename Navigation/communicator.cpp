@@ -17,7 +17,7 @@
 #include "usart4_driver.h"
 #include "CAN_distributor.h"
 
-void sync_logger (void);
+extern "C" void sync_logger (void);
 
 COMMON Semaphore setup_file_handling_completed;
 
@@ -200,11 +200,9 @@ void communicator_runnable (void*)
 	      else
 		{
 		navigator.disregard_density_data();
-		output_data.m.outside_air_humidity = -1.0f; // means: disregard humidity and temperature
 		update_system_state_clear( AIR_SENSOR_AVAILABLE);
+		output_data.m.outside_air_humidity = -1.0f; // means: disregard humidity and temperature
 		output_data.m.outside_air_temperature = ZERO;
-
-		output_data.m.outside_air_humidity = ZERO;
 		}
 	    }
 	}
