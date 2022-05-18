@@ -4,8 +4,7 @@
 
 static COMMON WWDG_HandleTypeDef WwdgHandle;
 
-void
-heartbeat (void)
+void heartbeat (void)
 {
   bool set = GPIO_PIN_SET
       == HAL_GPIO_ReadPin ( LED_STATUS1_GPIO_Port, LED_STATUS2_Pin);
@@ -19,8 +18,7 @@ COMMON volatile uint32_t watchdog_min=0xffffffff;
 COMMON volatile uint32_t watchdog_max=0;
 #endif
 
-void
-blink (void*)
+void blink (void*)
 {
 #if ACTIVATE_WATCHDOG
   acquire_privileges();
@@ -64,9 +62,17 @@ blink (void*)
     }
 }
 
-RestrictedTask alife_blinker (blink, "BLINK", configMINIMAL_STACK_SIZE, 0, STANDARD_TASK_PRIORITY);
+RestrictedTask watchdog_handler (blink, "WATCHDOG", configMINIMAL_STACK_SIZE, 0, WATCHDOG_TASK_PRIORITY);
+
+unsigned watchdog_delay = 10;
 
 extern "C" void WWDG_IRQHandler(void)
 {
-  asm("bkpt 0");
+  if( watchdog_delay == 10)
+      emergency_write_crashdump( (char *)"WATCHDOG", __LINE__, WwdgHandle.Instance->CR & 0x7f);
+  if( watchdog_delay > 0)
+    {
+    --watchdog_delay;
+    HAL_WWDG_Refresh (&WwdgHandle);
+    }
 }

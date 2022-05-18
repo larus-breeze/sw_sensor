@@ -7,10 +7,17 @@
 #ifndef MY_ASSERT_H_
 #define MY_ASSERT_H_
 
-#if 1
+#include "stdint.h"
+
+#ifdef __cplusplus
+ extern "C"
+#endif
+   void emergency_write_crashdump( char * file, int line, uint64_t data);
+
+#if 0
 #define ASSERT(x) if((x)==0) asm volatile("bkpt 0")
 #else
-#define ASSERT(x) ((void)(x))
+#define ASSERT(x) if((x)==0) emergency_write_crashdump( (char *)__FILE__, __LINE__, 0);
 #endif
 
 #endif /* MY_ASSERT_H_ */

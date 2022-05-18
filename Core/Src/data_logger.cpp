@@ -17,6 +17,9 @@
 
 COMMON Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue(4);
 extern Semaphore setup_file_handling_completed;
+COMMON char *crashfile;
+COMMON unsigned crashline;
+COMMON uint64_t crashdata;
 
 #if RUN_DATA_LOGGER
 
@@ -24,10 +27,97 @@ FATFS fatfs;
 extern SD_HandleTypeDef hsd;
 extern DMA_HandleTypeDef hdma_sdio_rx;
 extern DMA_HandleTypeDef hdma_sdio_tx;
+extern int64_t FAT_time; //!< DOS FAT time for file usage
 
 #define BUFSIZE 2048 // bytes
 #define RESERVE 512
 static uint8_t __ALIGNED(BUFSIZE) buffer[BUFSIZE + RESERVE];
+
+extern uint32_t Bus_Fault_Address;
+extern uint8_t  Bus_Fault_Status;
+extern uint32_t Bad_Memory_Address;
+extern uint32_t Memory_Fault_status;
+extern uint32_t Bad_Instruction_Address;
+extern uint32_t FPU_StatusControlRegister;
+extern uint16_t Usage_Fault_Status_Register;
+extern uint32_t Hard_Fault_Status;
+
+void write_crash_dump( void)
+{
+  FRESULT fresult;
+  FIL fp;
+  char buffer[50];
+  char *next = buffer;
+  int32_t writtenBytes = 0;
+
+  next = utox( (unsigned)FAT_time, buffer);
+  next = append_string (next, ".CRASHDUMP");
+  *next=0;
+
+  fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
+  if (fresult != FR_OK)
+    return;
+
+  f_write (&fp, GIT_TAG_INFO, strlen(GIT_TAG_INFO), (UINT*) &writtenBytes);
+  f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
+  utox( UNIQUE_ID[0], buffer, 8);
+  buffer[8]='\r';
+  buffer[9]='\n';
+  f_write (&fp, buffer, 10, (UINT*) &writtenBytes);
+
+  f_write (&fp, crashfile, strlen(crashfile), (UINT*) &writtenBytes);
+
+  next = buffer;
+  *next++=' ';
+  next = my_itoa( next, crashline);
+  *next++ = '\r';
+  *next++ = '\n';
+
+  next = lutox( crashdata, next);
+  *next++ = '\r';
+  *next++ = '\n';
+  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+
+  next = utox( Bus_Fault_Address, buffer);
+  *next++ = '\r';
+  *next++ = '\n';
+
+  next = utox( Bad_Memory_Address, next);
+  *next++ = '\r';
+  *next++ = '\n';
+
+  next = utox( Memory_Fault_status, next);
+  *next++ = '\r';
+  *next++ = '\n';
+
+  next = utox( Bad_Instruction_Address, next);
+  *next++ = '\r';
+  *next++ = '\n';
+  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+
+  next = utox( FPU_StatusControlRegister, buffer);
+  *next++ = '\r';
+  *next++ = '\n';
+
+  next = utox( Usage_Fault_Status_Register, next);
+  *next++ = '\r';
+  *next++ = '\n';
+
+  next = utox( Hard_Fault_Status, next);
+  *next++ = '\r';
+  *next++ = '\n';
+
+  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+
+  f_close(&fp);
+
+  delay(1000); // wait until data has been saved and file is closed
+
+  extern RestrictedTask data_logger;
+  data_logger.set_priority(LOGGER_PRIORITY + 5);
+  while( true)
+    /* wake watchdog */;
+}
 
 void write_EEPROM_dump( const char * filename)
 {
@@ -150,12 +240,15 @@ data_logger_runnable (void*)
 	suspend (); // give up, logger can not work
     }
 
-  read_configuration_file();
+  read_configuration_file(); // read configuration file if it is present on the SD card
   setup_file_handling_completed.signal();
 
   // wait until a GNSS timestamp is available.
   while (output_data.c.year == 0)
     {
+      if( crashfile)
+	write_crash_dump();
+
       delay (100); /* klaus: this bad guy has implemented a spinlock (max) */
     }
 
@@ -232,6 +325,9 @@ data_logger_runnable (void*)
     {
       notify_take (true); // wait for synchronization by from communicator
 
+      if( crashfile)
+	write_crash_dump();
+
       memcpy (buf_ptr, (uint8_t*) &output_data.m, sizeof(measurement_data_t)+sizeof(coordinates_t));
       buf_ptr += sizeof(measurement_data_t)+sizeof(coordinates_t);
 
@@ -276,14 +372,16 @@ static TaskParameters_t p =
 
 COMMON RestrictedTask data_logger (p);
 
-void sync_logger(void)
+extern "C" void sync_logger(void)
   {
     data_logger.notify_give ();
   }
 
-void emergency_write_crashdump( char * file, int line)
+extern "C" void emergency_write_crashdump( char * file, int line, uint64_t data)
   {
-    data_logger.notify_give ();
+    crashfile=file;
+    crashline=line;
+    crashdata=data;
   }
 
 #endif
