@@ -81,8 +81,8 @@ void write_EEPROM_defaults( void)
   ASSERT( ! status);
 #endif
 
-//  status = write_EEPROM_value( GNSS_CONFIGURATION, (float)GNSS_F9P_F9P);
-  status = write_EEPROM_value( GNSS_CONFIGURATION, (float)GNSS_M9N);
+  status = write_EEPROM_value( GNSS_CONFIGURATION, (float)GNSS_F9P_F9P);
+//  status = write_EEPROM_value( GNSS_CONFIGURATION, (float)GNSS_M9N);
   ASSERT( ! status);
 
   status = write_EEPROM_value( PITOT_OFFSET, 0.0f);
