@@ -55,20 +55,6 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	FAT_time = ((pvt.year - 1980) << 25) + (pvt.month << 21) + (pvt.day << 16)
 			+ (pvt.hour << 11) + (pvt.minute << 5) + (pvt.second >> 1);
 
-	fix_type = (FIX_TYPE) (pvt.fix_type);
-	if (( (pvt.fix_flags & 1) == 0) || (pvt.sAcc > 250)) // todo modify me for M9N GNSS support
-	  {
-	  coordinates.velocity[NORTH] 		= NAN;
-	  coordinates.velocity[EAST] 		= NAN;
-	  coordinates.velocity[DOWN] 		= NAN;
-	  coordinates.acceleration[NORTH] 	= NAN;
-	  coordinates.acceleration[EAST] 	= NAN;
-
-	  GNSS_new_data_ready = true;
-	  update_system_state_clear( GNSS_AVAILABLE);
-	  return GNSS_NO_FIX;
-	  }
-
 	coordinates.SATS_number = num_SV = pvt.num_SV;
 	if( pvt.fix_type == 3) // 3 -> 3D-fix
 	  coordinates.sat_fix_type |= SAT_FIX;
@@ -132,9 +118,24 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 
 	GNSS_new_data_ready = true;
 
-	update_system_state_set( GNSS_AVAILABLE);
+	fix_type = (FIX_TYPE) (pvt.fix_type);
+//	if (( (pvt.fix_flags & 1) == 0) || (pvt.sAcc > 250)) // todo modify me for M9N GNSS support
+	if (( (pvt.fix_flags & 1) == 0) || (pvt.sAcc > 1000)) // todo patch number 1000 just an estimate
+	  {
+	  coordinates.velocity[NORTH] 		= NAN; // todo remove NAN usage !
+	  coordinates.velocity[EAST] 		= NAN;
+	  coordinates.velocity[DOWN] 		= NAN;
+	  coordinates.acceleration[NORTH] 	= NAN;
+	  coordinates.acceleration[EAST] 	= NAN;
 
-	return GNSS_HAVE_FIX;
+	  update_system_state_clear( GNSS_AVAILABLE);
+	  return GNSS_NO_FIX;
+	  }
+	else
+	  {
+	    update_system_state_set( GNSS_AVAILABLE);
+	    return GNSS_HAVE_FIX;
+	  }
 }
 
 GNSS_Result GNSS_type::update_delta(const uint8_t * data)
