@@ -44,7 +44,6 @@ public:
 	{
 		attitude.from_euler( r, n, y);
 		attitude.get_rotation_matrix( body2nav);
-		body2nav.transpose( nav2body);
 		euler = attitude;
 	}
 	inline eulerangle<ftype> get_euler(void) const
@@ -63,27 +62,27 @@ public:
 	{
 		return induction_nav_frame;
 	}
-	inline const float get_lin_e0(void) const
+	inline float get_lin_e0(void) const
 	{
 		return attitude.lin_e0();
 	}
-	inline const float get_lin_e1(void) const
+	inline float get_lin_e1(void) const
 	{
 		return attitude.lin_e1();
 	}
-	inline const float get_e2(void) const
+	inline float get_e2(void) const
 	{
 		return attitude.get_e2();
 	}
-	inline const float get_north(void) const
+	inline float get_north(void) const
 	{
 		return attitude.get_north();
 	}
-	inline const float get_east(void) const
+	inline float get_east(void) const
 	{
 		return attitude.get_east();
 	}
-	inline const float get_down(void) const
+	inline float get_down(void) const
 	{
 		return attitude.get_down();
 	}
@@ -98,10 +97,6 @@ public:
 	inline const float3vector &get_gyro_correction(void) const
 	{
 		return gyro_correction;
-	}
-	inline const float3matrix &get_nav2body( void) const
-	{
-	  return nav2body;
 	}
 	inline const float3matrix &get_body2nav( void) const
 	{
@@ -172,7 +167,6 @@ private:
   float3vector induction_nav_frame; 	//!< observed NAV induction
   float3vector expected_nav_induction;	//!< expected NAV induction
   float3matrix body2nav;
-  float3matrix nav2body;
   eulerangle<ftype> euler;
   float3vector control_body;
   ftype Ts;

@@ -57,7 +57,6 @@ AHRS_type::attitude_setup (const float3vector &acceleration,
   float3matrix coordinates (fcoordinates);
   attitude.from_rotation_matrix (coordinates);
   attitude.get_rotation_matrix (body2nav);
-  body2nav.transpose (nav2body);
   euler = attitude;
 }
 
@@ -94,7 +93,7 @@ AHRS_type::update_circling_state ()
 void
 AHRS_type::feed_compass_calibration (const float3vector &mag)
 {
-  float3vector expected_induction = nav2body * expected_nav_induction;
+  float3vector expected_induction = body2nav.reverse_map(expected_nav_induction);
 
   for (unsigned i = 0; i < 3; ++i)
     mag_calibrator[i].add_value (expected_induction.e[i], mag.e[i]);
@@ -153,7 +152,6 @@ AHRS_type::update_attitude ( const float3vector &acc,
   attitude.normalize ();
 
   attitude.get_rotation_matrix (body2nav);
-  body2nav.transpose (nav2body);
 
   acceleration_nav_frame = body2nav * acc;
   induction_nav_frame 	 = body2nav * mag;
@@ -214,7 +212,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   else
       nav_correction[DOWN]  =   heading_gnss_work * H_GAIN;
 
-  gyro_correction = nav2body * nav_correction;
+  gyro_correction = body2nav.reverse_map(nav_correction);
   gyro_correction *= P_GAIN;
 
   if (circle_state == STRAIGHT_FLIGHT)
@@ -290,7 +288,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	    mag_correction *= 4.0f; // normalize by vector projection magnitude
 
 	    nav_correction[DOWN] = mag_correction * M_H_GAIN;
-	    gyro_correction = nav2body * nav_correction;
+	    gyro_correction = body2nav.reverse_map(nav_correction);
 	    gyro_correction *= P_GAIN;
 	    gyro_integrator += gyro_correction; // update integrator
 	  }
@@ -303,7 +301,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 		- nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
 
 	    nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
-	    gyro_correction = nav2body * nav_correction;
+	    gyro_correction = body2nav.reverse_map(nav_correction);
 	    gyro_correction *= P_GAIN;
 	    feed_compass_calibration (mag_sensor);
 	  }

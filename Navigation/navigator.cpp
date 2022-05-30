@@ -58,7 +58,7 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
 				ahrs.get_circling_state ());
 
   float3vector relative_wind_NAV  = flight_observer.get_instant_wind() - wind_average_observer.get_value();
-  float3vector relative_wind_BODY =  ahrs.get_nav2body() * relative_wind_NAV;
+  float3vector relative_wind_BODY =  ahrs.get_body2nav().reverse_map(relative_wind_NAV);
   relative_wind_observer.update(relative_wind_BODY,
 				ahrs.get_euler ().y,
 				ahrs.get_circling_state ());

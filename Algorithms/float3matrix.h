@@ -8,7 +8,7 @@
 #ifndef FLOAT3MATRIX_H_
 #define FLOAT3MATRIX_H_
 
-#include "arm_math.h"
+#include "embedded_math.h"
 #include "matrix.h"
 #include "float3vector.h"
 
@@ -34,6 +34,20 @@ public:
 	void transpose( float3matrix &result);
 	float3vector operator *( const float3vector& right) const;
 	float3matrix operator *( const float3matrix& right) const;
+	float3vector reverse_map( const float3vector& right) const
+        {
+                float3vector ret;
+                for( unsigned k=0; k<3; ++k)
+                {
+                        ret[k]=ZERO;
+                        for( unsigned i=0; i<3; ++i)
+                        {	// multiply by transposed matrix
+                                ret[k] += matrix<float, 3>::e[i][k] * right.e[i];
+                        }
+                }
+                return ret;
+        }
+
 private:
 	arm_matrix_instance_f32 ami;
 };
