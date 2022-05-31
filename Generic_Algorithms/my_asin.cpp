@@ -16,9 +16,8 @@
 //#include "fdlibm.h"
 #include <stdint.h>
 #include "embedded_memory.h"
-#include "arm_math.h"
+#include "embedded_math.h"
 #include "asin_atan.h"
-#include "vsqrtf.h"
 
 static float ROM
 one =  1.0000000000e+00, /* 0x3F800000 */

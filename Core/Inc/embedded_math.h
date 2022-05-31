@@ -6,8 +6,8 @@
 #ifndef INC_EMBEDDED_MATH_H_
 #define INC_EMBEDDED_MATH_H_
 
-#include "vsqrtf.h"
 #include "asin_atan.h"
+#include "arm_math.h"
 
 typedef float ftype;
 
@@ -29,5 +29,12 @@ typedef float ftype;
 
 inline int ROUND(float x) { return (int)((x) + 0.5f);}
 #define CLIP( x, min, max) ((x) < (min) ? (min) : (x) > (max) ? (max) : (x))
+
+__attribute__((always_inline)) static float inline VSQRTF(float op1)
+  {
+  	float result;
+  	asm volatile ("vsqrt.f32 %0, %1" : "=&w" (result) : "w" (op1) );
+  	return (result);
+  }
 
 #endif /* INC_EMBEDDED_MATH_H_ */

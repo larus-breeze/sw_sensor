@@ -26,8 +26,8 @@ public:
 
   void update (const float3vector &current_value, const float3vector & heading_vector, circle_state_t state)
   {
-    stage_1_N = stage_1_N * beta_max + current_value.e[NORTH] * ( 1.0f - beta_max);
-    stage_1_E = stage_1_E * beta_max + current_value.e[EAST]  * ( 1.0f - beta_max);
+    stage_1_N = stage_1_N * beta_max + current_value.e[NORTH] * ( ONE - beta_max);
+    stage_1_E = stage_1_E * beta_max + current_value.e[EAST]  * ( ONE - beta_max);
 
     --decimating_counter;
     if( decimating_counter == 0)
@@ -40,14 +40,14 @@ public:
 	if( state == STRAIGHT_FLIGHT) // todo patch
 	  {
 	    beta_N = beta_E = beta_max;
-	    alpha_N = alpha_E = 1.0f - beta_max;
+	    alpha_N = alpha_E = ONE - beta_max;
 	  }
 	else
 	  {
-	    alpha_N = (1.0f - beta_max) * SQR( heading_vector.e[NORTH]);
-	    alpha_E = (1.0f - beta_max) * SQR( heading_vector.e[EAST]);
-	    beta_N = 1.0f - alpha_N;
-	    beta_E = 1.0f - alpha_E;
+	    alpha_N = (ONE - beta_max) * SQR( heading_vector.e[NORTH]);
+	    alpha_E = (ONE - beta_max) * SQR( heading_vector.e[EAST]);
+	    beta_N = ONE - alpha_N;
+	    beta_E = ONE - alpha_E;
 	  }
 #if 0 // todo remove test
 	probe[0] = alpha_N;
@@ -58,7 +58,7 @@ public:
       }
 
     if( !isnormal( present_output.e[EAST]) || !isnormal( present_output.e[NORTH]))
-      present_output.e[NORTH] = present_output.e[EAST] = 0.0f;
+      present_output.e[NORTH] = present_output.e[EAST] = ZERO;
   }
 
  private:

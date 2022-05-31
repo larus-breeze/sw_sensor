@@ -8,6 +8,7 @@
 #include "FreeRTOS_wrapper.h"
 #include "stm32f4xx_hal.h"
 #include "GNSS.h"
+#include "GNSS_driver.h"
 
 #if RUN_GNSS
 

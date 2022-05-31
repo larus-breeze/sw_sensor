@@ -11,8 +11,7 @@
 #define assert(x)
 #endif
 
-#include "arm_math.h"
-#include "vsqrtf.h"
+#include "embedded_math.h"
 
 template <class datatype, int size> class matrix;
 template <class datatype> class Cbn;

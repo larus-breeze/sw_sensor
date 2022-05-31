@@ -14,7 +14,6 @@
 #include "euler.h"
 #include "asin_atan.h"
 #include "arm_math.h"
-#include "vsqrtf.h"
 
 //! quaternion - special form of vector<4>
 template <class datatype > class quaternion: public vector <datatype, 4>

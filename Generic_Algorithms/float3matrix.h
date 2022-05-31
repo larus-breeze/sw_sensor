@@ -32,20 +32,32 @@ public:
 			ami.pData=(float*)matrix<float, 3>::e;
 		}
 	void transpose( float3matrix &result);
-	float3vector operator *( const float3vector& right) const;
+	float3vector operator *( const float3vector& right) const
+        {
+          float3vector ret;
+          for( unsigned k=0; k<3; ++k)
+          {
+                  ret[k]=ZERO;
+                  for( unsigned i=0; i<3; ++i)
+                  {	// multiply by transposed matrix
+                          ret[k] += matrix<float, 3>::e[k][i] * right.e[i];
+                  }
+          }
+          return ret;
+        }
 	float3matrix operator *( const float3matrix& right) const;
 	float3vector reverse_map( const float3vector& right) const
         {
-                float3vector ret;
-                for( unsigned k=0; k<3; ++k)
-                {
-                        ret[k]=ZERO;
-                        for( unsigned i=0; i<3; ++i)
-                        {	// multiply by transposed matrix
-                                ret[k] += matrix<float, 3>::e[i][k] * right.e[i];
-                        }
-                }
-                return ret;
+          float3vector ret;
+          for( unsigned k=0; k<3; ++k)
+          {
+                  ret[k]=ZERO;
+                  for( unsigned i=0; i<3; ++i)
+                  {	// multiply by transposed matrix
+                          ret[k] += matrix<float, 3>::e[i][k] * right.e[i];
+                  }
+          }
+          return ret;
         }
 
 private:

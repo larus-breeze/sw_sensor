@@ -33,7 +33,6 @@ void flight_observer_t::update (
       vario_uncompensated_GNSS = KalmanVario_GNSS.update ( pressure_altitude, ahrs_acceleration.e[DOWN]);
       // this time use pressure vario
       vario_averager_GNSS.respond( speed_compensation_TAS  - vario_uncompensated_pressure);
-      return;
     }
   else
     {
@@ -52,10 +51,6 @@ void flight_observer_t::update (
 
       speed_compensation_GNSS = speed_compensation_fusioner.respond( speed_compensation, speed_compensation_TAS);
       vario_averager_GNSS.respond( speed_compensation_GNSS - vario_uncompensated_GNSS);
-
-#if N_PROBES == 5
-      probe[0] = speed_compensation;
-#endif
     }
 }
 

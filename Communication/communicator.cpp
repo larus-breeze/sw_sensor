@@ -13,8 +13,8 @@
 #include "NMEA_format.h"
 #include "common.h"
 #include "CAN_output.h"
-#include "usart3_driver.h"
-#include "usart4_driver.h"
+#include "D_GNSS_driver.h"
+#include "GNSS_driver.h"
 #include "CAN_distributor.h"
 
 extern "C" void sync_logger (void);

@@ -9,7 +9,7 @@
 
 #include "my_assert.h"
 #include "float3matrix.h"
-#include "arm_math.h"
+#include "embedded_math.h"
 
 void float3matrix::transpose( float3matrix &result)
 {
@@ -22,7 +22,7 @@ void float3matrix::transpose( float3matrix &result)
 	to.pData=(float *)(&(result.e));
 	(void)arm_mat_trans_f32( &from, &to);
 }
-
+#if 0
 float3vector float3matrix::operator *( const float3vector& right) const
 {
 	float3vector ret;
@@ -37,7 +37,7 @@ float3vector float3matrix::operator *( const float3vector& right) const
 	(void)arm_mat_mult_f32( &ami, &input, &ret_ami);
 	return ret;
 }
-
+#endif
 float3matrix float3matrix::operator *( const float3matrix& right) const
 {
 	float3matrix ret;

@@ -17,7 +17,7 @@
 #define B0 0.292893218813452
 #define B1 0.585786437626905
 #define B2 0.292893218813452
-#define A1 0.0
+#define A1 ZERO
 #define A2 0.171572875253810
 #define DESIGN_FREQUENCY 0.25
 
@@ -28,15 +28,15 @@ public:
 	pt2( basetype fcutoff) //! constructor taking Fc/Fs
 	{
 		basetype delta = SIN( M_PI * (DESIGN_FREQUENCY - fcutoff)) / SIN( M_PI * (fcutoff + DESIGN_FREQUENCY));
-		basetype a0x = A2 * SQR(delta) - A1 + 1.0;
-		basetype a1x = -2.0 * delta * A2 + (SQR(delta) + 1.0) * A1 - 2.0 * delta;
+		basetype a0x = A2 * SQR(delta) - A1 + ONE;
+		basetype a1x = -2.0 * delta * A2 + (SQR(delta) + ONE) * A1 - 2.0 * delta;
 		basetype a2x = A2 - delta * A1 + SQR(delta);
 
 		basetype b0x = B2 * SQR( delta) - B1 * delta + B0;
 		basetype b1x = - 2.0 * delta * B2 + (SQR(delta) + 1) * B1 - 2.0 * delta * B0;
 		basetype b2x = B2 - delta * B1 + SQR( delta) * B0;
 
-		// normalize denominator a0 = 1.0
+		// normalize denominator a0 = ONE
 		a1 = a1x / a0x;
 		a2 = a2x / a0x;
 		b0 = b0x / a0x;
