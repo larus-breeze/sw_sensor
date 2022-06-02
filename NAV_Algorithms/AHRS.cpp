@@ -6,9 +6,12 @@
 
 #include <AHRS.h>
 #include "system_configuration.h"
-#include "my_assert.h"
 #include "GNSS.h"
 #include "embedded_memory.h"
+
+#if USE_HARDWARE_EEPROM	== 0
+#include "EEPROM_emulation.h"
+#endif
 
 #define P_GAIN 0.03f			//!< Attitude controller: proportional gain
 #define I_GAIN 0.00006f 		//!< Attitude controller: integral gain
@@ -109,7 +112,9 @@ AHRS_type::AHRS_type (float sampling_time)
   nick_angle_averager( ANGLE_F_BY_FS),
   G_load_averager(     G_LOAD_F_BY_FS),
   antenna_DOWN_correction(  configuration( ANT_SLAVE_DOWN)  / configuration( ANT_BASELENGTH)),
-  antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH))
+  antenna_RIGHT_correction( configuration( ANT_SLAVE_RIGHT) / configuration( ANT_BASELENGTH)),
+  circle_state( STRAIGHT_FLIGHT),
+  turn_rate( ZERO)
 {
   float inclination=configuration(INCLINATION);
   declination=configuration(DECLINATION);
@@ -201,7 +206,7 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   nav_correction[NORTH] = - nav_acceleration.e[EAST]  + GNSS_acceleration.e[EAST];
   nav_correction[EAST]  = + nav_acceleration.e[NORTH] - GNSS_acceleration.e[NORTH];
 
-  if( USE_CROSS_ACCELERATION_WHILE_CIRCLING && (circle_state == CIRCLING)) // heading correction using acceleration cross product GNSS * INS
+  if( circle_state == CIRCLING) // heading correction using acceleration cross product GNSS * INS
     {
       float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
 	   + nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
@@ -306,9 +311,6 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 	    feed_compass_calibration (mag_sensor);
 	  }
 	  break;
-	default:
-	  ASSERT(0);
-	  break;
 	}
 
       gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
@@ -331,6 +333,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 
 void AHRS_type::handle_magnetic_calibration (void) const
 {
+#if WRITE_MAG_CALIB_EEPROM
   if( false == compass_calibration.isCalibrationDone())
     return;
 
@@ -340,8 +343,7 @@ void AHRS_type::handle_magnetic_calibration (void) const
       (       compass_calibration.parameters_changed_significantly())
       )
     {
-      lock_EEPROM( false);
       compass_calibration.write_into_EEPROM();
-      lock_EEPROM( true);
     }
+#endif
 }

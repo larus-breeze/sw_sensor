@@ -7,7 +7,6 @@
 #include "embedded_memory.h"
 #include "embedded_math.h"
 #include "ascii_support.h"
-#include "my_assert.h"
 #include <stdlib.h>
 
 float string2float(char *input)
@@ -176,7 +175,7 @@ char * my_ftoa( char * target, float value)
 
 void portable_ftoa ( float value, char* res, unsigned  no_of_decimals, unsigned res_len )
 {
-	ASSERT( no_of_decimals <= res_len-2);
+//	ASSERT( no_of_decimals <= res_len-2);
 
 	unsigned i=no_of_decimals;
 	while( i-- > 0)

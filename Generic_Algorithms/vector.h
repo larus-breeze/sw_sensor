@@ -26,10 +26,13 @@ class vector
 	friend class Cbn<datatype>;
 public:
 
-//	vector( const datatype * data = 0);
-	vector( const datatype *data=(const datatype *)0);
+	vector( void)
+	{
+	    for( int i=0; i < size; ++i)
+	      e[i]=ZERO;
+	}
+	vector( const datatype *data);
 	vector( const vector & right);
-
 
 	datatype scalar_multiply( const vector & right) const //!< scalar product
 	{
@@ -60,7 +63,7 @@ public:
 		datatype squaresum=datatype();
 		for( int i=0; i< size; ++i)
 			squaresum += (e[i]*e[i]);
-		return (datatype) VSQRTF( squaresum);
+		return (datatype) SQRT( squaresum);
 	};
 
 	vector & operator =  ( const vector & right);

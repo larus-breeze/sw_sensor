@@ -1,8 +1,11 @@
 #include "system_configuration.h"
-#include "my_assert.h"
-#include "eeprom.h"
 #include "embedded_memory.h"
+#include "embedded_math.h"
 #include "persistent_data.h"
+
+#if USE_HARDWARE_EEPROM
+#include "eeprom.h"
+#endif
 
 ROM persistent_data_t PERSISTENT_DATA[]=
     {
@@ -47,6 +50,8 @@ const persistent_data_t * find_parameter_from_ID( EEPROM_PARAMETER_ID id)
       return parameter;
   return 0;
 }
+
+#if USE_HARDWARE_EEPROM
 
 #define READ true
 #define WRITE false
@@ -163,7 +168,7 @@ float configuration( EEPROM_PARAMETER_ID id)
 {
   float value;
   bool result = read_EEPROM_value( id, value);
-  ASSERT( result == false);
+//  ASSERT( result == false);
   return value;
 }
 
@@ -172,10 +177,12 @@ bool EEPROM_initialize( void)
   unsigned status;
 
   status = HAL_FLASH_Unlock();
-  ASSERT(status == HAL_OK);
+//  ASSERT(status == HAL_OK);
 
   status = EE_Init();
-  ASSERT(status == HAL_OK);
+//  ASSERT(status == HAL_OK);
 
   return HAL_OK;
 }
+
+#endif

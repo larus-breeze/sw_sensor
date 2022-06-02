@@ -8,10 +8,9 @@
 #define APPLICATION_KALMANVARIO_H_
 
 #include "embedded_memory.h"
+#include "embedded_math.h"
 #include <stdint.h>
-#include "arm_math.h"
 #include "system_configuration.h"
-#include "common.h"
 
 class KalmanVario_t
 {
@@ -36,7 +35,7 @@ public:
     ALTITUDE, VARIO, ACCELERATION_OBSERVED, ACCELERATION_OFFSET
   }  state;
 
-  KalmanVario_t ( float _x=0.0, float v=0.0, float a=0.0, float a_offset=0.0f)
+  KalmanVario_t ( float _x=ZERO, float v=ZERO, float a=ZERO, float a_offset=ZERO)
     : x{_x, v, a, a_offset}
   {}
 

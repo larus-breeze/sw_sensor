@@ -8,7 +8,6 @@
 #ifndef LINEAR_LEAST_SQUARE_FIT_H_
 #define LINEAR_LEAST_SQUARE_FIT_H_
 
-#include "my_assert.h"
 #include "embedded_math.h"
 
 template<typename type>
@@ -57,7 +56,7 @@ template<typename type>
       type Qy = sum_yy - inv_n * sum_y * sum_y;
       type Qxy = sum_xy - inv_n * sum_x * sum_y;
 
-      ASSERT( n > TWO);
+//      ASSERT( n > TWO);
       type Vyx = (Qy - Qxy * Qxy / Qx) / (n - TWO);
 
       b = Qxy * invQx;

@@ -98,7 +98,7 @@ public:
 	{
 		return gyro_correction;
 	}
-	inline const float3matrix &get_body2nav( void) const
+	inline const float3matrix &get_body2nav( void)
 	{
 	  return body2nav;
 	}

@@ -3,8 +3,6 @@
 
 #include "stdint.h"
 
-#define M_PI_F 3.14159265358979323846f // todo find correct placing
-
 #ifdef __cplusplus
 
 typedef union

@@ -4,7 +4,6 @@
 #include <AHRS.h>
 #define SQR(x) ((x)*(x))
 #include "pt2.h"
-#include "my_assert.h"
 
 #define ONE_DIV_2PI 0.159155f
 #define PI_TIMES_2 6.2832f
@@ -14,12 +13,11 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false>
   {
   public:
     smart_averager (float cutoff_div_fsample) :
-	active_state (STRAIGHT_FLIGHT), present_output
-	  { 0 }, averager (cutoff_div_fsample)
+	active_state (STRAIGHT_FLIGHT),
+	averager (cutoff_div_fsample)
     {
       fill_recordings_with_old_average ();
-    }
-    ;
+    };
 
     value_t
     get_value (void) const
@@ -31,7 +29,7 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false>
     update (const value_t &current_value, float heading,
 	    circle_state_t new_state)
     {
-      if (heading < 0.0f)
+      if (heading < ZERO)
 	heading += PI_TIMES_2;
 
       switch (active_state)
@@ -81,7 +79,7 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false>
     record_input (value_t current_value, float heading)
     {
       unsigned index = (unsigned) (heading * ONE_DIV_2PI * N_SECTORS);
-      ASSERT(index < N_SECTORS);
+//      ASSERT(index < N_SECTORS);
 
       sector_averages[index] = sector_averages[index] * 0.75f
 	  + current_value * 0.25f;

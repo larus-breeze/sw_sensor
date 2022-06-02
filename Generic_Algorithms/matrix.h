@@ -1,5 +1,5 @@
 /***********************************************************************//**
- * @file		matrix.hpp
+ * @file		matrix.h
  * @brief		matrix class implementation
  * @author		Dr. Klaus Schaefer
  **************************************************************************/
@@ -16,10 +16,10 @@ template <class datatype, int size> class matrix
    {
 public:
 //! default constructor creates unity matrix
-   matrix();
+   matrix(void);
    //! constructor from array data
    //! elements are assumed to come line by line
-   matrix( const datatype *data=0);
+   matrix( const datatype *data);
       //! constructor from array data
       //! elements are assumed to come line by line
    matrix( const datatype data[size][size]);
@@ -28,8 +28,10 @@ public:
 
 //! copy assignment operator
    matrix & operator =  ( const matrix & right);
-//! multiplication (matrix times vector) -> vector
-      vector <datatype, size> operator *( const vector <datatype, size> & right);
+   //! multiplication (matrix times vector) -> vector
+ vector <datatype, size> operator *( const vector <datatype, size> & right) const;
+ //! multiplication (matrix times vector) -> vector
+ vector <datatype, size> reverse_map( const vector <datatype, size> & right) const;
 //! matrix transposition
       matrix<datatype, size> transpose(void);
 
@@ -88,7 +90,7 @@ template <class datatype, int size> matrix <datatype, size> & matrix <datatype, 
    }
 
 template <class datatype, int size>
- vector <datatype, size> matrix <datatype, size>::operator *( const vector <datatype, size> & right)    //returns a vector<datatype, size> and
+ vector <datatype, size> matrix <datatype, size>::operator *( const vector <datatype, size> & right) const   //returns a vector<datatype, size> and
    {                                                                      //actual object is matrix<datatype, size>
    vector <datatype, size> retv;
    datatype tmp;
@@ -97,6 +99,21 @@ template <class datatype, int size>
       tmp=0.0;
       for( int col=0; col<size; ++col)
          tmp+=e[row][col]*right.e[col];
+      retv.e[row]=tmp;
+      }
+   return retv;
+   }
+
+template <class datatype, int size>
+ vector <datatype, size> matrix <datatype, size>::reverse_map( const vector <datatype, size> & right)  const //returns a vector<datatype, size> and
+   {                                                                      //actual object is matrix<datatype, size>
+   vector <datatype, size> retv;
+   datatype tmp;
+   for( int row=0; row<size; ++row)
+      {
+      tmp=0.0;
+      for( int col=0; col<size; ++col)
+         tmp+=e[col][row]*right.e[col];
       retv.e[row]=tmp;
       }
    return retv;

@@ -27,7 +27,9 @@ public:
 	 vario_integrator( configuration( VARIO_INT_TC)),
 	 wind_average_observer( configuration( MEAN_WIND_TC)),
 	 relative_wind_observer( configuration( MEAN_WIND_TC)),
-	 corrected_wind_averager( 1.0f / 15.0f / 10.0f) 	// 15s @ 10Hz
+	 corrected_wind_averager( 1.0f / 15.0f / 10.0f), 	// 15s @ 10Hz
+	 GNSS_speed( ZERO),
+	 GNSS_altitude( ZERO)
   {  };
 
   void set_density_data( float temperature, float humidity)
@@ -121,8 +123,8 @@ private:
   float 	TAS;
   float 	IAS;
 
-  float3vector 	GNSS_velocity;
-  float		GNSS_speed;
+  float3vector 	GNSS_velocity; //!< 3-dim velocity
+  float		GNSS_speed;	//!< ground speed as reported from GNSS
   float3vector 	GNSS_acceleration;
   float 	GNSS_heading;
   float 	GNSS_altitude;
@@ -131,7 +133,7 @@ private:
   flight_observer_t 	flight_observer;
   smart_averager< float> 	vario_integrator;
   smart_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
-  smart_averager< float3vector> relative_wind_observer; // configure wind average clamping on first circle
+  smart_averager< float3vector> relative_wind_observer;
   pt2<float3vector,float> corrected_wind_averager;
 };
 

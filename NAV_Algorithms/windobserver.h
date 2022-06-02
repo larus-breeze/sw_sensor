@@ -18,6 +18,8 @@ public:
   {
 //  beta_max = exp( - T_sample / Tau );
     beta_max = 0.982f; // todo implement correct parameter setup
+    stage_1_N = ZERO;
+    stage_1_E = ZERO;
   }
   const float3vector & get_output( void) const
   {

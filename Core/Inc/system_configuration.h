@@ -14,8 +14,10 @@ extern float * probe; // debugging probes
 
 #define PARALLEL_MAGNETIC_AHRS		0 // run second AHRS without SAT compass usage
 
+#define WRITE_MAG_CALIB_EEPROM		1
 #define LOG_MAGNETIC_CALIBRATION 	0
 #define WRITE_EEPROM_DEFAULTS		0
+#define USE_HARDWARE_EEPROM		1
 
 #define DKCOM 				0
 

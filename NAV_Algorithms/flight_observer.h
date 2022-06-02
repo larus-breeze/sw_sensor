@@ -10,9 +10,12 @@
 #include "GNSS.h"
 #include <differentiator.h>
 #include "KalmanVario.h"
-#include "delay_line.h"
 #include "embedded_math.h"
 #include "windobserver.h"
+
+#if USE_HARDWARE_EEPROM	== 0
+#include "EEPROM_emulation.h"
+#endif
 
 #include "pt2.h"
 #include "HP_LP_fusion.h"
@@ -26,6 +29,10 @@ public:
   vario_averager_GNSS( configuration( VARIO_TC)),
   windspeed_instant_observer( configuration( WIND_TC)),
   kinetic_energy_differentiator( 1.0f, 1.0f / 100.0f),
+  speed_compensation_TAS( ZERO),
+  speed_compensation_GNSS( ZERO),
+  vario_uncompensated_GNSS( ZERO),
+  vario_uncompensated_pressure( ZERO),
   speed_compensation_fusioner( 0.998f),
   KalmanVario_GNSS( 0.0f, 0.0f, 0.0f, -9.81f),
   KalmanVario_pressure( 0.0f, 0.0f, 0.0f, -9.81f)

@@ -13,7 +13,6 @@
 #include "float3vector.h"
 #include "euler.h"
 #include "asin_atan.h"
-#include "arm_math.h"
 
 //! quaternion - special form of vector<4>
 template <class datatype > class quaternion: public vector <datatype, 4>
@@ -141,12 +140,12 @@ public:
 	void from_euler( datatype p, datatype q, datatype r)
 	{
 		p *= HALF; q *= HALF; r *= HALF;
-		register datatype sinphi   = SIN( p);
-		register datatype cosphi   = COS( p);
-		register datatype sintheta = SIN( q);
-		register datatype costheta = COS( q);
-		register datatype sinpsi   = SIN( r);
-		register datatype cospsi   = COS( r);
+		datatype sinphi   = SIN( p);
+		datatype cosphi   = COS( p);
+		datatype sintheta = SIN( q);
+		datatype costheta = COS( q);
+		datatype sinpsi   = SIN( r);
+		datatype cospsi   = COS( r);
 
 		vector<datatype, 4>::e[0] = cosphi*costheta*cospsi + sinphi*sintheta*sinpsi;
 		vector<datatype, 4>::e[1] = sinphi*costheta*cospsi + cosphi*sintheta*sinpsi;
