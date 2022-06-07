@@ -119,7 +119,8 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	GNSS_new_data_ready = true;
 
 	fix_type = (FIX_TYPE) (pvt.fix_type);
-	if (( (pvt.fix_flags & 1) == 0) || (pvt.sAcc > 250)) // todo modify me for M9N GNSS support
+	if( (pvt.fix_flags & 1) == 0)	// todo someday modify me for aerobatics support
+	//	if (( (pvt.fix_flags & 1) == 0) || (pvt.sAcc > 250)) // todo modify me for M9N GNSS support
 //	if (( (pvt.fix_flags & 1) == 0) || (pvt.sAcc > 1000)) // todo patch number 1000 just an estimate
 	  {
 	  coordinates.velocity[NORTH] 		= NAN; // todo remove NAN usage !
