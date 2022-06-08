@@ -11,7 +11,6 @@ COMMON int64_t FAT_time; //!< DOS FAT time for file usage
 
 #define SCALE_MM 0.001f
 #define SCALE_CM 0.01f
-#define SCALE_MM_NEG -0.001f
 #define DEG_2_METER 111111.111e-7f // (10000 / 90) m / degree on great circle
 #define ANGLE_SCALE (double)1e-7
 
@@ -79,7 +78,7 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	coordinates.position[EAST] = (double) (pvt.longitude - longitude_reference)
 			* latitude_scale;
 
-	coordinates.position[DOWN] = (double)(pvt.height) * SCALE_MM_NEG;
+	coordinates.position[DOWN] = (double)(pvt.height) * SCALE_MM;
 	coordinates.geo_sep_dm = (pvt.height_ellip - pvt.height) * SCALE_CM;
 
 	// record new time
