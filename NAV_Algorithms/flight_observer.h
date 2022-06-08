@@ -10,6 +10,7 @@
 #include "GNSS.h"
 #include <differentiator.h>
 #include "KalmanVario.h"
+#include "KalmanVario_PVA.h"
 #include "embedded_math.h"
 #include "windobserver.h"
 
@@ -87,7 +88,7 @@ public:
 
 	float get_effective_vertical_acceleration( void) const
 	{
-		return KalmanVario_GNSS.get_x( KalmanVario_t::ACCELERATION_OBSERVED);
+		return KalmanVario_GNSS.get_x( KalmanVario_PVA_t::ACCELERATION_OBSERVED);
 	}
 
 private:
@@ -104,7 +105,7 @@ private:
 
 	HP_LP_fusion <float> speed_compensation_fusioner;
 
-	KalmanVario_t KalmanVario_GNSS;
+	KalmanVario_PVA_t KalmanVario_GNSS;
 	KalmanVario_t KalmanVario_pressure;
 };
 

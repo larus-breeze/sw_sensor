@@ -30,7 +30,7 @@ void flight_observer_t::update (
   if( isnan( gnss_acceleration.e[NORTH])) // no GNSS fix by now
     {
       // workaround for no GNSS fix: maintain GNSS vario with pressure data
-      vario_uncompensated_GNSS = KalmanVario_GNSS.update ( pressure_altitude, ahrs_acceleration.e[DOWN]);
+      vario_uncompensated_GNSS = KalmanVario_GNSS.update ( pressure_altitude, ZERO, ahrs_acceleration.e[DOWN]); // todo MURX: what can we do without vertical speed information ?
       // this time use pressure vario
       vario_averager_GNSS.respond( speed_compensation_TAS  - vario_uncompensated_pressure);
     }
@@ -40,13 +40,13 @@ void flight_observer_t::update (
       windspeed_instant_observer.update( gnss_velocity - air_velocity, heading_vector, circle_state);
 
       // non TEC compensated vario, negative if *climbing* !
-      vario_uncompensated_GNSS = KalmanVario_GNSS.update ( GNSS_altitude, ahrs_acceleration.e[DOWN]);
+      vario_uncompensated_GNSS = KalmanVario_GNSS.update ( GNSS_altitude, gnss_velocity.e[DOWN], ahrs_acceleration.e[DOWN]);
 
       float speed_compensation =
     		  (
     		      ((gnss_velocity.e[NORTH] - wind_average.e[NORTH]) * gnss_acceleration.e[NORTH]) +
     		      ((gnss_velocity.e[EAST]  - wind_average.e[EAST])  * gnss_acceleration.e[EAST])  +
-    		      (KalmanVario_GNSS.get_x(KalmanVario_t::VARIO) * KalmanVario_GNSS.get_x(KalmanVario_t::ACCELERATION_OBSERVED))
+    		      (KalmanVario_GNSS.get_x(KalmanVario_PVA_t::VARIO) * KalmanVario_GNSS.get_x(KalmanVario_PVA_t::ACCELERATION_OBSERVED))
     		   ) * RECIP_GRAVITY;
 
       speed_compensation_GNSS = speed_compensation_fusioner.respond( speed_compensation, speed_compensation_TAS);
