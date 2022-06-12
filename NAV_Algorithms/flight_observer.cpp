@@ -49,8 +49,8 @@ void flight_observer_t::update (
     		      (KalmanVario_GNSS.get_x(KalmanVario_PVA_t::VARIO) * KalmanVario_GNSS.get_x(KalmanVario_PVA_t::ACCELERATION_OBSERVED))
     		   ) * RECIP_GRAVITY;
 
-      speed_compensation_GNSS = speed_compensation_fusioner.respond( speed_compensation, speed_compensation_TAS);
-      vario_averager_GNSS.respond( speed_compensation_GNSS - vario_uncompensated_GNSS);
+//      speed_compensation_GNSS = speed_compensation_fusioner.respond( speed_compensation, speed_compensation_TAS);
+      vario_averager_GNSS.respond( speed_compensation - vario_uncompensated_GNSS);
     }
 }
 
