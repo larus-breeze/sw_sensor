@@ -145,6 +145,11 @@ public:
     return declination;
   }
 
+  float
+  getHeadingDifferenceAhrsDgnss () const
+  {
+    return heading_difference_AHRS_DGNSS;
+  }
 
 private:
   quaternion<ftype>attitude;
@@ -179,6 +184,7 @@ private:
   compass_calibration_t compass_calibration;
   float antenna_DOWN_correction;  //!< slave antenna lower / DGNSS base length
   float antenna_RIGHT_correction; //!< slave antenna more right / DGNSS base length
+  float heading_difference_AHRS_DGNSS;
 };
 
 #endif /* AHRS_H_ */

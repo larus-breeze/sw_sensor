@@ -203,6 +203,8 @@ AHRS_type::update_diff_GNSS (const float3vector &gyro,
   if (heading_gnss_work < -M_PI_F)
     heading_gnss_work += 2.0f * M_PI_F;
 
+  heading_difference_AHRS_DGNSS = heading_gnss_work;
+
   nav_correction[NORTH] = - nav_acceleration.e[EAST]  + GNSS_acceleration.e[EAST];
   nav_correction[EAST]  = + nav_acceleration.e[NORTH] - GNSS_acceleration.e[NORTH];
 

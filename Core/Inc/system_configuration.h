@@ -17,7 +17,9 @@ extern float * probe; // debugging probes
 #define WRITE_MAG_CALIB_EEPROM		1
 #define LOG_MAGNETIC_CALIBRATION 	1
 #define WRITE_EEPROM_DEFAULTS		0
-#define USE_HARDWARE_EEPROM		1
+#define USE_HARDWARE_EEPROM			1
+#define WITH_DENSITY_DATA			1
+#define GNSS_VERTICAL_SPEED_INVERTED 0 // for simulation with old data
 
 #define DKCOM 				0
 

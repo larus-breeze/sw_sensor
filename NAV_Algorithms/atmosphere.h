@@ -39,7 +39,7 @@ public:
   {
     return  (1.0496346613e-5f * pressure + 0.1671546011f);
   }
-  float get_altitude( void) const //!< get NEGATIVE altitude
+  float get_negative_altitude( void) const
   {
     float tmp = 8.104381531e-4f * pressure;
     return - tmp * tmp  + 0.20867299170f * pressure - 14421.43945f;

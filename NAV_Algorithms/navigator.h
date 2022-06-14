@@ -29,7 +29,7 @@ public:
 	 relative_wind_observer( configuration( MEAN_WIND_TC)),
 	 corrected_wind_averager( 1.0f / 15.0f / 10.0f), 	// 15s @ 10Hz
 	 GNSS_speed( ZERO),
-	 GNSS_altitude( ZERO)
+	 GNSS_negative_altitude( ZERO)
   {  };
 
   void set_density_data( float temperature, float humidity)
@@ -66,7 +66,7 @@ public:
 
   void reset_altitude( void)
   {
-    flight_observer.reset( atmosphere.get_altitude(), GNSS_altitude);
+    flight_observer.reset( atmosphere.get_negative_altitude(), GNSS_negative_altitude);
   }
   /**
    * @brief update pitot pressure
@@ -127,7 +127,7 @@ private:
   float		GNSS_speed;	//!< ground speed as reported from GNSS
   float3vector 	GNSS_acceleration;
   float 	GNSS_heading;
-  float 	GNSS_altitude;
+  float 	GNSS_negative_altitude;
   unsigned	GNSS_fix_type;
 
   flight_observer_t 	flight_observer;

@@ -30,8 +30,10 @@ typedef struct
   float static_sensor_temperature;  //log temperature to monitor temperature in enclosure
   float absolute_sensor_temperature;
   float supply_voltage;  //Measuring the supply voltage. Might be related to sensor noise.
+#if WITH_DENSITY_DATA
   float outside_air_temperature; //!< OAT from external sensor if installed
   float outside_air_humidity; //!< 0.0 -> 1.0 NOT percent
+#endif
 } measurement_data_t;
 
 typedef struct
@@ -73,6 +75,8 @@ typedef struct
   eulerangle<float> euler_magnetic;
   quaternion<float> q_magnetic;
 #endif
+
+  float HeadingDifferenceAhrsDgnss;
 
 #if N_PROBES > 0
   float probe[N_PROBES];
