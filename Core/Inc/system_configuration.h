@@ -96,7 +96,7 @@ extern float * probe; // debugging probes
 
 #define NMEA_REPORTING_PERIOD	250 // period in clock ticks for NMEA output
 
-#define ACTIVATE_FPU_EXCEPTION_TRAP 1 // todo I want to be SET !
+#define ACTIVATE_FPU_EXCEPTION_TRAP 0 // todo I want to be SET !
 #define SET_FPU_FLUSH_TO_ZERO	1
 #define ACTIVATE_WATCHDOG	1
 #define WATCHDOG_STATISTICS 	0

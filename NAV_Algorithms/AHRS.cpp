@@ -164,7 +164,7 @@ AHRS_type::update_attitude ( const float3vector &acc,
 
   float3vector nav_rotation;
   nav_rotation = body2nav * gyro;
-  turn_rate = nav_rotation[DOWN];
+  turn_rate = nav_rotation.abs();
 
   slip_angle_averager.respond( ATAN2( -acc.e[RIGHT], -acc.e[DOWN]));
   nick_angle_averager.respond( ATAN2( +acc.e[FRONT], -acc.e[DOWN]));
