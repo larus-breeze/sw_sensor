@@ -244,7 +244,7 @@ data_logger_runnable (void*)
   setup_file_handling_completed.signal();
 
   // wait until a GNSS timestamp is available.
-  while (output_data.c.year == 0)
+  while (output_data.c.sat_fix_type == 0)
     {
       if( crashfile)
 	write_crash_dump();
