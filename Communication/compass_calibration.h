@@ -11,6 +11,7 @@
 #include "system_configuration.h"
 #include "float3vector.h"
 #include "Linear_Least_Square_Fit.h"
+#include "persistent_data.h"
 
 #if WRITE_MAG_CALIB_EEPROM
 #include "FreeRTOS_wrapper.h"
@@ -121,15 +122,12 @@ public:
   bool parameters_changed_significantly(void) const;
   void write_into_EEPROM( void) const;
   bool read_from_EEPROM( void); // false if OK
-private:
+// private:
   enum completeness_type { HAVE_NONE=0, HAVE_RIGHT=1, HAVE_LEFT=2, HAVE_BOTH=3};
   unsigned completeness; // bits from completeness_type
   bool calibration_done;
   calibration_t calibration[3];
 };
-
-#if WRITE_MAG_CALIB_EEPROM
-
 
 inline bool compass_calibration_t::parameters_changed_significantly (void) const
 {
@@ -160,10 +158,6 @@ inline void compass_calibration_t::write_into_EEPROM (void) const
     }
   write_EEPROM_value(MAG_STD_DEVIATION, SQRT( variance / 3.0f));
 }
-
-#endif
-
-#include "persistent_data.h"
 
 inline bool compass_calibration_t::read_from_EEPROM (void)
 {
