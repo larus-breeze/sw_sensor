@@ -38,8 +38,8 @@ extern float * probe; // debugging probes
 #define USE_CROSS_ACCELERATION_WHILE_CIRCLING true
 
 #define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
-#define MAG_CALIB_LETHARGY	0.8f // percentage of remaining old calibration info
-#define MAG_CALIBRATION_CHANGE_LIMIT 5.0e-4f // variance average of changes: 3 * { offset, scale }
+#define MAG_CALIB_LETHARGY	0.8f // percentage of remaining old calibration info todo tune this parameter
+#define MAG_CALIBRATION_CHANGE_LIMIT 2.5e-5f // variance average of changes: 3 * { var(offset), var(scale) }
 
 #if DKCOM == 1 // *******************************************************************
 
