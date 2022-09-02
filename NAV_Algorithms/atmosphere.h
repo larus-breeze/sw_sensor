@@ -8,6 +8,7 @@
 #define APPLICATION_ATMOSPHERE_H_
 
 #include "embedded_math.h"
+#include <air_density_observer.h>
 
 #define RECIP_STD_DENSITY_TIMES_2 1.632f
 
@@ -24,9 +25,18 @@ class atmosphere_t
 {
 public:
   atmosphere_t( float p_abs)
-  : pressure ( p_abs),
-    have_ambient_air_data(false)
+  :
+    have_ambient_air_data(false),
+    pressure ( p_abs),
+    temperature(20.0f),
+    humidity( 0.0f),
+    density_correction(1.0f),
+    QFF(101325)
   {}
+  void initialize( float altitude)
+  {
+    density_QFF_calculator.initialize(altitude);
+  }
   void set_pressure( float p_abs)
   {
     pressure = p_abs;
@@ -37,20 +47,14 @@ public:
   }
   float get_density( void) const
   {
-    return  (1.0496346613e-5f * pressure + 0.1671546011f);
-  }
-  float get_ICAO_density_from_altitude( float altitude)
-  {
-    return (0.998869040247678f +
-	   0.000000002858669f * altitude +
-	   -0.000093935526316f * altitude * altitude) * 1.2255f;
+    return  (1.0496346613e-5f * pressure + 0.1671546011f) * density_correction;
   }
   float get_negative_altitude( void) const
   {
     float tmp = 8.104381531e-4f * pressure;
     return - tmp * tmp  + 0.20867299170f * pressure - 14421.43945f;
   }
-  float get_TAS_from_dynamic_pressure( float dynamic_pressure, float altitude) const
+  float get_TAS_from_dynamic_pressure( float dynamic_pressure) const
   {
     return dynamic_pressure < 0.0f ? 0.0f : SQRT( 2 * dynamic_pressure / get_density());
   }
@@ -68,6 +72,22 @@ public:
   {
     have_ambient_air_data = false;
   }
+
+  float get_QFF () const
+  {
+    return QFF;
+  }
+
+  void feed_QFF_density_metering( float pressure, float MSL_altitude)
+    {
+    air_data_result result = density_QFF_calculator.feed_metering( pressure, MSL_altitude);
+      if( result.valid)
+	{
+	  QFF = result.QFF;
+	  density_correction = result.density_correction;
+	}
+    }
+
 private:
   float calculateGasConstantHumAir(
       float humidity, float pressure, float temperature);
@@ -78,7 +98,9 @@ private:
   float pressure;
   float temperature;
   float humidity;
-  float density;
+  float density_correction;
+  float QFF;
+  air_density_observer density_QFF_calculator;
 };
 
 #endif /* APPLICATION_ATMOSPHERE_H_ */

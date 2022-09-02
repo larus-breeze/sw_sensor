@@ -39,8 +39,12 @@ void flight_observer_t::update (
       float3vector air_velocity = heading_vector * TAS;
       windspeed_instant_observer.update( gnss_velocity - air_velocity, heading_vector, circle_state);
 
-      // get non TEC compensated vario, Kalman reports negative if *climbing* !
+      // non TEC compensated vario, negative if *climbing* !
+#if GNSS_VERTICAL_SPEED_INVERTED
+      vario_uncompensated_GNSS = - KalmanVario_GNSS.update ( GNSS_negative_altitude, - gnss_velocity.e[DOWN], ahrs_acceleration.e[DOWN]);
+#else
       vario_uncompensated_GNSS = - KalmanVario_GNSS.update ( GNSS_negative_altitude, gnss_velocity.e[DOWN], ahrs_acceleration.e[DOWN]);
+#endif
       float speed_compensation =
     		  (
     		      ((gnss_velocity.e[NORTH] - wind_average.e[NORTH]) * gnss_acceleration.e[NORTH]) +

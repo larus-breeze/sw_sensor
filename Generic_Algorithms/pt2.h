@@ -26,6 +26,8 @@ template <class datatype, class basetype> class pt2
 {
 public:
 	pt2( basetype fcutoff) //! constructor taking Fc/Fs
+	: input( datatype()),
+	  output( datatype())
 	{
 		basetype delta = SIN( M_PI * (DESIGN_FREQUENCY - fcutoff)) / SIN( M_PI * (fcutoff + DESIGN_FREQUENCY));
 		basetype a0x = A2 * SQR(delta) - A1 + ONE;

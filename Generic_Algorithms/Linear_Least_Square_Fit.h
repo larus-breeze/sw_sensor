@@ -10,19 +10,26 @@
 
 #include "embedded_math.h"
 
-template<typename type>
+template<typename sample_type>
   class linear_least_square_result
   {
   public:
-    type y_offset;
-    type slope;
-    type variance_offset;
-    type variance_slope;
+    linear_least_square_result(void)
+    : y_offset( sample_type()),
+      slope( sample_type()),
+      variance_offset( sample_type()),
+      variance_slope( sample_type()),
+      id(0)
+      {}
+      sample_type y_offset;
+    sample_type slope;
+    sample_type variance_offset;
+    sample_type variance_slope;
     uint32_t id; //!< channel identifier (for logging)
   };
 
 //! @brief linear fit y = a + b * x
-template<typename type>
+template<typename sample_type, typename evaluation_type=sample_type>
   class linear_least_square_fit
   {
   public:
@@ -31,7 +38,7 @@ template<typename type>
       reset ();
     }
     void
-    add_value (const type x, const type y)
+    add_value (const sample_type x, const sample_type y)
     {
       sum_x += x;
       sum_xx += x * x;
@@ -46,18 +53,18 @@ template<typename type>
       sum_x = sum_xx = sum_y = sum_yy = sum_xy = n = ZERO;
     }
     void
-    evaluate (type &a, type &b, type &variance_a, type &variance_b) const
+    evaluate (evaluation_type &a, evaluation_type &b, evaluation_type &variance_a, evaluation_type &variance_b) const
     {
-      type inv_n = ONE / n;
+      evaluation_type inv_n = (evaluation_type)ONE / n;
 
-      type x_mean = sum_x * inv_n;
-      type Qx = sum_xx - inv_n * sum_x * sum_x;
-      type invQx = ONE / Qx;
-      type Qy = sum_yy - inv_n * sum_y * sum_y;
-      type Qxy = sum_xy - inv_n * sum_x * sum_y;
+      evaluation_type x_mean = (evaluation_type)sum_x * inv_n;
+      evaluation_type Qx = (evaluation_type)sum_xx - inv_n * sum_x * sum_x;
+      evaluation_type invQx = (evaluation_type)ONE / Qx;
+      evaluation_type Qy = (evaluation_type)sum_yy - inv_n * sum_y * sum_y;
+      evaluation_type Qxy = (evaluation_type)sum_xy - inv_n * sum_x * sum_y;
 
 //      ASSERT( n > TWO);
-      type Vyx = (Qy - Qxy * Qxy / Qx) / (n - TWO);
+      evaluation_type Vyx = (Qy - Qxy * Qxy / Qx) / (n - TWO);
 
       b = Qxy * invQx;
       a = sum_y * inv_n - b * x_mean;
@@ -66,7 +73,7 @@ template<typename type>
       variance_b = Vyx * invQx;
     }
     void
-    evaluate (linear_least_square_result<type> &r) const
+    evaluate (linear_least_square_result<evaluation_type> &r) const
     {
       evaluate (r.y_offset, r.slope, r.variance_offset, r.variance_slope);
     }
@@ -75,13 +82,21 @@ template<typename type>
     {
       return (unsigned) n;
     }
+    sample_type get_mean_y( void) const
+    {
+      return sum_y / n;
+    }
+    sample_type get_mean_x( void) const
+    {
+      return sum_x / n;
+    }
   private:
-    type sum_x;
-    type sum_y;
-    type sum_xx;
-    type sum_yy;
-    type sum_xy;
-    type n;
+    sample_type sum_x;
+    sample_type sum_y;
+    sample_type sum_xx;
+    sample_type sum_yy;
+    sample_type sum_xy;
+    sample_type n;
   };
 
 #endif /* LINEAR_LEAST_SQUARE_FIT_H_ */

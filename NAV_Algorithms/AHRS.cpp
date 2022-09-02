@@ -275,7 +275,7 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
 
   else
     {
-      switch ( circle_state)
+    switch ( circle_state)
 	{
 	case STRAIGHT_FLIGHT:
 	case TRANSITION:
@@ -333,9 +333,100 @@ AHRS_type::update_compass (const float3vector &gyro, const float3vector &acc,
     }
 }
 
+#if 1 // SOFT_IRON_TEST
+/**
+ * @brief  update attitude from IMU data and magnetometer
+ */
+void
+AHRS_type::update_special (const float3vector &gyro, const float3vector &acc,
+			   const float3vector &mag_sensor,
+			   const float3vector &GNSS_acceleration)
+{
+  float3vector mag;
+  if (compass_calibration.isCalibrationDone ()) // use calibration if available
+      mag = compass_calibration.calibrate (mag_sensor);
+  else
+      mag = mag_sensor;
+
+#if 1
+  float temp = mag[FRONT];
+//  mag[FRONT] -= mag[RIGHT] * 0.05;
+//  mag[RIGHT] += temp * 0.05;
+#endif
+
+  float3vector nav_acceleration = body2nav * acc;
+  float3vector nav_induction    = body2nav * mag;
+
+  // calculate horizontal leveling error
+  nav_correction[NORTH] = -nav_acceleration.e[EAST]  + GNSS_acceleration.e[EAST];
+  nav_correction[EAST]  = +nav_acceleration.e[NORTH] - GNSS_acceleration.e[NORTH];
+
+  // *******************************************************************************************************
+  // calculate heading error depending on the present circling state
+  // on state changes handle MAG auto calibration
+
+  circle_state_t old_circle_state = circle_state;
+  update_circling_state ();
+
+  if (isnan( GNSS_acceleration.e[NORTH])) // no GNSS fix, fixme todo remove this section
+
+    // just keep gyro offsets but do not calculate correction
+      gyro_correction = gyro_integrator * I_GAIN;
+
+  else
+    {
+    switch ( circle_state)
+	{
+	case STRAIGHT_FLIGHT:
+	case TRANSITION:
+	  {
+	    // todo hier fehlt magnet-modell erde
+	    float mag_correction =
+		+ nav_induction[NORTH] * expected_nav_induction[EAST]
+		- nav_induction[EAST]  * expected_nav_induction[NORTH];
+
+#if 0 // thsi calculation is way too complicated
+	    mag_correction /= SQRT(
+		(SQR( nav_induction[NORTH]) + SQR(nav_induction[EAST])) *
+		(SQR( expected_nav_induction[NORTH])+SQR( expected_nav_induction[EAST]))
+		);
+#endif
+	    // todo needs to be uptdated if inclination is changed !
+	    mag_correction *= 4.0f; // normalize by vector projection magnitude
+
+	    nav_correction[DOWN] = mag_correction * M_H_GAIN;
+	    gyro_correction = body2nav.reverse_map(nav_correction);
+	    gyro_correction *= P_GAIN;
+	    gyro_integrator += gyro_correction; // update integrator
+	  }
+	  break;
+	  // *******************************************************************************************************
+	case CIRCLING:
+	  {
+	    float cross_correction = // vector cross product GNSS-acc und INS-acc -> heading error
+		+ nav_acceleration.e[NORTH] * GNSS_acceleration.e[EAST]
+		- nav_acceleration.e[EAST]  * GNSS_acceleration.e[NORTH];
+
+	    nav_correction[DOWN] = cross_correction * CROSS_GAIN; // no MAG or D-GNSS use here !
+	    gyro_correction = body2nav.reverse_map(nav_correction);
+	    gyro_correction *= P_GAIN;
+	    feed_compass_calibration (mag_sensor);
+	  }
+	  break;
+	}
+
+      gyro_correction = gyro_correction + gyro_integrator * I_GAIN;
+    }
+
+  // feed quaternion update with corrected sensor readings
+  update_attitude(acc, gyro + gyro_correction, mag);
+}
+
+
+#endif
+
 void AHRS_type::handle_magnetic_calibration (void) const
 {
-#if WRITE_MAG_CALIB_EEPROM
   if( false == compass_calibration.isCalibrationDone())
     return;
 
@@ -347,5 +438,4 @@ void AHRS_type::handle_magnetic_calibration (void) const
     {
       compass_calibration.write_into_EEPROM();
     }
-#endif
 }

@@ -31,10 +31,10 @@ static void runnable (void*)
     {
       char *next;
 
-      format_RMC (GNSS, NMEA_buf.string);
+      format_RMC (GNSS.coordinates, NMEA_buf.string);
       next = NMEA_append_tail (NMEA_buf.string);
 
-      format_GGA (GNSS, next);  //TODO: ensure that this reports the altitude in meter above medium sea level and height above wgs84: http://aprs.gids.nl/nmea/#gga
+      format_GGA (GNSS.coordinates, next);  //TODO: ensure that this reports the altitude in meter above medium sea level and height above wgs84: http://aprs.gids.nl/nmea/#gga
       next = NMEA_append_tail (next);
 
       format_MWV (output_data.wind_average[NORTH], output_data.wind_average[EAST], next);

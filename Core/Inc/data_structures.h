@@ -76,11 +76,11 @@ typedef struct
   quaternion<float> q_magnetic;
 #endif
 
+  float3vector body_acc;
+  float3vector body_gyro;
   float HeadingDifferenceAhrsDgnss;
-
-#if N_PROBES > 0
-  float probe[N_PROBES];
-#endif
+  float QFF;
+  float air_density;
 } output_data_t;
 
 #pragma pack(pop)

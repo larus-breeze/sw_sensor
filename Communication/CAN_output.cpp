@@ -4,14 +4,11 @@
  * @author		Dr. Klaus Schaefer
  **************************************************************************/
 #include "system_configuration.h"
+#include "CAN_output.h"
 
+#ifndef UNIX
 #include <FreeRTOS_wrapper.h>
-#include "navigator.h"
-#include "flight_observer.h"
-#include "serial_io.h"
-#include "NMEA_format.h"
-#include "common.h"
-#include "candriver.h"
+#endif
 
 enum CAN_ID_SENSOR
 {
@@ -87,20 +84,20 @@ void CAN_output ( const output_data_t &x)
   if( wind_direction < 0.0f)
     wind_direction += 6.2832f;
   p.data_sh[0] = (int16_t)(round(wind_direction * 1000.0f)); // 1/1000 rad
-  p.data_h[1] = (int16_t)(round(VSQRTF( SQR(x.wind.e[EAST])+ SQR(x.wind.e[NORTH])) * 3.6f));
+  p.data_h[1] = (int16_t)(round(SQRT( SQR(x.wind.e[EAST])+ SQR(x.wind.e[NORTH])) * 3.6f));
 
   wind_direction = ATAN2( - x.wind_average.e[EAST], - x.wind_average.e[NORTH]);
   if( wind_direction < 0.0f)
     wind_direction += 6.2832f;
   p.data_sh[2] = (int16_t)(round(wind_direction * 1000.0f)); // 1/1000 rad
-  p.data_h[3] = (int16_t)(round(VSQRTF( SQR(x.wind_average.e[EAST])+ SQR(x.wind_average.e[NORTH])) * 3.6f));
+  p.data_h[3] = (int16_t)(round(SQRT( SQR(x.wind_average.e[EAST])+ SQR(x.wind_average.e[NORTH])) * 3.6f));
 
   CAN_driver.send(p, 1);
 
   p.id=c_CAN_Id_Atmosphere;		// 0x109
   p.dlc=8;
-  p.data_w[0] = (uint32_t)(round(x.m.static_pressure));
-  p.data_w[1] = (uint32_t)(round(1.0496346613e-2f * x.m.static_pressure + 0.1671546011e3f)); // todo: true density = ?
+  p.data_w[0] = (uint32_t)(x.m.static_pressure);
+  p.data_w[1] = (uint32_t)(x.air_density * 1000.0f);
   CAN_driver.send(p, 1);
 
   p.id=c_CAN_Id_GPS_Sats;		// 0x10a
@@ -122,14 +119,30 @@ void CAN_output ( const output_data_t &x)
   p.data_sh[0] = (int16_t)(round(x.slip_angle * 1000.0f));	// slipwinkel in rad aus Scheinlot
   p.data_sh[1] = (int16_t)(round(x.turn_rate  * 1000.0f)); 	// drehrate in rad/s
   p.data_sh[2] = (int16_t)(round(x.nick_angle * 1000.0f));	// nickwinkel in rad aus Scheinlot
+#ifdef CAN_OUTPUT_ACTIVE
   if( CAN_driver.send(p, 1)) // check CAN for timeout this time
-	system_state |= CAN_OUTPUT_ACTIVE;
+      system_state |= CAN_OUTPUT_ACTIVE;
 
   p.id=c_CAN_Id_SystemState;				// 0x10d
   p.dlc=4;
   p.data_w[0] = system_state;
   CAN_driver.send(p, 1);
+#else
+  CAN_driver.send(p, 1);
+
+  p.id=c_CAN_Id_SystemState;				// 0x10d
+  p.dlc=4;
+  p.data_w[0] = 0x00; // dummy
+  CAN_driver.send(p, 1);
+
+  p.id=0x200; // dummy for audio heart beat
+  p.dlc=1;
+  CAN_driver.send(p, 1);
+#endif
+
 }
+
+#ifndef UNIX
 
 void CAN_task_runnable( void *)
 {
@@ -142,3 +155,5 @@ void CAN_task_runnable( void *)
 }
 
 COMMON RestrictedTask CAN_task( CAN_task_runnable, "CAN", 256, 0, CAN_PRIORITY);
+
+#endif

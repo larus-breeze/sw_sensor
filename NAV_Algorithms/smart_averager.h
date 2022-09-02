@@ -14,7 +14,8 @@ template<class value_t, bool CLAMP_OUTPUT_FIRST_CIRCLE = false>
   public:
     smart_averager (float cutoff_div_fsample) :
 	active_state (STRAIGHT_FLIGHT),
-	averager (cutoff_div_fsample)
+	averager (cutoff_div_fsample),
+	present_output(0)
     {
       fill_recordings_with_old_average ();
     };

@@ -84,7 +84,7 @@ typedef struct
 {
   float3vector position;  	//!< NED / meters
   float3vector velocity;  	//!< NED / m/s
-  float3vector acceleration;  	//!< NED / m/s^2 (from velocity delta)
+  float3vector acceleration;  	//!< NED / m/s^2 (from GNSS velocity derivative)
   float  heading_motion;	// degrees
   float  speed_motion;		// m/s
   float3vector relPosNED;	//
@@ -107,7 +107,9 @@ typedef struct
   uint8_t SATS_number;
   uint8_t sat_fix_type;	// bit 0: SAT FIX, bit 1: SAT HEADING
 
+#if INCLUDING_NANO
   int32_t nano;		// nanoseconds from time stamp
+#endif
 
   int16_t geo_sep_dm; 	// (WGS ellipsoid height - elevation MSL) in 0.1m units
   uint16_t dummy;

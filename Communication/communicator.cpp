@@ -21,8 +21,7 @@ extern "C" void sync_logger (void);
 
 COMMON Semaphore setup_file_handling_completed;
 
-COMMON output_data_t __ALIGNED(1024) output_data =
-  { 0 };
+COMMON output_data_t __ALIGNED(1024) output_data = { 0 };
 COMMON GNSS_type GNSS (output_data.c);
 
 COMMON float declination;
@@ -128,7 +127,8 @@ void communicator_runnable (void*)
       ASSERT(false);
     }
 
-  navigator.update_pabs (output_data.m.static_pressure);
+  navigator.update_pressure_and_altitude( output_data.m.static_pressure - QNH_offset, -output_data.c.position.e[DOWN]);
+  navigator.initialize_QFF_density_metering( -output_data.c.position[DOWN]);
   navigator.reset_altitude ();
 
   for( int i=0; i<100; ++i) // wait 1 s until measurement stable
@@ -146,20 +146,24 @@ void communicator_runnable (void*)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
 
-      navigator.update_pabs (output_data.m.static_pressure - QNH_offset);
-      navigator.update_pitot (
-	  (output_data.m.pitot_pressure - pitot_offset) * pitot_span);
+      navigator.update_pressure_and_altitude(output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
+      navigator.update_pitot ( (output_data.m.pitot_pressure - pitot_offset) * pitot_span);
 
       if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
 	{
 	  GNSS_new_data_ready = false;
 	  navigator.update_GNSS (GNSS.coordinates);
+	  navigator.feed_QFF_density_metering( output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
 	}
 
       // rotate sensor coordinates into airframe coordinates
       acc = sensor_mapping * output_data.m.acc;
       mag = sensor_mapping * output_data.m.mag;
       gyro = sensor_mapping * output_data.m.gyro;
+
+      output_data.body_acc  = acc;
+      output_data.body_gyro = gyro;
+
       navigator.update_IMU (acc, mag, gyro);
       navigator.report_data (output_data);
 

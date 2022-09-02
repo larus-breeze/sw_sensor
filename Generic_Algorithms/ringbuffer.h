@@ -10,7 +10,7 @@
 template <class datatype, unsigned size> class RingBuffer
    {
 public:
-    RingBuffer( datatype initial_value = 0)
+    RingBuffer( datatype initial_value = datatype())
         {
         pointer = 0;
 		for( unsigned i=0; i<size; ++i)

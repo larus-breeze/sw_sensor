@@ -29,8 +29,9 @@ public:
 	 relative_wind_observer( configuration( MEAN_WIND_TC)),
 	 corrected_wind_averager( 1.0f / 15.0f / 10.0f), 	// 15s @ 10Hz
 	 GNSS_speed( ZERO),
-	 GNSS_negative_altitude( ZERO)
-  {  };
+	 GNSS_negative_altitude( ZERO),
+	 TAS_averager(1.0f / 1.0f / 100.0f)
+  {};
 
   void set_density_data( float temperature, float humidity)
   {
@@ -38,6 +39,15 @@ public:
       atmosphere.set_ambient_air_data( CLIP( temperature, -40.0f, 50.0f), CLIP( humidity, 0.0f, 1.0f));
     else
       atmosphere.disregard_ambient_air_data();
+  }
+  void initialize_QFF_density_metering( float MSL_altitude)
+  {
+    atmosphere.initialize( MSL_altitude);
+  }
+
+  void feed_QFF_density_metering( float pressure, float MSL_altitude)
+  {
+    atmosphere.feed_QFF_density_metering( pressure, MSL_altitude);
   }
 
   void disregard_density_data( void)
@@ -59,7 +69,7 @@ public:
    * @brief update absolute pressure
    * called @ 100 Hz
    */
-  void update_pabs( float pressure)
+  void update_pressure_and_altitude( float pressure, float MSL_altitude)
   {
     atmosphere.set_pressure(pressure);
   }
@@ -77,6 +87,7 @@ public:
     pitot_pressure=pressure;
     TAS = atmosphere.get_TAS_from_dynamic_pressure ( pitot_pressure);
     IAS = atmosphere.get_IAS_from_dynamic_pressure ( pitot_pressure);
+    TAS_averager.respond(TAS);
   }
   /**
    * @brief update AHRS from IMU
@@ -135,6 +146,7 @@ private:
   smart_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
   smart_averager< float3vector> relative_wind_observer;
   pt2<float3vector,float> corrected_wind_averager;
+  pt2<float,float> TAS_averager;
 };
 
 #endif /* NAVIGATORT_H_ */

@@ -5,8 +5,6 @@
  **************************************************************************/
 #include "NMEA_format.h"
 
-#define ROM const __attribute__ ((section (".rodata")))
-
 #include "embedded_math.h"
 
 #define ANGLE_SCALE 1e-7
@@ -111,27 +109,27 @@ sqr (float a)
 }
 ROM char GPRMC[]="$GPRMC,";
 
-char *format_RMC (const GNSS_type &gnss, char *p)
+char *format_RMC (const coordinates_t &coordinates, char *p)
 {
   p = append_string( p, GPRMC);
 
-  *p++ = (gnss.coordinates.hour) / 10 + '0';
-  *p++ = (gnss.coordinates.hour) % 10 + '0';
-  *p++ = (gnss.coordinates.minute) / 10 + '0';
-  *p++ = (gnss.coordinates.minute) % 10 + '0';
-  *p++ = (gnss.coordinates.second) / 10 + '0';
-  *p++ = (gnss.coordinates.second) % 10 + '0';
+  *p++ = (coordinates.hour) / 10 + '0';
+  *p++ = (coordinates.hour) % 10 + '0';
+  *p++ = (coordinates.minute) / 10 + '0';
+  *p++ = (coordinates.minute) % 10 + '0';
+  *p++ = (coordinates.second) / 10 + '0';
+  *p++ = (coordinates.second) % 10 + '0';
   *p++ = '.';
   *p++ = '0';
   *p++ = '0';
   *p++ = ',';
-  *p++ = gnss.get_fix_type() >= FIX_2d ? 'A' : 'V';
+  *p++ = coordinates.sat_fix_type != 0 ? 'A' : 'V';
   *p++ = ',';
 
-  p = angle_format (gnss.coordinates.latitude, p, 'N', 'S');
+  p = angle_format (coordinates.latitude, p, 'N', 'S');
   *p++ = ',';
 
-  p = angle_format (gnss.coordinates.longitude, p, 'E', 'W');
+  p = angle_format (coordinates.longitude, p, 'E', 'W');
   *p++ = ',';
 
 #if 0
@@ -141,7 +139,7 @@ char *format_RMC (const GNSS_type &gnss, char *p)
 	  sqr( gnss.coordinates.velocity.e[EAST])
       ) * MPS_TO_NMPH;
 #else
-  float value = gnss.coordinates.speed_motion * MPS_TO_NMPH;
+  float value = coordinates.speed_motion * MPS_TO_NMPH;
 #endif
 
   unsigned knots = (unsigned)(value * 10.0f + 0.5f);
@@ -158,7 +156,7 @@ char *format_RMC (const GNSS_type &gnss, char *p)
   float true_track =
       ATAN2( gnss.coordinates.velocity.e[EAST], gnss.coordinates.velocity.e[NORTH]);
 #else
-  float true_track = gnss.coordinates.heading_motion;
+  float true_track = coordinates.heading_motion;
 #endif
   int angle_10 = true_track * 10.0 + 0.5;
   if( angle_10 < 0)
@@ -174,12 +172,12 @@ char *format_RMC (const GNSS_type &gnss, char *p)
 
   *p++ = ',';
 
-  *p++ = (gnss.coordinates.day) / 10 + '0';
-  *p++ = (gnss.coordinates.day) % 10 + '0';
-  *p++ = (gnss.coordinates.month) / 10 + '0';
-  *p++ = (gnss.coordinates.month) % 10 + '0';
-  *p++ = ((gnss.coordinates.year)%100) / 10 + '0';
-  *p++ = ((gnss.coordinates.year)%100) % 10 + '0';
+  *p++ = (coordinates.day) / 10 + '0';
+  *p++ = (coordinates.day) % 10 + '0';
+  *p++ = (coordinates.month) / 10 + '0';
+  *p++ = (coordinates.month) % 10 + '0';
+  *p++ = ((coordinates.year)%100) / 10 + '0';
+  *p++ = ((coordinates.year)%100) % 10 + '0';
 
   *p++ = ',';
   *p++ = ',';
@@ -192,32 +190,32 @@ char *format_RMC (const GNSS_type &gnss, char *p)
 
 ROM char GPGGA[]="$GPGGA,";
 
-char *format_GGA(const GNSS_type &gnss, char *p)
+char *format_GGA( const coordinates_t &coordinates, char *p)
 {
   p = append_string( p, GPGGA);
 
-  *p++ = (gnss.coordinates.hour)   / 10 + '0';
-  *p++ = (gnss.coordinates.hour)   % 10 + '0';
-  *p++ = (gnss.coordinates.minute) / 10 + '0';
-  *p++ = (gnss.coordinates.minute) % 10 + '0';
-  *p++ = (gnss.coordinates.second) / 10 + '0';
-  *p++ = (gnss.coordinates.second) % 10 + '0';
+  *p++ = (coordinates.hour)   / 10 + '0';
+  *p++ = (coordinates.hour)   % 10 + '0';
+  *p++ = (coordinates.minute) / 10 + '0';
+  *p++ = (coordinates.minute) % 10 + '0';
+  *p++ = (coordinates.second) / 10 + '0';
+  *p++ = (coordinates.second) % 10 + '0';
   *p++ = '.';
   *p++ = '0';
   *p++ = '0';
   *p++ = ',';
 
-  p = angle_format (gnss.coordinates.latitude, p, 'N', 'S');
+  p = angle_format (coordinates.latitude, p, 'N', 'S');
   *p++ = ',';
 
-  p = angle_format (gnss.coordinates.longitude, p, 'E', 'W');
+  p = angle_format (coordinates.longitude, p, 'E', 'W');
   *p++ = ',';
 
-  *p++ = gnss.get_fix_type() >= FIX_2d ? '1' : '0';
+  *p++ = coordinates.sat_fix_type  >= 0 ? '1' : '0';
   *p++ = ',';
 
-  *p++ = (gnss.get_num_SV()) / 10 + '0';
-  *p++ = (gnss.get_num_SV()) % 10 + '0';
+  *p++ = (coordinates.SATS_number) / 10 + '0';
+  *p++ = (coordinates.SATS_number) % 10 + '0';
   *p++ = ',';
 
   *p++ = '0'; // fake HDOP
@@ -225,7 +223,7 @@ char *format_GGA(const GNSS_type &gnss, char *p)
   *p++ = '0';
   *p++ = ',';
 
-  uint32_t altitude_msl_dm = gnss.coordinates.position.e[DOWN] * -10.0;
+  uint32_t altitude_msl_dm = coordinates.position.e[DOWN] * -10.0;
   *p++ = altitude_msl_dm / 10000 + '0';
   altitude_msl_dm %= 10000;
   *p++ = altitude_msl_dm / 1000 + '0';
@@ -239,7 +237,7 @@ char *format_GGA(const GNSS_type &gnss, char *p)
   *p++ = 'M';
   *p++ = ',';
 
-  int32_t geo_sep = gnss.coordinates.geo_sep_dm;
+  int32_t geo_sep = coordinates.geo_sep_dm;
   if( geo_sep < 0)
     {
       geo_sep = -geo_sep;
@@ -292,7 +290,7 @@ char *format_MWV ( float wind_north, float wind_east, char *p)
   *p++ = 'T'; // true direction
   *p++ = ',';
 
-  float value = VSQRTF(sqr( wind_north) + sqr( wind_east));
+  float value = SQRT(sqr( wind_north) + sqr( wind_east));
 
   unsigned wind = value * 10.0f;
   *p++ = wind / 1000 + '0';
