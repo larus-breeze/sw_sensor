@@ -39,12 +39,18 @@ public:
   {
     return  (1.0496346613e-5f * pressure + 0.1671546011f);
   }
+  float get_ICAO_density_from_altitude( float altitude)
+  {
+    return (0.998869040247678f +
+	   0.000000002858669f * altitude +
+	   -0.000093935526316f * altitude * altitude) * 1.2255f;
+  }
   float get_negative_altitude( void) const
   {
     float tmp = 8.104381531e-4f * pressure;
     return - tmp * tmp  + 0.20867299170f * pressure - 14421.43945f;
   }
-  float get_TAS_from_dynamic_pressure( float dynamic_pressure) const
+  float get_TAS_from_dynamic_pressure( float dynamic_pressure, float altitude) const
   {
     return dynamic_pressure < 0.0f ? 0.0f : SQRT( 2 * dynamic_pressure / get_density());
   }
