@@ -83,7 +83,7 @@ void navigator_t::update_GNSS (const coordinates_t &coordinates)
 			   ahrs.get_circling_state ());
 }
 
-void navigator_t::report_data(output_data_t &d)
+void navigator_t::report_data( output_data_t &d)
 {
     d.TAS 			= TAS_averager.get_output();
     d.IAS 			= IAS;

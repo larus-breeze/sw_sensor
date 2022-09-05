@@ -13,9 +13,11 @@ COMMON NMEA_buffer_t NMEA_buf;
 extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c
 extern float declination;
 
-static void runnable (void*)
+static void runnable (void* data)
 {
-#if ACTIVATE_USB_NMEA
+  float declination = *(float *)data;
+
+  #if ACTIVATE_USB_NMEA
   MX_USB_DEVICE_Init();
   update_system_state_set( USB_OUTPUT_ACTIVE);
 #endif
@@ -76,5 +78,7 @@ static void runnable (void*)
     }
 }
 
-COMMON RestrictedTask NMEA_task( runnable, "NMEA", 256, 0, NMEA_USB_PRIORITY | portPRIVILEGE_BIT);
+ROM float declination_DUMMY = 2.0f; // todo fixme !
+
+COMMON RestrictedTask NMEA_task( runnable, "NMEA", 256, (void *)&declination_DUMMY, NMEA_USB_PRIORITY | portPRIVILEGE_BIT);
 

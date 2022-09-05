@@ -12,6 +12,7 @@
 #include "serial_io.h"
 #include "NMEA_format.h"
 #include "common.h"
+#include "organizer.h"
 #include "CAN_output.h"
 #include "D_GNSS_driver.h"
 #include "GNSS_driver.h"
@@ -24,8 +25,6 @@ COMMON Semaphore setup_file_handling_completed;
 COMMON output_data_t __ALIGNED(1024) output_data = { 0 };
 COMMON GNSS_type GNSS (output_data.c);
 
-COMMON float declination;
-
 extern RestrictedTask NMEA_task;
 
 static ROM bool TRUE=true;
@@ -33,14 +32,12 @@ static ROM bool FALSE=true;
 
 void communicator_runnable (void*)
 {
+  organizer_t organizer;
+
   // wait until configuration file read
   setup_file_handling_completed.wait();
 
-  // construct NAV objects after reading setup data
-  navigator_t navigator;
-  float3vector acc, mag, gyro;
-
-  declination = navigator.get_declination();
+  organizer.initialize_before_measurement();
 
   uint16_t air_density_sensor_counter = 0;
   uint16_t GNSS_count = 0;
@@ -57,19 +54,6 @@ void communicator_runnable (void*)
   GNSS_configration_t GNSS_configuration =
       (GNSS_configration_t) ROUND (configuration (GNSS_CONFIGURATION));
 
-  float pitot_offset 	= configuration (PITOT_OFFSET);
-  float pitot_span 	= configuration (PITOT_SPAN);
-  float QNH_offset	= configuration (QNH_OFFSET);
-
-  float3matrix sensor_mapping;
-    {
-      quaternion<float> q;
-      q.from_euler (configuration (SENS_TILT_ROLL),
-		    configuration (SENS_TILT_NICK),
-		    configuration (SENS_TILT_YAW));
-      q.get_rotation_matrix (sensor_mapping);
-    }
-
   uint8_t count_10Hz = 1; // de-synchronize CAN output by 1 cycle
 
   GNSS.coordinates.sat_fix_type = SAT_FIX_NONE; // just to be sure
@@ -84,7 +68,8 @@ void communicator_runnable (void*)
 
 	while (!GNSS_new_data_ready) // lousy spin lock !
 	  delay (100);
-	navigator.update_GNSS (GNSS.coordinates);
+
+	organizer.update_GNSS (GNSS.coordinates);
 	GNSS_new_data_ready = false;
       }
       break;
@@ -98,13 +83,9 @@ void communicator_runnable (void*)
 
 	while (!GNSS_new_data_ready) // lousy spin lock !
 	  delay (100);
-	navigator.update_GNSS (GNSS.coordinates);
-	GNSS_new_data_ready = false;
 
-	float present_heading = 0.0f;
-	if (D_GNSS_new_data_ready && (GNSS.coordinates.sat_fix_type & SAT_HEADING))
-	  present_heading = output_data.c.relPosHeading;
-	navigator.set_attitude (0.0f, 0.0f, present_heading);
+	organizer.update_GNSS (GNSS.coordinates);
+	GNSS_new_data_ready = false;
       }
       break;
     case GNSS_F9P_F9P: // no extra task for 2nd GNSS module
@@ -114,30 +95,18 @@ void communicator_runnable (void*)
 	while (!GNSS_new_data_ready) // lousy spin lock !
 	  delay (100);
 
-	navigator.update_GNSS (GNSS.coordinates);
+	organizer.update_GNSS (GNSS.coordinates);
 	GNSS_new_data_ready = false;
-
-	float present_heading = 0.0f;
-	if (GNSS.coordinates.sat_fix_type & SAT_HEADING)
-	  present_heading = output_data.c.relPosHeading;
-	navigator.set_attitude (0.0f, 0.0f, present_heading);
       }
       break;
     default:
       ASSERT(false);
     }
 
-  navigator.update_pressure_and_altitude( output_data.m.static_pressure - QNH_offset, -output_data.c.position.e[DOWN]);
-  navigator.initialize_QFF_density_metering( -output_data.c.position[DOWN]);
-  navigator.reset_altitude ();
-
   for( int i=0; i<100; ++i) // wait 1 s until measurement stable
     notify_take (true);
 
-  // setup initial attitude
-  acc = sensor_mapping * output_data.m.acc;
-  mag = sensor_mapping * output_data.m.mag;
-  navigator.set_from_add_mag( acc, mag); // initialize attitude from acceleration + compass
+  organizer.initialize_after_first_measurement();
 
   NMEA_task.resume();
 
@@ -146,26 +115,14 @@ void communicator_runnable (void*)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
 
-      navigator.update_pressure_and_altitude(output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
-      navigator.update_pitot ( (output_data.m.pitot_pressure - pitot_offset) * pitot_span);
-
       if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
 	{
+	  organizer.update_GNSS (GNSS.coordinates);
 	  GNSS_new_data_ready = false;
-	  navigator.update_GNSS (GNSS.coordinates);
-	  navigator.feed_QFF_density_metering( output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
 	}
 
-      // rotate sensor coordinates into airframe coordinates
-      acc = sensor_mapping * output_data.m.acc;
-      mag = sensor_mapping * output_data.m.mag;
-      gyro = sensor_mapping * output_data.m.gyro;
-
-      output_data.body_acc  = acc;
-      output_data.body_gyro = gyro;
-
-      navigator.update_IMU (acc, mag, gyro);
-      navigator.report_data (output_data);
+      organizer.on_new_pressure_data(); // todo check this update rate
+      organizer.update_IMU();
 
       if(
 	  (((GNSS_configuration == GNSS_F9P_F9H) || (GNSS_configuration == GNSS_F9P_F9P))
@@ -192,7 +149,7 @@ void communicator_runnable (void*)
 	  if( air_density_sensor_Q.receive( p, 0) && p.dlc == 8)
 	    {
 	      air_density_sensor_counter = 0;
-	      navigator.set_density_data(p.data_f[0], p.data_f[1]);
+	      organizer.set_density_data(p.data_f[0], p.data_f[1]);
 	      update_system_state_set( AIR_SENSOR_AVAILABLE);
 	      output_data.m.outside_air_temperature = p.data_f[0];
 	      output_data.m.outside_air_humidity = p.data_f[1];
@@ -203,14 +160,15 @@ void communicator_runnable (void*)
 		  ++air_density_sensor_counter;
 	      else
 		{
-		navigator.disregard_density_data();
-		update_system_state_clear( AIR_SENSOR_AVAILABLE);
-		output_data.m.outside_air_humidity = -1.0f; // means: disregard humidity and temperature
-		output_data.m.outside_air_temperature = ZERO;
+		  organizer.disregard_density_data();
+		  update_system_state_clear( AIR_SENSOR_AVAILABLE);
+		  output_data.m.outside_air_humidity = -1.0f; // means: disregard humidity and temperature
+		  output_data.m.outside_air_temperature = ZERO;
 		}
 	    }
 	}
 
+      organizer.report_data ( output_data);
       sync_logger (); // kick logger @ 100 Hz
     }
 }

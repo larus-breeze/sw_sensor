@@ -57,7 +57,7 @@ public:
   }
 private:
   float hysteresis;
-  float minimax;;
+  float minimax;
   bool going_up;
 };
 
