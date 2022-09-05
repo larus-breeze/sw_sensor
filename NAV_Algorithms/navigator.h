@@ -116,14 +116,17 @@ public:
     ahrs_magnetic.set_from_euler(roll, nick, yaw);
 #endif
   }
+
   float get_IAS( void) const
   {
     return IAS;
   }
+
   float get_declination( void) const
   {
     return ahrs.get_declination();
   }
+
 private:
   AHRS_type 	ahrs;
 #if PARALLEL_MAGNETIC_AHRS

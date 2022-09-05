@@ -11,6 +11,9 @@
 #include "navigator.h"
 #include "flight_observer.h"
 #include "NMEA_format.h"
+
+void CAN_output ( const output_data_t &);
+
 #ifdef UNIX
 #include "USB_serial.h"
 #include "stdint.h"
@@ -108,15 +111,5 @@ public:
 extern CAN_driver_t CAN_driver;
 void CAN_output ( const output_data_t &x);
 
-#else
-#include "candriver.h"
-extern RestrictedTask CAN_task;
-
-inline void trigger_CAN(void)
-{
-  CAN_task.notify_give();
-}
-
 #endif
-
 #endif /* SRC_CAN_OUTPUT_H_ */

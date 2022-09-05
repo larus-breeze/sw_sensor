@@ -1,6 +1,7 @@
 #include "system_configuration.h"
 #include "FreeRTOS_wrapper.h"
 
+#include "generic_CAN_driver.h"
 #include "candriver.h"
 
 #include "stm32f4xx_hal.h"
@@ -225,6 +226,11 @@ void can_driver_t::initialize(void)
 void CAN_reset_timer_callback( TimerHandle_t)
 {
   CAN_driver.initialize();
+}
+
+bool CAN_send( const CANpacket &p, uint32_t max_delay)
+{
+  CAN_driver.send(p, max_delay);
 }
 
 #if RUN_CAN_TESTER
