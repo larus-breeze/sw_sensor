@@ -136,5 +136,4 @@ void CAN_output ( const output_data_t &x)
   p.dlc=1;
   CAN_send(p, 1);
 #endif
-
 }

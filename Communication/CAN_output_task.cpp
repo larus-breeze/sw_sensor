@@ -1,4 +1,5 @@
 #include "system_configuration.h"
+#include "FreeRTOS_wrapper.h"
 #include "common.h"
 #include "CAN_output.h"
 
