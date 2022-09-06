@@ -59,13 +59,13 @@ void CAN_output ( const output_data_t &x)
 
   p.id=c_CAN_Id_GPS_LatLon;		// 0x105
   p.dlc=8;
-  p.data_sw[0] = x.c.latitude * (double)1e7;
-  p.data_sw[1] = x.c.longitude * (double)1e7;  //
+  p.data_sw[0] = (int32_t)(x.c.latitude * (double)1e7);
+  p.data_sw[1] = (int32_t)(x.c.longitude * (double)1e7);  //
   CAN_send(p, 1);
 
   p.id=c_CAN_Id_GPS_Alt;		// 0x106
   p.dlc=8;
-  p.data_l = x.c.position.e[DOWN] * -1e3f;// in mm
+  p.data_l = (int64_t)(x.c.position.e[DOWN] * -1e3f);// in mm
   CAN_send(p, 1);
 
   p.id=c_CAN_Id_GPS_Trk_Spd;		// 0x107
@@ -108,7 +108,7 @@ void CAN_output ( const output_data_t &x)
   p.data_sh[0] = (int16_t)(round(x.G_load * 1000.0f));	// G-Belastung mm/s^2 nach oben pos.
   p.data_sh[1] = (int16_t)(round(x.effective_vertical_acceleration * -1000.0f)); // mm/s^2
   p.data_sh[2] = (int16_t)(round(x.vario_uncompensated * -1000.0f)); // mm/s
-  p.data_sb[6] = x.circle_mode;
+  p.data_sb[6] = (int8_t)(x.circle_mode);
   CAN_send(p, 1);
 
   p.id=c_CAN_Id_TurnCoord;				// 0x10c

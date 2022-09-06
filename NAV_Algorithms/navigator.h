@@ -128,11 +128,14 @@ public:
   }
 
 private:
-  AHRS_type 	ahrs;
+  AHRS_type 		ahrs;
+  atmosphere_t 		atmosphere;
+  flight_observer_t 	flight_observer;
+
 #if PARALLEL_MAGNETIC_AHRS
   AHRS_type	ahrs_magnetic;
 #endif
-  atmosphere_t 	atmosphere;
+
   float 	pitot_pressure;
   float 	TAS;
   float 	IAS;
@@ -144,7 +147,6 @@ private:
   float 	GNSS_negative_altitude;
   unsigned	GNSS_fix_type;
 
-  flight_observer_t 	flight_observer;
   smart_averager< float> 	vario_integrator;
   smart_averager< float3vector, true> wind_average_observer; // configure wind average clamping on first circle
   smart_averager< float3vector> relative_wind_observer;
