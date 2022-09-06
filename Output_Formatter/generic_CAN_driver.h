@@ -40,6 +40,49 @@ public:
   };
 } ;
 
-bool CAN_send( const CANpacket &p, uint32_t max_delay);
+#pragma pack(push, 2)
+
+//! CAN packet tunneled through USART gateway
+class CAN_gateway_packet
+{
+public:
+  CAN_gateway_packet( const CANpacket &p)
+  : ID_checked(p.id),
+    DLC_checksum(p.dlc),
+    data(p.data_l)
+  {
+    uint16_t checksum = ~(p.id % 31);
+    ID_checked |= checksum << 11;
+
+    checksum = ~(p.data_l % 4095);
+    DLC_checksum |= checksum << 4;
+  }
+
+  bool to_CANpacket( CANpacket &p)
+  {
+    uint16_t checksum = ~((ID_checked & 0x7ff) % 31) & 0x1f;
+    if( ID_checked >> 11 != checksum)
+      return false;
+
+    checksum = ~(data % 4095) & 0xfff;
+    if( DLC_checksum >> 4 != checksum)
+      return false;
+
+    p.id     = ID_checked & 0x7ff;
+    p.dlc    = DLC_checksum & 0x0f;
+    p.data_l = data;
+
+    return true;
+  }
+
+public:
+  uint16_t ID_checked;
+  uint16_t DLC_checksum;
+  uint64_t data; //
+};
+
+#pragma pack(pop)
+
+bool CAN_send( const CANpacket &p, unsigned dummy);
 
 #endif /* GENERIC_CAN_DRIVER_H_ */

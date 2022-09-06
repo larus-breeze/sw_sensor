@@ -12,8 +12,6 @@
 #include "navigator.h"
 #include "flight_observer.h"
 
-extern output_data_t __ALIGNED(1024) output_data;
-
 class organizer_t
 {
 public:
@@ -39,7 +37,7 @@ public:
 
   }
 
-  void initialize_after_first_measurement(void)
+  void initialize_after_first_measurement( output_data_t & output_data)
   {
     navigator.update_pressure_and_altitude( output_data.m.static_pressure - QNH_offset, -output_data.c.position.e[DOWN]);
     navigator.initialize_QFF_density_metering( -output_data.c.position[DOWN]);
@@ -49,7 +47,7 @@ public:
     acc = sensor_mapping * output_data.m.acc;
     mag = sensor_mapping * output_data.m.mag;
 
-    if (GNSS.coordinates.sat_fix_type & SAT_HEADING)
+    if (output_data.c.sat_fix_type & SAT_HEADING)
       {
 	navigator.set_attitude ( 0.0f, 0.0f, output_data.c.relPosHeading); // todo use acc data some day ?
       }
@@ -57,15 +55,15 @@ public:
       navigator.set_from_add_mag( acc, mag); // initialize attitude from acceleration + compass
   }
 
-  void on_new_pressure_data( void)
+  void on_new_pressure_data( output_data_t & output_data)
   {
     navigator.update_pressure_and_altitude(output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
     navigator.update_pitot ( (output_data.m.pitot_pressure - pitot_offset) * pitot_span);
   }
 
-  void update_GNSS( const coordinates_t &coordinates)
+  void update_GNSS( output_data_t & output_data)
   {
-    navigator.update_GNSS (GNSS.coordinates);
+    navigator.update_GNSS ( output_data.c);
     navigator.feed_QFF_density_metering( output_data.m.static_pressure - QNH_offset, -output_data.c.position[DOWN]);
   }
 
@@ -74,7 +72,7 @@ public:
 	navigator.set_attitude ( roll, nick, present_heading);
   }
 
-  void update_IMU( void)
+  void update_IMU( output_data_t & output_data)
   {
     // rotate sensor coordinates into airframe coordinates
     acc  = sensor_mapping * output_data.m.acc;
@@ -101,6 +99,12 @@ public:
   void disregard_density_data()
   {
     navigator.disregard_density_data();
+  }
+
+  float
+  getDeclination () const
+  {
+    return declination;
   }
 
 private:

@@ -6,7 +6,14 @@
 #ifndef APPLICATION_NMEA_FORMAT_H_
 #define APPLICATION_NMEA_FORMAT_H_
 
-#include "GNSS.h"
+#include "data_structures.h"
+
+class NMEA_buffer_t
+{
+public:
+  char string[255];
+  uint8_t length;
+};
 
 char *format_RMC (const coordinates_t &coordinates, char *p);
 char *format_GGA( const coordinates_t &coordinates, char *p);
@@ -18,5 +25,7 @@ char *append_HCHDM( float magnetic_heading, char *p);
 
 char * NMEA_append_tail( char *p);
 bool NMEA_checksum( const char *line);
+
+void format_NMEA_string( const output_data_t &output_data, NMEA_buffer_t &NMEA_buf, float declination);
 
 #endif /* APPLICATION_NMEA_FORMAT_H_ */

@@ -5,6 +5,7 @@
  *      Author: schaefer
  */
 
+#include "ascii_support.h"
 #include "serial_io.h"
 
 void serial_output::puti( int value, int base)
@@ -22,7 +23,7 @@ void serial_output::putx( int32_t value, uint8_t digits)
 void serial_output::putf( float value)
 {
 	char buffer[20];
-	ftoa( value, buffer);
+	my_ftoa( buffer, value);
 	puts( buffer);
 }
 void serial_output::puts( const char * data)

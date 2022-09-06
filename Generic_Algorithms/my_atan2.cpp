@@ -16,7 +16,7 @@
 
 #include <stdint.h>
 #include "embedded_memory.h"
-#include "arm_math.h"
+#include "embedded_math.h"
 #include "asin_atan.h"
 
 static float ROM

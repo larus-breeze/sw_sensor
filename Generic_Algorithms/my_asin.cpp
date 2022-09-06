@@ -86,7 +86,7 @@ float my_asinf(float x)
 	t = w*(float)0.5;
 	p = t*(pS0+t*(pS1+t*(pS2+t*(pS3+t*(pS4+t*pS5)))));
 	q = one+t*(qS1+t*(qS2+t*(qS3+t*qS4)));
-	s = VSQRTF(t);
+	s = SQRT(t);
 	if(ix>=0x3F79999A) { 	/* if |x| > 0.975 */
 	    w = p/q;
 	    t = pio2_hi-((float)2.0*(s+s*w)-pio2_lo);

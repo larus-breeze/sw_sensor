@@ -8,12 +8,7 @@
 #ifndef SRC_NMEA_OUTPUT_H_
 #define SRC_NMEA_OUTPUT_H_
 
-class NMEA_buffer_t
-{
-public:
-  char string[255];
-  uint8_t length;
-};
+#include "NMEA_format.h"
 
 extern NMEA_buffer_t NMEA_buf;
 

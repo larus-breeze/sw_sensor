@@ -70,7 +70,7 @@ void communicator_runnable (void*)
 	while (!GNSS_new_data_ready) // lousy spin lock !
 	  delay (100);
 
-	organizer.update_GNSS (GNSS.coordinates);
+	organizer.update_GNSS (output_data);
 	GNSS_new_data_ready = false;
       }
       break;
@@ -85,7 +85,7 @@ void communicator_runnable (void*)
 	while (!GNSS_new_data_ready) // lousy spin lock !
 	  delay (100);
 
-	organizer.update_GNSS (GNSS.coordinates);
+	organizer.update_GNSS (output_data);
 	GNSS_new_data_ready = false;
       }
       break;
@@ -96,7 +96,7 @@ void communicator_runnable (void*)
 	while (!GNSS_new_data_ready) // lousy spin lock !
 	  delay (100);
 
-	organizer.update_GNSS (GNSS.coordinates);
+	organizer.update_GNSS (output_data);
 	GNSS_new_data_ready = false;
       }
       break;
@@ -107,7 +107,7 @@ void communicator_runnable (void*)
   for( int i=0; i<100; ++i) // wait 1 s until measurement stable
     notify_take (true);
 
-  organizer.initialize_after_first_measurement();
+  organizer.initialize_after_first_measurement(output_data);
 
   NMEA_task.resume();
 
@@ -118,12 +118,12 @@ void communicator_runnable (void*)
 
       if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
 	{
-	  organizer.update_GNSS (GNSS.coordinates);
+	  organizer.update_GNSS (output_data);
 	  GNSS_new_data_ready = false;
 	}
 
-      organizer.on_new_pressure_data(); // todo check this update rate
-      organizer.update_IMU();
+      organizer.on_new_pressure_data(output_data); // todo check this update rate
+      organizer.update_IMU(output_data);
 
       if(
 	  (((GNSS_configuration == GNSS_F9P_F9H) || (GNSS_configuration == GNSS_F9P_F9P))
