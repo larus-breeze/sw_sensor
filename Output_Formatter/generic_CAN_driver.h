@@ -8,6 +8,8 @@
 #ifndef GENERIC_CAN_DRIVER_H_
 #define GENERIC_CAN_DRIVER_H_
 
+#include "stdint.h"
+
 //! basic CAN packet type
 class CANpacket
 {
