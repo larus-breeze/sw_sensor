@@ -1,6 +1,5 @@
-Debug/*
 /Debug/
+/Release/
+/lib/
 /.settings/language.settings.xml
 /Core/Inc/git-commit-version.h
-/Release/
-/STM3240G_Eval/
