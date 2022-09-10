@@ -9,6 +9,7 @@
 #include "i2c.h"
 #include "ms5611.h"
 #include "common.h"
+#include "communicator.h"
 
 #if RUN_MS5611_MODULE == 1
 

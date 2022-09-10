@@ -8,6 +8,7 @@
 #include "usb_device.h"
 #include "usbd_cdc.h"
 #include "usart_2_driver.h"
+#include "communicator.h"
 
 COMMON NMEA_buffer_t NMEA_buf;
 extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c

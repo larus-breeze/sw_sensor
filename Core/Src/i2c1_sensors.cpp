@@ -9,6 +9,7 @@
 #include "i2c.h"
 #include "common.h"
 #include "fxos8700cq.h"
+#include "communicator.h"
 
 #define I2C_ADDRESS (0x28<<1) // 7 bits left-adjusted
 /*

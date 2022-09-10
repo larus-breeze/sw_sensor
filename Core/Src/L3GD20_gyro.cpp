@@ -8,7 +8,7 @@
 #include "FreeRTOS_wrapper.h"
 #include "spi.h"
 #include "stm_l3gd20.h"
-#include "common.h"
+#include "communicator.h"
 
 #if RUN_L3GD20
 

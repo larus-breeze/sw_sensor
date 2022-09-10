@@ -1,7 +1,7 @@
 #include "system_configuration.h"
 #include "FreeRTOS_wrapper.h"
-#include "common.h"
 #include "CAN_output.h"
+#include "communicator.h"
 
 void CAN_task_runnable( void *)
 {

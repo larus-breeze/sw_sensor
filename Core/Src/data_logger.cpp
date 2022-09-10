@@ -14,9 +14,12 @@
 #include "Linear_Least_Square_Fit.h"
 #include "data_structures.h"
 #include "read_configuration_file.h"
+#include "communicator.h"
+
+extern Semaphore setup_file_handling_completed;
+extern uint32_t UNIQUE_ID[4];
 
 COMMON Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue(4);
-extern Semaphore setup_file_handling_completed;
 COMMON char *crashfile;
 COMMON unsigned crashline;
 COMMON uint64_t crashdata;

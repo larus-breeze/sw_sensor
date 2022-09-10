@@ -8,6 +8,7 @@
 #include "xbusmessageid.h"
 #include "cmsis_gcc.h"
 #include "stdint.h"
+#include "communicator.h"
 
 #if RUN_MTi_1_MODULE
 
