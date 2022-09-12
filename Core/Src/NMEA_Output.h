@@ -10,6 +10,6 @@
 
 #include "NMEA_format.h"
 
-extern NMEA_buffer_t NMEA_buf;
+extern string_buffer_t NMEA_buf;
 
 #endif /* SRC_NMEA_OUTPUT_H_ */
