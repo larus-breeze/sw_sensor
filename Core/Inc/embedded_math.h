@@ -25,7 +25,12 @@ typedef float ftype;
 #define COS(x) arm_cos_f32(x)
 #define SIN(x) arm_sin_f32(x)
 #define ASIN(x) my_asinf(x)
-#define ATAN2(y, x) my_atan2f(y, x)
+inline float ATAN2( float y, float x)
+{
+	float result;
+	(void)arm_atan2_f32( y, x, &result);
+	return result;
+}
 
 inline int ROUND(float x) { return (int)((x) + 0.5f);}
 #define CLIP( x, min, max) ((x) < (min) ? (min) : (x) > (max) ? (max) : (x))
