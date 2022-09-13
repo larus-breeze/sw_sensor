@@ -32,7 +32,6 @@ inline float ATAN2( float y, float x)
 	return result;
 }
 
-inline int ROUND(float x) { return (int)((x) + 0.5f);}
 #define CLIP( x, min, max) ((x) < (min) ? (min) : (x) > (max) ? (max) : (x))
 
 __attribute__((always_inline)) static float inline VSQRTF(float op1)
