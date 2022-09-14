@@ -32,7 +32,10 @@ inline float ATAN2( float y, float x)
 	return result;
 }
 
-#define CLIP( x, min, max) ((x) < (min) ? (min) : (x) > (max) ? (max) : (x))
+template <typename type> type CLIP( type x, type min, type max)
+{
+  return (x < min) ? min : (x > max) ? max : x;
+}
 
 __attribute__((always_inline)) static float inline VSQRTF(float op1)
   {
