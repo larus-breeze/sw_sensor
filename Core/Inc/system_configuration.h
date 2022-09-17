@@ -18,9 +18,9 @@ extern float * probe; // debugging probes
 #define WRITE_MAG_CALIB_EEPROM		1
 #define LOG_MAGNETIC_CALIBRATION 	1
 #define WRITE_EEPROM_DEFAULTS		0
-#define USE_HARDWARE_EEPROM			1
-#define WITH_DENSITY_DATA			1
-#define GNSS_VERTICAL_SPEED_INVERTED 0 // for simulation with old data
+#define USE_HARDWARE_EEPROM		1
+#define WITH_DENSITY_DATA		1
+#define GNSS_VERTICAL_SPEED_INVERTED	0 // for simulation with old data
 
 #define DKCOM 				0
 
@@ -29,18 +29,6 @@ extern float * probe; // debugging probes
 
 #define WIND_SHORTTERM_F_BY_FS 	( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
 #define VARIO_F_BY_FS          	( 1.0f / 2.0f / 100.0f)      	// 2s @ 100Hz
-
-#define DISABLE_CIRCLING_STATE 	0
-#if DISABLE_CIRCLING_STATE != 1
-#define CIRCLE_LIMIT 		(10 * 100) //!< 10 * 1/100 s delay into / out of circling state
-#define STABLE_CIRCLING_LIMIT	(30 * 100) // seconds @ 100 Hz for MAG auto calibration
-#endif
-
-#define USE_CROSS_ACCELERATION_WHILE_CIRCLING true
-
-#define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
-#define MAG_CALIB_LETHARGY	0.8f // percentage of remaining old calibration info todo tune this parameter
-#define MAG_CALIBRATION_CHANGE_LIMIT 2.5e-5f // variance average of changes: 3 * { var(offset), var(scale) }
 
 #if DKCOM == 1 // *******************************************************************
 
