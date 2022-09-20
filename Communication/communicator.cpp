@@ -70,7 +70,7 @@ void communicator_runnable (void*)
 	while (!GNSS_new_data_ready) // lousy spin lock !
 	  delay (100);
 
-	organizer.update_GNSS (output_data);
+	organizer.update_GNSS_data (output_data.c);
 	GNSS_new_data_ready = false;
       }
       break;
@@ -85,7 +85,7 @@ void communicator_runnable (void*)
 	while (!GNSS_new_data_ready) // lousy spin lock !
 	  delay (100);
 
-	organizer.update_GNSS (output_data);
+	organizer.update_GNSS_data (output_data.c);
 	GNSS_new_data_ready = false;
       }
       break;
@@ -96,7 +96,7 @@ void communicator_runnable (void*)
 	while (!GNSS_new_data_ready) // lousy spin lock !
 	  delay (100);
 
-	organizer.update_GNSS (output_data);
+	organizer.update_GNSS_data (output_data.c);
 	GNSS_new_data_ready = false;
       }
       break;
@@ -111,19 +111,29 @@ void communicator_runnable (void*)
 
   NMEA_task.resume();
 
+  unsigned synchronizer_10Hz = 10; // re-sampling 100Hz -> 10Hz
+
   // this is the MAIN data acquisition and processing loop
   while (true)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
 
-      if (GNSS_new_data_ready) // triggered at 10 Hz by GNSS
+      if (GNSS_new_data_ready) // triggered at 10 or 5 Hz, GNSS-dependent
 	{
-	  organizer.update_GNSS (output_data);
+	  organizer.update_GNSS_data (output_data.c);
 	  GNSS_new_data_ready = false;
+	  synchronizer_10Hz = 1; // NOW: do the 10Hz job, as early as possible !
 	}
 
       organizer.on_new_pressure_data(output_data); // todo check this update rate
-      organizer.update_IMU(output_data);
+      organizer.update_every_10ms(output_data);
+
+      --synchronizer_10Hz;
+      if( synchronizer_10Hz == 0)
+	{
+	  organizer.update_every_100ms (output_data);
+	  synchronizer_10Hz = 10;
+	}
 
       if(
 	  (((GNSS_configuration == GNSS_F9P_F9H) || (GNSS_configuration == GNSS_F9P_F9P))
