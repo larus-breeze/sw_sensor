@@ -137,10 +137,10 @@ void communicator_runnable (void*)
 
       if(
 	  (((GNSS_configuration == GNSS_F9P_F9H) || (GNSS_configuration == GNSS_F9P_F9P))
-	      && (GNSS.fix_type & SAT_HEADING))
+	      && (output_data.c.sat_fix_type == (SAT_HEADING | SAT_FIX)))
 	  ||
 	  ((GNSS_configuration == GNSS_M9N)
-	      && (GNSS.fix_type & SAT_FIX))
+	      && (output_data.c.sat_fix_type == SAT_FIX))
 	)
 	{
 	  ++GNSS_count;
