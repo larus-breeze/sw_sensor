@@ -32,11 +32,6 @@ inline float ATAN2( float y, float x)
 	return result;
 }
 
-template <typename type> type CLIP( type x, type min, type max)
-{
-  return (x < min) ? min : (x > max) ? max : x;
-}
-
 __attribute__((always_inline)) static float inline VSQRTF(float op1)
   {
   	float result;
@@ -44,4 +39,12 @@ __attribute__((always_inline)) static float inline VSQRTF(float op1)
   	return (result);
   }
 
+#ifdef __cplusplus
+
+template <typename type> type CLIP( type x, type min, type max)
+{
+  return (x < min) ? min : (x > max) ? max : x;
+}
+
+#endif // cplusplus
 #endif /* INC_EMBEDDED_MATH_H_ */
