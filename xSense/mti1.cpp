@@ -12,16 +12,21 @@
 
 #if RUN_MTi_1_MODULE
 
+// fine-tuned MTi timing parameters
+#define LONGEST_WAIT_4_MTI_MS 400
+#define PLANNED_DELAY_4_MTI_MS 20
+#define DAQ_LOOP_WAIT_4_MTI_MS 15
+
+// used GPIO pins
 #define IMU_PSEL0  GPIO_PIN_10
 #define IMU_PSEL1  GPIO_PIN_11
 #define IMU_DRDY   GPIO_PIN_12
 #define IMU_NRST   GPIO_PIN_13
 #define IMU_PORT   GPIOD
 
-COMMON Semaphore MTi_ready;
+COMMON Semaphore MTi_ready; //!< ISR -> task synchronizing semaphore
 
-void
-sync_communicator (void);
+void sync_communicator (void);
 
 extern RestrictedTask mti_driver;
 
@@ -37,8 +42,7 @@ init_ports_and_reset_mti (void) // GPIO stuff
   EXTI15_10_Handle = xTraceSetISRProperties("EXTI15_10", 15);
 #endif
 
-  GPIO_InitTypeDef GPIO_InitStruct =
-    { 0 };
+  GPIO_InitTypeDef GPIO_InitStruct ={ 0 };
 
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
@@ -63,7 +67,7 @@ init_ports_and_reset_mti (void) // GPIO stuff
   HAL_NVIC_EnableIRQ (EXTI15_10_IRQn);
 
   HAL_GPIO_WritePin ( IMU_PORT, IMU_NRST, GPIO_PIN_RESET);
-  delay (100);
+  delay (PLANNED_DELAY_4_MTI_MS);
   HAL_GPIO_WritePin ( IMU_PORT, IMU_NRST, GPIO_PIN_SET);
   delay (1);
 }
@@ -127,8 +131,7 @@ readDataFrom_MTI (MtsspInterface *device, uint8_t *buf)
 /**
  * @brief EXTI15_10 interrupt handler
  */
-extern "C" void
-EXTI15_10_IRQHandler (void)
+extern "C" void EXTI15_10_IRQHandler (void)
 {
 #if TRACE_ISR == 1
   vTraceStoreISRBegin(EXTI15_10_Handle);
@@ -146,8 +149,7 @@ EXTI15_10_IRQHandler (void)
  * @param GPIO_Pin: Specifies the pins connected EXTI line
  * @retval None
  */
-void
-HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
+void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == IMU_DRDY)
     MTi_ready.signal_from_ISR ();
@@ -155,20 +157,17 @@ HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 
 /*!	\brief Returns the value of the DataReady line
  */
-static bool
-checkDataReadyLine (void)
+static inline bool checkDataReadyLine (void)
 {
   return HAL_GPIO_ReadPin ( IMU_PORT, IMU_DRDY) == GPIO_PIN_SET;
 }
 
 static ROM uint8_t config_data[] = // config: ACC GYRO MAG STATUS
-      { 0x40, 0x20, 0x00, 0x64, 0x80, 0x20, 0x00, 0x64, 0xC0, 0x20, 0x00, 0x64,
-	  0xE0, 0x20, 0x00, 0x00 };
+      { 0x40, 0x20, 0x00, 0x64, 0x80, 0x20, 0x00, 0x64, 0xC0, 0x20, 0x00, 0x64, 0xE0, 0x20, 0x00, 0x00 };
 // "wrong" config:
 //{0x80,0x30,0x00,0x00,0x40,0x20,0x00,0x64,0x80,0x20,0x00,0x64,0xC0,0x20,0x00,0x64,0xE0,0x20,0x00,0x00};
 
-static bool
-check_for_correct_configuration (uint8_t *data)
+static bool check_for_correct_configuration (uint8_t *data)
 {
   unsigned counter = 0;
   for (const uint8_t *my_config = config_data; *my_config == *data; ++counter)
@@ -179,26 +178,14 @@ check_for_correct_configuration (uint8_t *data)
   return counter == sizeof(config_data) - 2;
 }
 
-inline void
-wait_until_MTi_reports_data_ready (void)
+static void run (void*)
 {
-//	xTaskNotifyStateClear(MTi_task);
-//	notify_take(1, 10);
-//	for( bool ready=checkDataReadyLine(); ! ready; ready=checkDataReadyLine())
-//		delay(2);
-  while (!checkDataReadyLine ())
-    MTi_ready.wait (20);
-}
-
-static void
-run (void*)
-{
-  acquire_privileges();
-
 #if TRACE_ISR == 1
 	chn = xTraceRegisterString("MTi-ISR");
 #endif
+restart:
 
+  acquire_privileges();
   init_ports_and_reset_mti ();
   drop_privileges();
 
@@ -206,18 +193,23 @@ run (void*)
   MtsspDriverSpi SPI_driver;
   MtsspInterface IMU_interface (&SPI_driver);
 
-  delay (100);
+  delay (LONGEST_WAIT_4_MTI_MS); // MTi 1 typically needs 168ms to reset itself
 
-  wait_until_MTi_reports_data_ready ();
+  if( false == checkDataReadyLine())
+	goto restart;
+
   readDataFrom_MTI (&IMU_interface, buf);
 
-  delay (100);
+  delay (PLANNED_DELAY_4_MTI_MS);
+
   while (true) // until configuration has been set successfully
     {
       XbusMessage read_cnf (XMID_ReqOutputConfig);
       IMU_interface.sendXbusMessage (&read_cnf);
 
-      wait_until_MTi_reports_data_ready ();
+      if( false == MTi_ready.wait (LONGEST_WAIT_4_MTI_MS))
+	goto restart;
+
       readDataFrom_MTI (&IMU_interface, buf);
 
       if (check_for_correct_configuration (buf + 4)) // skip header -> + 4
@@ -229,16 +221,16 @@ run (void*)
       XbusMessage go_cnf (XMID_GotoConfig);
       IMU_interface.sendXbusMessage (&go_cnf);
 
-      delay (100);
+      delay (PLANNED_DELAY_4_MTI_MS);
 
       XbusMessage msg (XMID_SetOutputConfig);
       msg.m_length = sizeof(config_data);
       msg.m_data = (uint8_t*) config_data;
       IMU_interface.sendXbusMessage (&msg);
 
-      delay (100);
+      if( false == MTi_ready.wait (LONGEST_WAIT_4_MTI_MS))
+	goto restart;
 
-      wait_until_MTi_reports_data_ready ();
       readDataFrom_MTI (&IMU_interface, buf);
       if (check_for_correct_configuration (buf + 2))
 	{
@@ -249,15 +241,29 @@ run (void*)
 
   XbusMessage cnf (XMID_GotoMeasurement);
   IMU_interface.sendXbusMessage (&cnf);
-  wait_until_MTi_reports_data_ready ();
+
+  if( false == MTi_ready.wait (LONGEST_WAIT_4_MTI_MS))
+	goto restart;
+
   readDataFrom_MTI (&IMU_interface, buf);
+
+  // the *second* DAC loop has been observed taking 35 ms
+  // so: do some dummy wait + read loops here
+  for( unsigned i = 0; i < 5; ++i)
+    {
+      if( false == MTi_ready.wait (LONGEST_WAIT_4_MTI_MS))
+	  goto restart;
+      readDataFrom_MTI (&IMU_interface, buf);
+    }
 
   while (true)
     {
-      wait_until_MTi_reports_data_ready ();
+      if( false == MTi_ready.wait (DAQ_LOOP_WAIT_4_MTI_MS))
+	goto restart;
+
       readDataFrom_MTI (&IMU_interface, buf);
 
-      sync_communicator (); // trigger computations
+      sync_communicator (); // trigger computations @ 100Hz
     }
 }
 
