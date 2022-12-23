@@ -33,11 +33,10 @@ static ROM bool FALSE=true;
 
 void communicator_runnable (void*)
 {
-  organizer_t organizer;
-
   // wait until configuration file read
   setup_file_handling_completed.wait();
 
+  organizer_t organizer;
   organizer.initialize_before_measurement();
 
   uint16_t air_density_sensor_counter = 0;
