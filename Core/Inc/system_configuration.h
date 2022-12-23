@@ -42,10 +42,12 @@ extern float * probe; // debugging probes
 
 #endif // **************************************************************************
 
+#define WITH_LOWCOST_SENSORS	0
+
 #define RUN_GNSS		1
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
-#define RUN_L3GD20 		1
+#define RUN_L3GD20 		0
 #define RUN_FXOS8700		0
 #define RUN_PITOT_MODULE 	1
 
