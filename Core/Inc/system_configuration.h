@@ -12,7 +12,7 @@ extern float * probe; // debugging probes
 
 #define RUN_DATA_LOGGER		1
 
-#define PARALLEL_MAGNETIC_AHRS		0 // run second AHRS without SAT compass usage
+#define PARALLEL_MAGNETIC_AHRS	0 // run second AHRS without SAT compass usage
 #define INCLUDING_NANO		1
 
 #define WRITE_MAG_CALIB_EEPROM		1
@@ -37,8 +37,8 @@ extern float * probe; // debugging probes
 
 #else // **************************************************************************
 
-#define BLUETOOTH_NAME		"AT+NAMEALBATROS2"
-#define ACTIVATE_USB_NMEA	0
+#define BLUETOOTH_NAME		"AT+NAMELarusMk2"
+#define ACTIVATE_USB_NMEA	1
 
 #endif // **************************************************************************
 
@@ -46,7 +46,7 @@ extern float * probe; // debugging probes
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
 #define RUN_L3GD20 		1
-#define RUN_FXOS8700		1
+#define RUN_FXOS8700		0
 #define RUN_PITOT_MODULE 	1
 
 #define RUN_CAN_TESTER		0
