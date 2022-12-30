@@ -87,6 +87,11 @@ DMA1_Stream1_IRQHandler (void)
 
 static uint8_t __ALIGNED(256) buffer[RECEIVE_BUFFER_SIZE];
 
+#if MEASURE_GNSS_REFRESH_TIME
+uint64_t getTime_usec_privileged(void);
+COMMON uint64_t delta,start;
+#endif
+
 void
 USART_3_runnable (void *using_DGNSS)
 {
@@ -101,6 +106,12 @@ USART_3_runnable (void *using_DGNSS)
 
   while (true)
     {
+
+#if MEASURE_GNSS_REFRESH_TIME
+      delta = getTime_usec_privileged() - start;
+      start = getTime_usec_privileged();
+#endif
+
       result = HAL_UART_Receive_DMA (&huart3, buffer, buffer_size);
       if (result != HAL_OK)
 	{

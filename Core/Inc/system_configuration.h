@@ -21,6 +21,7 @@ extern float * probe; // debugging probes
 #define USE_HARDWARE_EEPROM		1
 #define WITH_DENSITY_DATA		1
 #define GNSS_VERTICAL_SPEED_INVERTED	0 // for simulation with old data
+#define MEASURE_GNSS_REFRESH_TIME	0
 
 #define DKCOM 				0
 

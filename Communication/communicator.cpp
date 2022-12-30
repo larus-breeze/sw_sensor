@@ -117,11 +117,10 @@ void communicator_runnable (void*)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
 
-      if (GNSS_new_data_ready) // triggered at 10 or 5 Hz, GNSS-dependent
+      if (GNSS_new_data_ready) // triggered after 100 or 150ms, GNSS-dependent
 	{
 	  organizer.update_GNSS_data (output_data.c);
 	  GNSS_new_data_ready = false;
-	  synchronizer_10Hz = 1; // NOW: do the 10Hz job, as early as possible !
 	}
 
       organizer.on_new_pressure_data(output_data); // todo check this update rate

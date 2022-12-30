@@ -24,6 +24,10 @@ GNSS_type::GNSS_type( coordinates_t & coo) :
 		num_SV(0)
 	{}
 
+#if MEASURE_GNSS_REFRESH_TIME
+COMMON float delta_t;
+#endif
+
 GNSS_Result GNSS_type::update(const uint8_t * data)
 {
 	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01)
@@ -48,7 +52,11 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	    pvt.second * 1000  +
 	    pvt.nano   / 1000000; // ns -> ms , see uBlox documentation. nano is SIGNED !
 
-	float delta_t = (float)(day_time_ms - old_timestamp_ms) * 0.001f;
+#if MEASURE_GNSS_REFRESH_TIME == 0
+	float delta_t;
+#endif
+
+	delta_t = (float)(day_time_ms - old_timestamp_ms) * 0.001f;
 	old_timestamp_ms = day_time_ms;
 
 	/* Pack date and time into a DWORD variable */
