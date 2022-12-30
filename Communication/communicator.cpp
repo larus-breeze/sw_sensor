@@ -42,6 +42,7 @@ void communicator_runnable (void*)
   uint16_t air_density_sensor_counter = 0;
   uint16_t GNSS_count = 0;
 
+#if WITH_DENSITY_DATA
   Queue<CANpacket> air_density_sensor_Q (2);
 
     {
@@ -50,6 +51,7 @@ void communicator_runnable (void*)
       bool result = subscribe_CAN_messages (cde);
       ASSERT(result);
     }
+#endif
 
   GNSS_configration_t GNSS_configuration =
       (GNSS_configration_t) round(configuration (GNSS_CONFIGURATION));
@@ -153,6 +155,7 @@ void communicator_runnable (void*)
 	  count_10Hz = 0;
 	  trigger_CAN ();
 
+#if WITH_DENSITY_DATA
 	  // take care of ambient air data if sensor reports any
 	  CANpacket p;
 	  if( air_density_sensor_Q.receive( p, 0) && p.dlc == 8)
@@ -175,6 +178,8 @@ void communicator_runnable (void*)
 		  output_data.m.outside_air_temperature = ZERO;
 		}
 	    }
+#endif
+
 	}
 
       organizer.report_data ( output_data);
