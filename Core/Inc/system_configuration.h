@@ -31,17 +31,7 @@ extern float * probe; // debugging probes
 #define WIND_SHORTTERM_F_BY_FS 	( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
 #define VARIO_F_BY_FS          	( 1.0f / 2.0f / 100.0f)      	// 2s @ 100Hz
 
-#if DKCOM == 1 // *******************************************************************
-
-#define BLUETOOTH_NAME		"AT+NAMED-KCOM"
 #define ACTIVATE_USB_NMEA	0
-
-#else // **************************************************************************
-
-#define BLUETOOTH_NAME		"AT+NAMELarusMk2"
-#define ACTIVATE_USB_NMEA	1
-
-#endif // **************************************************************************
 
 #define WITH_LOWCOST_SENSORS	0
 
@@ -55,7 +45,7 @@ extern float * probe; // debugging probes
 #define RUN_CAN_TESTER		0
 #define TEST_EEPROM		0
 
-#define ACTIVATE_BLUETOOTH_NMEA	1
+#define ACTIVATE_USART_1_NMEA	1
 #define ACTIVATE_USART_2_NMEA	1
 
 #define ACTIVATE_USB_TEST	0
@@ -65,6 +55,7 @@ extern float * probe; // debugging probes
 
 #define RUN_SPI_TESTER		0
 #define RUN_SDIO_TEST		0
+#define RUN_USART_1_TEST	0
 #define RUN_USART_2_TEST	0
 
 #define MTI_PRIORITY		STANDARD_TASK_PRIORITY + 3
@@ -107,7 +98,7 @@ enum
 	AIR_SENSOR_AVAILABLE 	= 0x400,
 
 	USB_OUTPUT_ACTIVE	= 0x1000,
-	BLUEZ_OUTPUT_ACTIVE	= 0x2000,
+	USART_1_OUTPUT_ACTIVE	= 0x2000,
 	CAN_OUTPUT_ACTIVE	= 0x4000,
 	USART_2_OUTPUT_ACTIVE	= 0x8000
 };

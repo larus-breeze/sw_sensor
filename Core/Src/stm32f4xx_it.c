@@ -264,7 +264,7 @@ void DMA2_Stream6_IRQHandler(void)
   //BSP_SD_WriteCpltCallback();
   /* USER CODE END DMA2_Stream6_IRQn 1 */
 }
-
+#if 0
 /**
   * @brief This function handles DMA2 stream7 global interrupt.
   */
@@ -278,7 +278,7 @@ void DMA2_Stream7_IRQHandler(void)
 
   /* USER CODE END DMA2_Stream7_IRQn 1 */
 }
-
+#endif
 /**
   * @brief This function handles USART6 global interrupt.
   */

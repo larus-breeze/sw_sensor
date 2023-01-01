@@ -7,6 +7,7 @@
 #include "NMEA_format.h"
 #include "usb_device.h"
 #include "usbd_cdc.h"
+#include "usart_1_driver.h"
 #include "usart_2_driver.h"
 #include "communicator.h"
 
@@ -25,6 +26,10 @@ static void runnable (void* data)
   USART_2_Init ();
   update_system_state_set( USART_2_OUTPUT_ACTIVE);
 #endif
+#if ACTIVATE_USART_1_NMEA
+  USART_1_Init ();
+  update_system_state_set( USART_1_OUTPUT_ACTIVE);
+#endif
 
 //  suspend(); // wait until we are needed
 
@@ -39,6 +44,9 @@ static void runnable (void* data)
 #endif
 #if ACTIVATE_BLUETOOTH_NMEA
       Bluetooth_Transmit( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
+#endif
+#if ACTIVATE_USART_1_NMEA
+      USART_1_transmit_DMA( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
 #endif
 #if ACTIVATE_USART_2_NMEA
       USART_2_transmit_DMA( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
