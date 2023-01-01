@@ -180,6 +180,9 @@
 							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.symbolsrec.744348483" name="MCU Output Converter Motorola S-rec with symbols" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.symbolsrec.627952932"/>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.29276544.344593018" name="usart1_driver_RX_DMA.cpp" rcbsApplicability="disable" resourcePath="Drivers/Custom/usart1_driver_RX_DMA.cpp" toolsToInvoke="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.1677793022.1606019573">
+						<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.1677793022.1606019573" name="MCU G++ Compiler" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.1677793022"/>
+					</fileInfo>
 					<folderInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.29276544.560813089" name="/" resourcePath="Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS">
 						<toolChain id="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug.312503487" name="MCU ARM GCC" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug" unusedChildren="">
 							<option id="com.st.stm32cube.ide.mcu.option.internal.toolchain.type.978257154.2071969860" name="Internal Toolchain Type" superClass="com.st.stm32cube.ide.mcu.option.internal.toolchain.type.978257154"/>
@@ -312,7 +315,7 @@
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Communication"/>
 						<entry excluding="DSP|Src/sysmem.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
-						<entry excluding="Custom/usart1_driver.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
+						<entry excluding="Custom/usart1_driver_RX_DMA.cpp|Custom/usart1_driver.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="FATFS"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Math_functions"/>
 						<entry excluding="DSP/Source/SupportFunctions|DSP/Source/FastMathFunctions/arm_sin_q15.c|DSP/Source/ComplexMathFunctions|DSP/Source/FastMathFunctions/arm_cos_q15.c|DSP/Source/FastMathFunctions/arm_sqrt_q15.c|DSP/Source/FastMathFunctions/arm_sin_q31.c|DSP/Source/FilteringFunctions|DSP/Source/BasicMathFunctions|Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2|DSP/Source/MatrixFunctions/MatrixFunctions.c|DSP/Source/CommonTables/CommonTables.c|DSP/Source/TransformFunctions|DSP/Source/FastMathFunctions/arm_cos_q31.c|DSP/Source/StatisticsFunctions|DSP/Source/ControllerFunctions|DSP/Source/FastMathFunctions/FastMathFunctions.c|DSP/Source/FastMathFunctions/arm_sqrt_q31.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
@@ -1003,6 +1006,8 @@
 		</scannerConfigBuildInfo>
 	</storageModule>
 	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="release"/>
+		<configuration configurationName="debug timing"/>
 		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/the_soar_instrument"/>
 		</configuration>
