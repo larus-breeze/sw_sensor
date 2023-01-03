@@ -56,5 +56,5 @@ static void runnable (void* data)
 
 ROM float declination_DUMMY = 2.0f; // todo fixme !
 
-COMMON RestrictedTask NMEA_task( runnable, "NMEA", 256, 0, NMEA_USB_PRIORITY | portPRIVILEGE_BIT);
+COMMON RestrictedTask NMEA_task( runnable, "NMEA", 256, 0, (NMEA_USB_PRIORITY) | portPRIVILEGE_BIT);
 
