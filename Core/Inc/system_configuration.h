@@ -22,6 +22,7 @@ extern float * probe; // debugging probes
 #define WITH_DENSITY_DATA		0
 #define GNSS_VERTICAL_SPEED_INVERTED	0 // for simulation with old data
 #define MEASURE_GNSS_REFRESH_TIME	0
+#define USE_LARUS_NMEA_EXTENSIONS	1
 
 #define DKCOM 				0
 
