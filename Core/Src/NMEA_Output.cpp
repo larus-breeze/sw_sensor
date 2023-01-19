@@ -10,6 +10,7 @@
 #include "usart_1_driver.h"
 #include "usart_2_driver.h"
 #include "communicator.h"
+#include "system_state.h"
 
 COMMON string_buffer_t NMEA_buf;
 extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c

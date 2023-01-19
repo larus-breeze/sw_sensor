@@ -9,6 +9,7 @@
 #include "stm32f4xx_hal.h"
 #include "GNSS.h"
 #include "D_GNSS_driver.h"
+#include "system_state.h"
 
 COMMON UART_HandleTypeDef huart4;
 COMMON DMA_HandleTypeDef hdma_uart4_rx;

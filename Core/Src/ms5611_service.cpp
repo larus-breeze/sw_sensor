@@ -10,6 +10,7 @@
 #include "ms5611.h"
 #include "common.h"
 #include "communicator.h"
+#include "system_state.h"
 
 #if RUN_MS5611_MODULE == 1
 

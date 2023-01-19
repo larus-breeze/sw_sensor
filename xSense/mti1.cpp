@@ -9,6 +9,7 @@
 #include "cmsis_gcc.h"
 #include "stdint.h"
 #include "communicator.h"
+#include "system_state.h"
 
 #if RUN_MTi_1_MODULE
 

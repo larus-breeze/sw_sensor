@@ -3,3 +3,5 @@
 /.settings/language.settings.xml
 /Core/Inc/git-commit-version.h
 /debug timing/
+/release/
+/the_soar_instrument debug timing.launch
