@@ -1,8 +1,27 @@
 /**
- * @file    system_configuration.h
- * @brief   system-wide tweaks
- * @author  Dr. Klaus Schaefer klaus.schaefer@h-da.de
- */
+ * @file    	system_configuration.h
+ * @brief   	system-wide tweaks
+ * @author	Dr. Klaus Schaefer
+ * @copyright 	Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
+ * @license 	This project is released under the GNU Public License GPL-3.0
+
+    <Larus Flight Sensor Firmware>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ **************************************************************************/
+
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
@@ -49,7 +68,6 @@ extern float * probe; // debugging probes
 #define ACTIVATE_USART_1_NMEA	1
 #define ACTIVATE_USART_2_NMEA	1
 
-#define ACTIVATE_USB_TEST	0
 #define ACTIVATE_BLUETOOTH_TEST	0
 
 #define uSD_LED_STATUS		1
