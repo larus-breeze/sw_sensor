@@ -32,6 +32,7 @@
 #include "usart_2_driver.h"
 #include "communicator.h"
 #include "system_state.h"
+#include "sensor_dump.h"
 
 COMMON string_buffer_t NMEA_buf;
 extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c
@@ -39,7 +40,7 @@ extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c
 static void runnable (void* data)
 {
 
-  #if ACTIVATE_USB_NMEA
+#if ACTIVATE_USB_NMEA
   MX_USB_DEVICE_Init();
   update_system_state_set( USB_OUTPUT_ACTIVE);
 #endif
@@ -53,12 +54,29 @@ static void runnable (void* data)
   update_system_state_set( USART_1_OUTPUT_ACTIVE);
 #endif
 
-//  suspend(); // wait until we are needed
+#if ACTIVATE_SENSOR_DUMP
+  MX_USB_DEVICE_Init(); // force using the USB ACM device
+  update_system_state_set( USB_OUTPUT_ACTIVE);
+
+  unsigned i=0;
+  for (synchronous_timer t (10); true; t.sync ())
+    {
+      decimate_sensor_dump( output_data);
+      ++i;
+      if( i >=10)
+	{
+	  i=0;
+	  format_sensor_dump( output_data, NMEA_buf);
+	  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);
+	  USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+	}
+    }
+#endif
 
   for (synchronous_timer t (NMEA_REPORTING_PERIOD); true; t.sync ())
     {
 
-      format_NMEA_string( output_data, NMEA_buf, 0); // todo fixme declination set to 0 for a while
+      format_NMEA_string( output_data, NMEA_buf);
 
 #if ACTIVATE_USB_NMEA
       USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);
@@ -75,8 +93,6 @@ static void runnable (void* data)
 #endif
     }
 }
-
-ROM float declination_DUMMY = 2.0f; // todo fixme !
 
 COMMON RestrictedTask NMEA_task( runnable, "NMEA", 256, 0, (NMEA_USB_PRIORITY) | portPRIVILEGE_BIT);
 
