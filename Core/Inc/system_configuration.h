@@ -68,7 +68,7 @@ extern float * probe; // debugging probes
 #define ACTIVATE_USART_1_NMEA	1
 #define ACTIVATE_USART_2_NMEA	1
 
-#define ACTIVATE_SENSOR_DUMP	1
+#define ACTIVATE_SENSOR_DUMP	0
 
 #define ACTIVATE_BLUETOOTH_TEST	0
 

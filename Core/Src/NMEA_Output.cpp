@@ -54,14 +54,12 @@ static void runnable (void* data)
   update_system_state_set( USART_1_OUTPUT_ACTIVE);
 #endif
 
-#if ACTIVATE_SENSOR_DUMP
+#if ACTIVATE_SENSOR_DUMP // Sensor setup version ********************
   MX_USB_DEVICE_Init(); // force using the USB ACM device
-  update_system_state_set( USB_OUTPUT_ACTIVE);
-
   unsigned i=0;
-  for (synchronous_timer t (10); true; t.sync ())
+  for ( synchronous_timer t (10); true; t.sync ())
     {
-      decimate_sensor_dump( output_data);
+      decimate_sensor_observations( output_data);
       ++i;
       if( i >=10)
 	{
@@ -71,7 +69,7 @@ static void runnable (void* data)
 	  USBD_CDC_TransmitPacket(&hUsbDeviceFS);
 	}
     }
-#endif
+#endif // Sensor setup version ***************************************
 
   for (synchronous_timer t (NMEA_REPORTING_PERIOD); true; t.sync ())
     {

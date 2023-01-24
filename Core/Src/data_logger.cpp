@@ -263,7 +263,7 @@ data_logger_runnable (void*)
 
   read_configuration_file(); // read configuration file if it is present on the SD card
   setup_file_handling_completed.signal();
-
+#if 0 // fixme patch
   // wait until a GNSS timestamp is available.
   while (output_data.c.sat_fix_type == 0)
     {
@@ -272,7 +272,7 @@ data_logger_runnable (void*)
 
       delay (100); /* klaus: this bad guy has implemented a spinlock (max) */
     }
-
+#endif
   // generate filename based on timestamp
   int idx = 0;
   itoa (2000 + output_data.c.year, out_filename, 10);

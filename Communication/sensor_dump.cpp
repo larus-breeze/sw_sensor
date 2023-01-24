@@ -1,22 +1,48 @@
 #include "sensor_dump.h"
 #include "ascii_support.h"
 
-float pabs_mean, pabs_squared_mean;
+uint64_t pabs_sum, samples, noise_energy;
 
-ROM float BETA = 0.04;
-ROM float ALFA = 1 - BETA;
+#define RAD_2_DEGREES_100 5729.6f
 
-ROM float RAD_2_DEGREES_100 = 5729.6f;
-
-void decimate_sensor_dump( const output_data_t &output_data)
+struct statistics
 {
-  pabs_mean = pabs_mean * ALFA + output_data.m.static_pressure * BETA;
-  pabs_squared_mean = pabs_squared_mean * ALFA + SQR( output_data.m.static_pressure) * BETA;
+  float mean;
+  float rms;
+  uint64_t samples;
+};
+
+statistics stat;
+
+void decimate_sensor_observations( const output_data_t &output_data)
+{
+  pabs_sum += (uint64_t)(output_data.m.static_pressure);
+  ++samples;
+  noise_energy += SQR( (uint64_t)(output_data.m.static_pressure + 0.5f) - pabs_sum / samples);
 }
+
+statistics get_sensor_data( void)
+{
+  statistics retv;
+  retv.mean = round( pabs_sum / samples);
+  retv.rms = SQRT( (float)noise_energy / (float)samples);
+  retv.samples=samples;
+  return retv;
+}
+void reset_sensor_data( void)
+{
+  samples = pabs_sum = noise_energy = 0;
+}
+
+extern uint32_t UNIQUE_ID[4];
 
 void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA_buf)
 {
   char *s = NMEA_buf.string;
+
+  s=append_string( s, "Sensor ID = ");
+  s=utox( UNIQUE_ID[0], s);
+  s=append_string( s, "\r\n");
 
   s=append_string( s, "acc   ");
   for( unsigned i=0; i<3; ++i)
@@ -46,15 +72,20 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = integer_to_ascii_2_decimals( 100.0f * output_data.m.pitot_pressure , s);
   s=append_string( s, "\r\n");
 
+  statistics present_stat = get_sensor_data();
+  if( present_stat.samples >= 100)
+    {
+      stat = present_stat;
+      reset_sensor_data();
+    }
+
   s=append_string( s, "pabs / hPa ");
-  s = integer_to_ascii_2_decimals( pabs_mean , s);
+  s = integer_to_ascii_2_decimals( stat.mean , s);
   s=append_string( s, "\r\n");
 
-#if 1
   s=append_string( s, "pabs RMS / Pa ");
-  s = integer_to_ascii_2_decimals( 100.0f * SQRT( pabs_squared_mean - SQR( pabs_mean)) , s);
+  s = integer_to_ascii_2_decimals( stat.rms * 100.0f , s);
   s=append_string( s, "\r\n");
-#endif
 
   s=append_string( s, "temp  ");
   s = integer_to_ascii_2_decimals( 100.0f * output_data.m.static_sensor_temperature , s);
