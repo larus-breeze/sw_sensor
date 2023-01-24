@@ -122,7 +122,6 @@ int main(void)
   UNIQUE_ID[2]=*(uint32_t *)0x1fff7a14;
   UNIQUE_ID[3]=*(uint32_t *)0x1fff7a18;
   UNIQUE_ID[0]=UNIQUE_ID[1] ^ UNIQUE_ID[2] ^ UNIQUE_ID[3];
-  UNIQUE_ID[0] ^= ((UNIQUE_ID[0]) >> 16);
 
 #if WRITE_EEPROM_DEFAULTS
   void write_EEPROM_defaults( void);
