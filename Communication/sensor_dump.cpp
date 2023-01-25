@@ -44,15 +44,21 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s=utox( UNIQUE_ID[0], s);
   s=append_string( s, "\r\n");
 
+  float squaresum;
+
   s=append_string( s, "acc   ");
+  squaresum=0.0f;
   for( unsigned i=0; i<3; ++i)
     {
+      squaresum += SQR( output_data.m.acc.e[i]);
       s = integer_to_ascii_2_decimals( 100.0f * output_data.m.acc.e[i] , s);
       *s++ = '\t';
     }
+  s = integer_to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
   s=append_string( s, "\r\n");
 
   s=append_string( s, "gyro  ");
+  squaresum=0.0f;
   for( unsigned i=0; i<3; ++i)
     {
       s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * output_data.m.gyro.e[i] , s);
@@ -61,11 +67,14 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s=append_string( s, "\r\n");
 
   s=append_string( s, "mag   ");
+  squaresum=0.0f;
   for( unsigned i=0; i<3; ++i)
     {
+      squaresum += SQR( output_data.m.mag.e[i]);
       s = integer_to_ascii_2_decimals( 100.0f * output_data.m.mag.e[i] , s);
       *s++ = '\t';
     }
+  s = integer_to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
   s=append_string( s, "\r\n");
 
   s=append_string( s, "pitot / Pa ");
@@ -96,11 +105,11 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s=append_string( s, "\r\n");
 
   s=append_string( s, "GNSS time ");
-  s = format_integer( output_data.c.hour , s);
+  s = format_2_digits( s, output_data.c.hour);
   *s ++ = ':';
-  s = format_integer( output_data.c.minute , s);
+  s = format_2_digits( s, output_data.c.minute);
   *s ++ = ':';
-  s = format_integer( output_data.c.second , s);
+  s = format_2_digits( s, output_data.c.second);
   s=append_string( s, "\r\n");
 
   s=append_string( s, "\r\n");
