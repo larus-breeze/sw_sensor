@@ -29,10 +29,10 @@ extern float * probe; // debugging probes
 
 #include "persistent_data.h"
 
-#define RUN_DATA_LOGGER		1
+#define RUN_DATA_LOGGER			1
 
-#define PARALLEL_MAGNETIC_AHRS	0 // run second AHRS without SAT compass usage
-#define INCLUDING_NANO		1
+#define PARALLEL_MAGNETIC_AHRS		0 // run second AHRS without SAT compass usage
+#define INCLUDING_NANO			1
 
 #define WRITE_MAG_CALIB_EEPROM		1
 #define LOG_MAGNETIC_CALIBRATION 	1
@@ -43,15 +43,13 @@ extern float * probe; // debugging probes
 #define MEASURE_GNSS_REFRESH_TIME	0
 #define USE_LARUS_NMEA_EXTENSIONS	1
 
-#define DKCOM 				0
-
 #define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
 #define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
 
 #define WIND_SHORTTERM_F_BY_FS 	( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
 #define VARIO_F_BY_FS          	( 1.0f / 2.0f / 100.0f)      	// 2s @ 100Hz
 
-#define ACTIVATE_USB_NMEA	0
+#define ACTIVATE_USB_NMEA	1
 
 #define WITH_LOWCOST_SENSORS	0
 
@@ -68,7 +66,7 @@ extern float * probe; // debugging probes
 #define ACTIVATE_USART_1_NMEA	1
 #define ACTIVATE_USART_2_NMEA	1
 
-#define ACTIVATE_SENSOR_DUMP	1
+#define ACTIVATE_SENSOR_DUMP	0
 
 #define ACTIVATE_BLUETOOTH_TEST	0
 
