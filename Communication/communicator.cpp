@@ -118,15 +118,11 @@ void communicator_runnable (void*)
   NMEA_task.resume();
 
   unsigned synchronizer_10Hz = 10; // re-sampling 100Hz -> 10Hz
-  unsigned counter = 0;
+
   // this is the MAIN data acquisition and processing loop
   while (true)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
-
-      ++counter;
-      if( counter == 1000)
-	harakiri();
 
       if (GNSS_new_data_ready) // triggered after 100 or 150ms, GNSS-dependent
 	{
