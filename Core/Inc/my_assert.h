@@ -26,16 +26,12 @@
 #define MY_ASSERT_H_
 
 #include "stdint.h"
-
-#ifdef __cplusplus
- extern "C"
-#endif
-   void emergency_write_crashdump( char * file, int line, uint64_t data);
+#include "emergency.h"
 
 #if 0
 #define ASSERT(x) if((x)==0) asm volatile("bkpt 0")
 #else
-#define ASSERT(x) if((x)==0) emergency_write_crashdump( (char *)__FILE__, __LINE__, 0);
+#define ASSERT(x) if((x)==0) emergency_write_crashdump( (char *)__FILE__, __LINE__);
 #endif
 
 #endif /* MY_ASSERT_H_ */

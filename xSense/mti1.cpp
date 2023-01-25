@@ -49,7 +49,7 @@
 #define IMU_NRST   GPIO_PIN_13
 #define IMU_PORT   GPIOD
 
-COMMON Semaphore MTi_ready; //!< ISR -> task synchronizing semaphore
+COMMON Semaphore MTi_ready(1, 0, (char *)"MTi_RDY"); //!< ISR -> task synchronizing semaphore
 
 void sync_communicator (void);
 
@@ -206,7 +206,9 @@ static bool check_for_correct_configuration (uint8_t *data)
 static void run (void*)
 {
 #if TRACE_ISR == 1
+	acquire_privileges();
 	chn = xTraceRegisterString("MTi-ISR");
+	drop_privileges();
 #endif
 restart:
 

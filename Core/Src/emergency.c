@@ -25,38 +25,21 @@
 #include <stdint.h>
 #include "my_assert.h"
 #include "stm32f407xx.h"
+#include "emergency.h"
+#include "embedded_memory.h"
 
-void emergency_write_crashdump( char * file, int line, uint64_t data);
 void sync_logger(void );
 
-// "core dump" memory
-volatile unsigned int stacked_r0;
-volatile unsigned int stacked_r1;
-volatile unsigned int stacked_r2;
-volatile unsigned int stacked_r3;
-volatile unsigned int stacked_r12;
-volatile unsigned int stacked_lr;
-volatile unsigned int stacked_pc;
-volatile unsigned int stacked_psr;
-
-uint32_t Bus_Fault_Address;
-uint32_t Bad_Memory_Address;
-uint32_t Memory_Fault_status;
-uint32_t Bad_Instruction_Address;
-uint32_t FPU_StatusControlRegister;
-uint8_t  Bus_Fault_Status;
-uint32_t Hard_Fault_Status;
-uint16_t Usage_Fault_Status_Register;
+COMMON register_dump_t register_dump;
 
 /**
  * @brief  This function handles exceptions triggered by bad parameters to lib functions
  */
 void assert_failed(uint8_t* file, uint32_t line)
 {
-  emergency_write_crashdump( file, line, 0);
-  MPU_vTaskSuspend(0);
+  emergency_write_crashdump( file, line);
   while(1)
-    ;
+    MPU_vTaskSuspend(0);
 }
 
 void task_suspend_helper( void)
@@ -66,30 +49,31 @@ void task_suspend_helper( void)
     MPU_vTaskSuspend(0);
 }
 
-void emergency_write_crashdump( char * file, int line, uint64_t data);
-
 void analyze_fault_stack(volatile unsigned int * hardfault_args)
 {
-  stacked_r0 = ((unsigned long) hardfault_args[0]);
-  stacked_r1 = ((unsigned long) hardfault_args[1]);
-  stacked_r2 = ((unsigned long) hardfault_args[2]);
-  stacked_r3 = ((unsigned long) hardfault_args[3]);
+  register_dump.stacked_r0 = ((unsigned long) hardfault_args[0]);
+  register_dump.stacked_r1 = ((unsigned long) hardfault_args[1]);
+  register_dump.stacked_r2 = ((unsigned long) hardfault_args[2]);
+  register_dump.stacked_r3 = ((unsigned long) hardfault_args[3]);
 
-  stacked_r12 = ((unsigned long) hardfault_args[4]);
-  stacked_lr = ((unsigned long) hardfault_args[5]);
-  stacked_pc = ((unsigned long) hardfault_args[6]);
-  stacked_psr = ((unsigned long) hardfault_args[7]);
+  register_dump.stacked_r12 = ((unsigned long) hardfault_args[4]);
+  register_dump.stacked_lr = ((unsigned long) hardfault_args[5]);
+  register_dump.stacked_pc = ((unsigned long) hardfault_args[6]);
+  register_dump.stacked_psr = ((unsigned long) hardfault_args[7]);
+
+  extern void * pxCurrentTCB;
+  register_dump.active_TCB = pxCurrentTCB;
 
   hardfault_args[6] = task_suspend_helper;
 
-  emergency_write_crashdump( __FILE__, __LINE__, (uint64_t)stacked_pc + ((uint64_t)stacked_lr << 32));
+  emergency_write_crashdump( __FILE__, __LINE__);
 }
 
 void FPU_IRQHandler( void)
 {
-  FPU_StatusControlRegister = __get_FPSCR();
+  register_dump.FPU_StatusControlRegister = __get_FPSCR();
   // patch FPFSR on the stack FPU context to avoid triggering the FPU IRQ recursively
-  *(__IO uint32_t*)(FPU->FPCAR +0x40) = FPU_StatusControlRegister & ~0x8f;
+  *(__IO uint32_t*)(FPU->FPCAR +0x40) = register_dump.FPU_StatusControlRegister & ~0x8f;
   __asm volatile
   (
       " mov r5, #0                                                     \n"
@@ -123,7 +107,7 @@ NMI_Handler(void)
 void
 HardFault_Handler(void)
 {
-  Hard_Fault_Status = *(uint32_t *) 0xe000ed2c;
+  register_dump.Hard_Fault_Status = *(uint32_t *) 0xe000ed2c;
   __asm volatile
   (
       " mov r5, #0                                              \n"
@@ -146,8 +130,8 @@ HardFault_Handler(void)
 void
 MemManage_Handler(void)
 {
-  Bad_Memory_Address = *(int*) 0xe000ed34;
-  Memory_Fault_status    = *(uint8_t*) 0xe000ed28;
+  register_dump.Bad_Memory_Address = *(int*) 0xe000ed34;
+  register_dump.Memory_Fault_status    = *(uint8_t*) 0xe000ed28;
   // If you are stranded here:
   // Check Bad_Memory_Address and Bad_Instruction_Address !
 	  // 0x92 : Stack overflow (push)
@@ -176,8 +160,8 @@ MemManage_Handler(void)
 void
 BusFault_Handler(void)
 {
-  Bus_Fault_Address=*(uint32_t *)0xe000ed38;
-  Bus_Fault_Status =*(uint8_t *) 0xe000ed29;
+  register_dump.Bus_Fault_Address=*(uint32_t *)0xe000ed38;
+  register_dump.Bus_Fault_Status =*(uint8_t *) 0xe000ed29;
 	// bus fault status:
 	// 0x92 stacking error address valid
 	// 0x80 Bus_Fault_Address valid
@@ -207,7 +191,7 @@ BusFault_Handler(void)
  */
 void __attribute__(( naked )) UsageFault_Handler(void)
 {
-  Usage_Fault_Status_Register = * (uint16_t *)0xe000ed2a;
+  register_dump.Usage_Fault_Status_Register = * (uint16_t *)0xe000ed2a;
   __asm volatile
   (
       " mov r5, #3                                                     \n"

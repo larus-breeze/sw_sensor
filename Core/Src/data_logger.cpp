@@ -33,14 +33,14 @@
 #include "data_structures.h"
 #include "read_configuration_file.h"
 #include "communicator.h"
+#include "emergency.h"
 
 extern Semaphore setup_file_handling_completed;
 extern uint32_t UNIQUE_ID[4];
 
-COMMON Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue(4);
+COMMON Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue(4,"M_CALIB");
 COMMON char *crashfile;
 COMMON unsigned crashline;
-COMMON uint64_t crashdata;
 
 #if RUN_DATA_LOGGER
 
@@ -50,18 +50,28 @@ extern DMA_HandleTypeDef hdma_sdio_rx;
 extern DMA_HandleTypeDef hdma_sdio_tx;
 extern int64_t FAT_time; //!< DOS FAT time for file usage
 
-#define BUFSIZE 2048 // bytes
+#define MEM_BUFSIZE 2048 // bytes
 #define RESERVE 512
-static uint8_t __ALIGNED(BUFSIZE) buffer[BUFSIZE + RESERVE];
+static uint8_t __ALIGNED(MEM_BUFSIZE) mem_buffer[MEM_BUFSIZE + RESERVE];
 
-extern uint32_t Bus_Fault_Address;
-extern uint8_t  Bus_Fault_Status;
-extern uint32_t Bad_Memory_Address;
-extern uint32_t Memory_Fault_status;
-extern uint32_t Bad_Instruction_Address;
-extern uint32_t FPU_StatusControlRegister;
-extern uint16_t Usage_Fault_Status_Register;
-extern uint32_t Hard_Fault_Status;
+char * format_date_time( char * target)
+{
+  target = format_2_digits( target, output_data.c.year);
+  target = format_2_digits( target, output_data.c.month);
+  target = format_2_digits( target, output_data.c.day);
+  *target ++ = '_';
+  target = format_2_digits( target, output_data.c.hour);
+  target = format_2_digits( target, output_data.c.minute);
+  target = format_2_digits( target, output_data.c.second);
+  *target=0;
+  return target;
+}
+
+void newline( char * &next)
+{
+  *next++ = '\r';
+  *next++ = '\n';
+}
 
 void write_crash_dump( void)
 {
@@ -71,66 +81,108 @@ void write_crash_dump( void)
   char *next = buffer;
   int32_t writtenBytes = 0;
 
-  next = utox( (unsigned)FAT_time, buffer);
+#if configUSE_TRACE_FACILITY // ************************************************
+#include "trcConfig.h"
+  vTraceStop(); // don't trace ourselves ...
+#endif
+
+  next = format_date_time( buffer);
   next = append_string (next, ".CRASHDUMP");
-  *next=0;
 
   fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)
     return;
 
-  f_write (&fp, GIT_TAG_INFO, strlen(GIT_TAG_INFO), (UINT*) &writtenBytes);
-  f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
-  utox( UNIQUE_ID[0], buffer, 8);
-  buffer[8]='\r';
-  buffer[9]='\n';
-  f_write (&fp, buffer, 10, (UINT*) &writtenBytes);
+  next=append_string( buffer, (char*)"Firmware: ");
+  next=append_string( next, GIT_TAG_INFO);
+  newline( next);
 
-  f_write (&fp, crashfile, strlen(crashfile), (UINT*) &writtenBytes);
+  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
-  next = buffer;
-  *next++=' ';
+  next=append_string( buffer, (char*)"Hardware: ");
+  next = utox( UNIQUE_ID[0], next, 8);
+  newline( next);
+
+  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+
+  next=append_string( buffer, crashfile);
+  next=append_string( next, (char*)" Line: ");
   next = my_itoa( next, crashline);
-  *next++ = '\r';
-  *next++ = '\n';
+  newline( next);
 
-  next = lutox( crashdata, next);
-  *next++ = '\r';
-  *next++ = '\n';
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
-  next = utox( Bus_Fault_Address, buffer);
-  *next++ = '\r';
-  *next++ = '\n';
+  next=append_string( buffer, (char*)"Task:     ");
+  next=append_string( next, pcTaskGetName( (TaskHandle_t)(register_dump.active_TCB)));
+  newline( next);
 
-  next = utox( Bad_Memory_Address, next);
-  *next++ = '\r';
-  *next++ = '\n';
-
-  next = utox( Memory_Fault_status, next);
-  *next++ = '\r';
-  *next++ = '\n';
-
-  next = utox( Bad_Instruction_Address, next);
-  *next++ = '\r';
-  *next++ = '\n';
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
-  next = utox( FPU_StatusControlRegister, buffer);
-  *next++ = '\r';
-  *next++ = '\n';
+  next=append_string( buffer, (char*)"PC:       ");
+  next = utox( register_dump.stacked_pc, next);
+  newline( next);
+  next=append_string( next, (char*)"LR:       ");
+  next = utox( register_dump.stacked_lr, next);
+  newline( next);
 
-  next = utox( Usage_Fault_Status_Register, next);
-  *next++ = '\r';
-  *next++ = '\n';
+  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
-  next = utox( Hard_Fault_Status, next);
-  *next++ = '\r';
-  *next++ = '\n';
+  next=append_string( buffer, (char*)"BusFA:    ");
+  next = utox( register_dump.Bus_Fault_Address, next);
+  newline( next);
+
+  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+
+  next=append_string( buffer, (char*)"MemA:     ");
+  next = utox( register_dump.Bad_Memory_Address, next);
+  newline( next);
+
+  next=append_string( next, (char*)"MemFS:    ");
+  next = utox( register_dump.Memory_Fault_status, next);
+  newline( next);
+
+  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+
+  next=append_string( buffer, (char*)"FPU_S:    ");
+  next = utox( register_dump.FPU_StatusControlRegister, next);
+  newline( next);
+
+  next=append_string( next, (char*)"UsgFS:    ");
+  next = utox( register_dump.Usage_Fault_Status_Register, next);
+  newline( next);
+
+  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+
+  next=append_string( buffer, (char*)"HardFS:   ");
+  next = utox( register_dump.Hard_Fault_Status, next);
+  newline( next);
 
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
   f_close(&fp);
+
+#if configUSE_TRACE_FACILITY // ************************************************
+
+extern RecorderDataType myTraceBuffer;
+  next = format_date_time( buffer);
+  next = append_string (next, ".bin");
+  fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
+  if (fresult != FR_OK)
+    return;
+
+
+  for( uint8_t *ptr=(uint8_t *)&myTraceBuffer; ptr < (uint8_t *)&myTraceBuffer + sizeof(RecorderDataType); ptr += 2048)
+    {
+      size_t size = (uint8_t *)&myTraceBuffer + sizeof(RecorderDataType) - ptr;
+      if( size > MEM_BUFSIZE)
+	size = MEM_BUFSIZE;
+      memcpy( mem_buffer, ptr, size);
+      fresult = f_write (&fp, (const void *)mem_buffer, size, (UINT*) &writtenBytes);
+      ASSERT( writtenBytes == MEM_BUFSIZE);
+    }
+  f_close(&fp);
+
+#endif // ************************************************************************
 
   delay(1000); // wait until data has been saved and file is closed
 
@@ -332,7 +384,7 @@ data_logger_runnable (void*)
   GPIO_PinState led_state = GPIO_PIN_RESET;
 
   uint32_t writtenBytes = 0;
-  uint8_t *buf_ptr = buffer;
+  uint8_t *buf_ptr = mem_buffer;
 
   write_EEPROM_dump( out_filename);
 
@@ -352,17 +404,17 @@ data_logger_runnable (void*)
       memcpy (buf_ptr, (uint8_t*) &output_data.m, sizeof(measurement_data_t)+sizeof(coordinates_t));
       buf_ptr += sizeof(measurement_data_t)+sizeof(coordinates_t);
 
-      if (buf_ptr < buffer + BUFSIZE)
+      if (buf_ptr < mem_buffer + MEM_BUFSIZE)
 	continue; // buffer only filled partially
 
-      fresult = f_write (&outfile, buffer, BUFSIZE, (UINT*) &writtenBytes);
-      if( ! ((fresult == FR_OK) && (writtenBytes == BUFSIZE)))
+      fresult = f_write (&outfile, mem_buffer, MEM_BUFSIZE, (UINT*) &writtenBytes);
+      if( ! ((fresult == FR_OK) && (writtenBytes == MEM_BUFSIZE)))
 	while(true)
 	  suspend (); // give up, logger can not work
 
-      uint32_t rest = buf_ptr - (buffer + BUFSIZE);
-      memcpy (buffer, buffer + BUFSIZE, rest);
-      buf_ptr = buffer + rest;
+      uint32_t rest = buf_ptr - (mem_buffer + MEM_BUFSIZE);
+      memcpy (mem_buffer, mem_buffer + MEM_BUFSIZE, rest);
+      buf_ptr = mem_buffer + rest;
 
       if( ++sync_counter >= 16)
 	{
@@ -398,11 +450,10 @@ extern "C" void sync_logger(void)
     data_logger.notify_give ();
   }
 
-extern "C" void emergency_write_crashdump( char * file, int line, uint64_t data)
+extern "C" void emergency_write_crashdump( char * file, int line)
   {
     crashfile=file;
     crashline=line;
-    crashdata=data;
   }
 
 #endif

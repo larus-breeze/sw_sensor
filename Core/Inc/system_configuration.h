@@ -68,7 +68,7 @@ extern float * probe; // debugging probes
 #define ACTIVATE_USART_1_NMEA	1
 #define ACTIVATE_USART_2_NMEA	1
 
-#define ACTIVATE_SENSOR_DUMP	0
+#define ACTIVATE_SENSOR_DUMP	1
 
 #define ACTIVATE_BLUETOOTH_TEST	0
 
@@ -104,5 +104,6 @@ extern float * probe; // debugging probes
 #define SET_FPU_FLUSH_TO_ZERO	1
 #define ACTIVATE_WATCHDOG	1
 #define WATCHDOG_STATISTICS 	0
+#define TRACE_ISR		0
 
 #endif /* SRC_SYSTEM_CONFIGURATION_H_ */

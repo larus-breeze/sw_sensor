@@ -21,7 +21,7 @@
 
 extern "C" void sync_logger (void);
 
-COMMON Semaphore setup_file_handling_completed;
+COMMON Semaphore setup_file_handling_completed(1,0,"SETUP");
 
 COMMON output_data_t __ALIGNED(1024) output_data = { 0 };
 COMMON GNSS_type GNSS (output_data.c);
@@ -30,6 +30,11 @@ extern RestrictedTask NMEA_task;
 
 static ROM bool TRUE=true;
 static ROM bool FALSE=true;
+
+inline void harakiri(void)
+{
+  *(unsigned *)0x08000000 = 13;
+}
 
 void communicator_runnable (void*)
 {
@@ -113,11 +118,15 @@ void communicator_runnable (void*)
   NMEA_task.resume();
 
   unsigned synchronizer_10Hz = 10; // re-sampling 100Hz -> 10Hz
-
+  unsigned counter = 0;
   // this is the MAIN data acquisition and processing loop
   while (true)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
+
+      ++counter;
+      if( counter == 1000)
+	harakiri();
 
       if (GNSS_new_data_ready) // triggered after 100 or 150ms, GNSS-dependent
 	{

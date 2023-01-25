@@ -109,8 +109,8 @@ namespace CAN_driver_ISR
 } // namespace CAN_driver_ISR
 
 can_driver_t::can_driver_t () :
-    RX_queue (20),
-    TX_queue (20),
+    RX_queue (20,"CAN_RX"),
+    TX_queue (20,"CAN_RX"),
     reset_timer( 10000, CAN_reset_timer_callback, false),
     locked( true)
 {

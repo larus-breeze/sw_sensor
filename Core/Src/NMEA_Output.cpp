@@ -61,12 +61,20 @@ static void runnable (void* data)
     {
       decimate_sensor_observations( output_data);
       ++i;
-      if( i >=10)
+      if( i >=50)
 	{
 	  i=0;
 	  format_sensor_dump( output_data, NMEA_buf);
 	  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);
 	  USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+
+#if ACTIVATE_USART_1_NMEA
+      USART_1_transmit_DMA( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
+#endif
+#if ACTIVATE_USART_2_NMEA
+      USART_2_transmit_DMA( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
+#endif
+
 	}
     }
 #endif // Sensor setup version ***************************************

@@ -89,5 +89,6 @@ RestrictedTask watchdog_handler (blink, "WATCHDOG", configMINIMAL_STACK_SIZE, 0,
 
 extern "C" void WWDG_IRQHandler(void)
 {
+  ASSERT(0);
   asm("bkpt 0");
 }
