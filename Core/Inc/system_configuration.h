@@ -91,17 +91,20 @@ extern float * probe; // debugging probes
 #define CAN_PRIORITY		STANDARD_TASK_PRIORITY + 1
 #define WATCHDOG_TASK_PRIORITY	STANDARD_TASK_PRIORITY + 1 // todo change me to be lowest prio some day
 
-#define EMERGENCY_ISR_PRIORITY	12 // highest priority
+#define EMERGENCY_ISR_PRIORITY	11 // highest priority
+#define WATCHDOG_ISR_PRIORITY	12
 #define USB_ISR_PRIORITY	13
 #define SDIO_ISR_PRIORITY	14
 #define STANDARD_ISR_PRIORITY	15 // lowest priority
 
 #define NMEA_REPORTING_PERIOD	250 // period in clock ticks for NMEA output
 
-#define ACTIVATE_FPU_EXCEPTION_TRAP 0 // todo I want to be SET !
+#define ACTIVATE_FPU_EXCEPTION_TRAP 1 // todo I want to be SET !
 #define SET_FPU_FLUSH_TO_ZERO	1
 #define ACTIVATE_WATCHDOG	1
 #define WATCHDOG_STATISTICS 	0
 #define TRACE_ISR		0
+#define INJECT_ERROR_NUMBER	0
+
 
 #endif /* SRC_SYSTEM_CONFIGURATION_H_ */

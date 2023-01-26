@@ -31,7 +31,7 @@ typedef struct
   uint32_t Bus_Fault_Status;
   uint32_t Hard_Fault_Status;
   uint32_t Usage_Fault_Status_Register;
-
+  uint32_t IPSR;
   void * active_TCB;
 } register_dump_t;
 

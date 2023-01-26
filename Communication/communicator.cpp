@@ -18,6 +18,7 @@
 #include "D_GNSS_driver.h"
 #include "GNSS_driver.h"
 #include "CAN_distributor.h"
+#include "uSD_handler.h"
 
 extern "C" void sync_logger (void);
 
@@ -30,11 +31,6 @@ extern RestrictedTask NMEA_task;
 
 static ROM bool TRUE=true;
 static ROM bool FALSE=true;
-
-inline void harakiri(void)
-{
-  *(unsigned *)0x08000000 = 13;
-}
 
 void communicator_runnable (void*)
 {
@@ -188,7 +184,8 @@ void communicator_runnable (void*)
 	}
 
       organizer.report_data ( output_data);
-      sync_logger (); // kick logger @ 100 Hz
+      if( logger_is_enabled)
+	sync_logger (); // kick logger @ 100 Hz
     }
 }
 

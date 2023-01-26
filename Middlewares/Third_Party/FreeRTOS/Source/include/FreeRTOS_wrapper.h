@@ -377,7 +377,8 @@ public:
 	//! Resume task execution, callable ONLY from ISR !
 	inline void resume_from_ISR(void) const
 	{
-		xTaskResumeFromISR(task_handle);
+		BaseType_t HigherPriorityTaskWoken = xTaskResumeFromISR(task_handle);
+		portEND_SWITCHING_ISR(HigherPriorityTaskWoken);
 	}
 	//! Wait for task notification
 	//!

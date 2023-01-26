@@ -34,13 +34,16 @@
 #include "read_configuration_file.h"
 #include "communicator.h"
 #include "emergency.h"
+#include "uSD_handler.h"
 
 extern Semaphore setup_file_handling_completed;
 extern uint32_t UNIQUE_ID[4];
+extern bool reset_by_watchdog_requested;
 
 COMMON Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue(4,"M_CALIB");
 COMMON char *crashfile;
 COMMON unsigned crashline;
+COMMON bool logger_is_enabled;
 
 #if RUN_DATA_LOGGER
 
@@ -76,9 +79,14 @@ void newline( char * &next)
   *next = 0;
 }
 
+extern RestrictedTask uSD_handler_task; // will come downwards ...
+
 //!< write crash dump file and force MPU reset via watchdog
 void write_crash_dump( void)
 {
+  uSD_handler_task.set_priority(configMAX_PRIORITIES - 1); // set it to highest priority
+  vTaskSuspend( (TaskHandle_t)(register_dump.active_TCB)); // suspend the erroneous task
+
   FRESULT fresult;
   FIL fp;
   char buffer[50];
@@ -118,6 +126,12 @@ void write_crash_dump( void)
 
   next=append_string( buffer, (char*)"Task:     ");
   next=append_string( next, pcTaskGetName( (TaskHandle_t)(register_dump.active_TCB)));
+  newline( next);
+
+  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+
+  next=append_string( buffer, (char*)"IPSR:     ");
+  next = utox( register_dump.IPSR, next);
   newline( next);
 
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
@@ -174,7 +188,6 @@ extern RecorderDataType myTraceBuffer;
   if (fresult != FR_OK)
     return;
 
-
   for( uint8_t *ptr=(uint8_t *)&myTraceBuffer; ptr < (uint8_t *)&myTraceBuffer + sizeof(RecorderDataType); ptr += 2048)
     {
       size_t size = (uint8_t *)&myTraceBuffer + sizeof(RecorderDataType) - ptr;
@@ -182,7 +195,8 @@ extern RecorderDataType myTraceBuffer;
 	size = MEM_BUFSIZE;
       memcpy( mem_buffer, ptr, size);
       fresult = f_write (&fp, (const void *)mem_buffer, size, (UINT*) &writtenBytes);
-      ASSERT( writtenBytes == MEM_BUFSIZE);
+      if( writtenBytes != size)
+	break;
     }
   f_close(&fp);
 
@@ -190,8 +204,7 @@ extern RecorderDataType myTraceBuffer;
 
   delay(1000); // wait until data has been saved and file is closed
 
-  extern RestrictedTask data_logger;
-  data_logger.set_priority(LOGGER_PRIORITY + 5);
+  reset_by_watchdog_requested = true; // avoiding deadly loop
   while( true)
     /* wake watchdog */;
 }
@@ -285,11 +298,11 @@ void write_magnetic_calibration_file (const coordinates_t &c)
   f_close(&fp);
 }
 
-void
-data_logger_runnable (void*)
+//!< this executable takes care of all uSD reading and writing
+void uSD_handler_runnable (void*)
 {
   HAL_SD_DeInit (&hsd);
-  delay (2000); //TODO: Quick consecutive resets cause SD Card to hang. This improved but does not fix the situation. Might require switching sd card power
+  delay (1000);
 
   // wait until sd card is detected
   for( int i=10; i>0 && (! BSP_PlatformIsDetected()); --i)
@@ -317,9 +330,23 @@ data_logger_runnable (void*)
       delay (100);
     }
 
+  FIL the_file;
+  fresult = f_open (&the_file, (char *)"enable.logger", FA_READ);
+  logger_is_enabled = (fresult == FR_OK);
+  f_close( &the_file); // as this is just a dummy file
+
+  if( ! logger_is_enabled)
+    {
+      while( true)
+	{
+	notify_take (true); // wait for synchronization by crash detection
+	if( crashfile)
+	  write_crash_dump();
+	}
+    }
+
   char out_filename[30];
   char * next = out_filename;
-  FIL outfile;
 
   // generate filename based on timestamp
   next = format_date_time( next);
@@ -332,7 +359,7 @@ data_logger_runnable (void*)
 
   write_EEPROM_dump( out_filename);
 
-  fresult = f_open (&outfile, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
+  fresult = f_open (&the_file, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)
     suspend (); // give up, logger unable to work
 
@@ -342,7 +369,7 @@ data_logger_runnable (void*)
 
   while( true) // logger loop synchronized by communicator
     {
-      notify_take (true); // wait for synchronization by from communicator
+      notify_take (true); // wait for synchronization by from communicator OR crash detection
 
       if( crashfile)
 	write_crash_dump();
@@ -353,7 +380,7 @@ data_logger_runnable (void*)
       if (buf_ptr < mem_buffer + MEM_BUFSIZE)
 	continue; // buffer only filled partially
 
-      fresult = f_write (&outfile, mem_buffer, MEM_BUFSIZE, (UINT*) &writtenBytes);
+      fresult = f_write (&the_file, mem_buffer, MEM_BUFSIZE, (UINT*) &writtenBytes);
       if( ! ((fresult == FR_OK) && (writtenBytes == MEM_BUFSIZE)))
 	while(true)
 	  suspend (); // give up, logger can not work
@@ -370,7 +397,7 @@ data_logger_runnable (void*)
       if( ++sync_counter >= 16)
 	{
 	  sync_counter = 0;
-	  f_sync (&outfile);
+	  f_sync (&the_file);
 #if LOG_MAGNETIC_CALIBRATION
 	  write_magnetic_calibration_file ( output_data.c);
 #endif
@@ -382,7 +409,7 @@ data_logger_runnable (void*)
 static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 
 static TaskParameters_t p =
-  { data_logger_runnable, "LOGGER",
+  { uSD_handler_runnable, "uSD",
   STACKSIZE, 0,
   LOGGER_PRIORITY + portPRIVILEGE_BIT, stack_buffer,
     {
@@ -390,17 +417,52 @@ static TaskParameters_t p =
       { (void *)0x80f8000, 0x8000, portMPU_REGION_READ_WRITE },
       { 0, 0, 0 } } };
 
-COMMON RestrictedTask data_logger (p);
+COMMON RestrictedTask uSD_handler_task (p);
 
 extern "C" void sync_logger(void)
   {
-    data_logger.notify_give ();
+    uSD_handler_task.notify_give ();
   }
 
+//!< this function is called synchronously from task context
 extern "C" void emergency_write_crashdump( char * file, int line)
   {
-    crashfile=file;
-    crashline=line;
+  acquire_privileges();
+  crashfile=file;
+  crashline=line;
+  extern void * pxCurrentTCB;
+  register_dump.active_TCB = pxCurrentTCB;
+  uSD_handler_task.set_priority(configMAX_PRIORITIES - 1); // set it to highest priority
+  uSD_handler_task.notify_give();
+  suspend();
   }
+
+void kill_amok_task( void *)
+{
+  while( true)
+    {
+      suspend();
+      if( register_dump.active_TCB)
+	vTaskSuspend( (TaskHandle_t)(register_dump.active_TCB));
+    }
+}
+
+COMMON RestrictedTask amok_running_task_killer( kill_amok_task, "ANTI_AMOK", configMINIMAL_STACK_SIZE, 0, configMAX_PRIORITIES -1);
+
+//!< this function is called in exception context
+extern "C" void finish_crash_handling( void)
+{
+  extern void * pxCurrentTCB;
+  register_dump.active_TCB = pxCurrentTCB;
+
+  // remember what happened
+  crashfile=(char *)"EXCEPTION";
+  crashline=0;
+
+  // triggger error logging
+  uSD_handler_task.notify_give_from_ISR();
+  amok_running_task_killer.resume_from_ISR();
+}
+
 
 #endif

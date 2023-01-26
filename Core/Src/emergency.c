@@ -42,12 +42,7 @@ void assert_failed(uint8_t* file, uint32_t line)
     MPU_vTaskSuspend(0);
 }
 
-void task_suspend_helper( void)
-{
-  sync_logger();
-  while(1)
-    MPU_vTaskSuspend(0);
-}
+extern void finish_crash_handling(void);
 
 void analyze_fault_stack(volatile unsigned int * hardfault_args)
 {
@@ -57,16 +52,17 @@ void analyze_fault_stack(volatile unsigned int * hardfault_args)
   register_dump.stacked_r3 = ((unsigned long) hardfault_args[3]);
 
   register_dump.stacked_r12 = ((unsigned long) hardfault_args[4]);
-  register_dump.stacked_lr = ((unsigned long) hardfault_args[5]);
-  register_dump.stacked_pc = ((unsigned long) hardfault_args[6]);
+  register_dump.stacked_lr  = ((unsigned long) hardfault_args[5]);
+  register_dump.stacked_pc  = ((unsigned long) hardfault_args[6]);
   register_dump.stacked_psr = ((unsigned long) hardfault_args[7]);
+
+  register_dump.IPSR = __get_IPSR();
+  register_dump.FPU_StatusControlRegister = __get_FPSCR();
 
   extern void * pxCurrentTCB;
   register_dump.active_TCB = pxCurrentTCB;
 
-  hardfault_args[6] = task_suspend_helper;
-
-  emergency_write_crashdump( __FILE__, __LINE__);
+  finish_crash_handling();
 }
 
 void FPU_IRQHandler( void)
@@ -82,7 +78,7 @@ void FPU_IRQHandler( void)
       " mrseq r0, msp                                                  \n"
       " mrsne r0, psp                                                  \n"
       " ldr r1, [r0, #24]                                              \n"
-      " ldr r2, handler1_address_const                                \n"
+      " ldr r2, handler1_address_const                                 \n"
       " bx r2                                                          \n"
       " handler1_address_const: .word analyze_fault_stack   	       \n"
   );
@@ -146,7 +142,7 @@ MemManage_Handler(void)
       " mrseq r0, msp                                                  \n"
       " mrsne r0, psp                                                  \n"
       " ldr r1, [r0, #24]                                              \n"
-      " ldr r2, handler3_address_const                                \n"
+      " ldr r2, handler3_address_const                                 \n"
       " bx r2                                                          \n"
       " handler3_address_const: .word analyze_fault_stack   	       \n"
   );
@@ -178,7 +174,7 @@ BusFault_Handler(void)
       " mrseq r0, msp                                                  \n"
       " mrsne r0, psp                                                  \n"
       " ldr r1, [r0, #24]                                              \n"
-      " ldr r2, handler4_address_const                                \n"
+      " ldr r2, handler4_address_const                                 \n"
       " bx r2                                                          \n"
       " handler4_address_const: .word analyze_fault_stack  \n"
   );

@@ -27,6 +27,7 @@
 #include "FreeRTOS_wrapper.h"
 
 static COMMON WWDG_HandleTypeDef WwdgHandle;
+bool reset_by_watchdog_requested = false;
 
 void heartbeat (void)
 {
@@ -41,7 +42,7 @@ COMMON volatile uint32_t watchdog_min=0xffffffff;
 COMMON volatile uint32_t watchdog_max=0;
 #endif
 
-void blink (void*)
+void watchdog_runnable (void*)
 {
 #if ACTIVATE_WATCHDOG
   acquire_privileges();
@@ -53,7 +54,7 @@ void blink (void*)
   WwdgHandle.Init.Counter = 127;
   WwdgHandle.Init.EWIMode=WWDG_EWI_ENABLE;
 
-  NVIC_SetPriority ((IRQn_Type) WWDG_IRQn, STANDARD_ISR_PRIORITY);
+  NVIC_SetPriority ((IRQn_Type) WWDG_IRQn, WATCHDOG_ISR_PRIORITY);
   NVIC_EnableIRQ ((IRQn_Type) WWDG_IRQn);
 
   if (HAL_WWDG_Init (&WwdgHandle) != HAL_OK)
@@ -79,16 +80,22 @@ void blink (void*)
       if( watchdog_actual < watchdog_min)
 	watchdog_min = watchdog_actual;
 #endif
-      if (HAL_WWDG_Refresh (&WwdgHandle) != HAL_OK)
-	  Error_Handler ();
+      HAL_WWDG_Refresh (&WwdgHandle);
 #endif
     }
 }
 
-RestrictedTask watchdog_handler (blink, "WATCHDOG", configMINIMAL_STACK_SIZE, 0, WATCHDOG_TASK_PRIORITY);
+RestrictedTask watchdog_handler ( watchdog_runnable, "WATCHDOG", configMINIMAL_STACK_SIZE, 0, WATCHDOG_TASK_PRIORITY);
+
+extern "C" void finish_crash_handling( void);
 
 extern "C" void WWDG_IRQHandler(void)
 {
-  ASSERT(0);
-  asm("bkpt 0");
+  if( reset_by_watchdog_requested) // we came here intentionally !
+    while( true)
+      ; // deadly ISR spinlock, leads to a core reset
+
+  HAL_WWDG_Refresh (&WwdgHandle); // reset watchdog one more time
+  finish_crash_handling(); // trigger logging
 }
+
