@@ -1,6 +1,6 @@
 /** *****************************************************************************
- * @file    	data_logger.cpp
- * @brief   	data logging to uSD
+ * @file    	uSD_handler.cpp
+ * @brief   	uSD File reader + writer
  * @author  	Dr. Klaus Schaefer,  some adaptions by Maximilian Betz
  * @copyright 	Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
  * @license 	This project is released under the GNU Public License GPL-3.0
@@ -54,6 +54,7 @@ extern int64_t FAT_time; //!< DOS FAT time for file usage
 #define RESERVE 512
 static uint8_t __ALIGNED(MEM_BUFSIZE) mem_buffer[MEM_BUFSIZE + RESERVE];
 
+//!< format date and time from sat fix data
 char * format_date_time( char * target)
 {
   target = format_2_digits( target, output_data.c.year);
@@ -67,12 +68,15 @@ char * format_date_time( char * target)
   return target;
 }
 
+//!< append carriage return and newline and advance pointer
 void newline( char * &next)
 {
   *next++ = '\r';
   *next++ = '\n';
+  *next = 0;
 }
 
+//!< write crash dump file and force MPU reset via watchdog
 void write_crash_dump( void)
 {
   FRESULT fresult;
@@ -254,16 +258,8 @@ void write_magnetic_calibration_file (const coordinates_t &c)
   if (false == magnetic_calibration_queue.receive (data, 0))
     return;
 
-  next = format_2_digits(next, c.year);
-  next = format_2_digits(next, c.month);
-  next = format_2_digits(next, c.day);
-  *next++ = '_';
-  next = format_2_digits(next, c.hour);
-  next = format_2_digits(next, c.minute);
-  next = format_2_digits(next, c.second);
-
+  next = format_date_time( next);
   *next++ = (char)(data[0].id);
-
   append_string(next, ".mcl");
 
   fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
@@ -295,15 +291,12 @@ data_logger_runnable (void*)
   HAL_SD_DeInit (&hsd);
   delay (2000); //TODO: Quick consecutive resets cause SD Card to hang. This improved but does not fix the situation. Might require switching sd card power
 
-  char out_filename[30];
-  FRESULT fresult;
-  FIL outfile;
-
   // wait until sd card is detected
   for( int i=10; i>0 && (! BSP_PlatformIsDetected()); --i)
       delay (1000);
   delay (100); // wait until card is plugged correctly
 
+  FRESULT fresult;
   fresult = f_mount (&fatfs, "", 0);
 
   if (fresult != FR_OK)
@@ -321,67 +314,18 @@ data_logger_runnable (void*)
     {
       if( crashfile)
 	write_crash_dump();
-
-      delay (100); /* klaus: this bad guy has implemented a spinlock (max) */
+      delay (100);
     }
+
+  char out_filename[30];
+  char * next = out_filename;
+  FIL outfile;
 
   // generate filename based on timestamp
-  int idx = 0;
-  itoa (2000 + output_data.c.year, out_filename, 10);
-  while (out_filename[idx] != 0)
-    idx++;
-  if (output_data.c.month < 10)
-    {
-      out_filename[idx] = '0';
-      idx++;
-    }
-  itoa (output_data.c.month, &out_filename[idx], 10);
-  while (out_filename[idx] != 0)
-    idx++;
-
-  if (output_data.c.day < 10)
-    {
-      out_filename[idx] = '0';
-      idx++;
-    }
-  itoa (output_data.c.day, &out_filename[idx], 10);
-  while (out_filename[idx] != 0)
-    idx++;
-
-  if (output_data.c.hour < 10)
-    {
-      out_filename[idx] = '0';
-      idx++;
-    }
-  itoa (output_data.c.hour, &out_filename[idx], 10);
-  while (out_filename[idx] != 0)
-    idx++;
-
-  if (output_data.c.minute < 10)
-    {
-      out_filename[idx] = '0';
-      idx++;
-    }
-  itoa (output_data.c.minute, &out_filename[idx], 10);
-  while (out_filename[idx] != 0)
-    idx++;
-
-  if (output_data.c.second < 10)
-    {
-      out_filename[idx] = '0';
-      idx++;
-    }
-  itoa (output_data.c.second, &out_filename[idx], 10);
-  while (out_filename[idx] != 0)
-    idx++;
-
-  out_filename[idx] = '.';
-  out_filename[idx + 1] = 'f';
-
-  itoa ((sizeof(coordinates_t) + sizeof(measurement_data_t)) / sizeof(float),
-	out_filename + idx + 2, 10);
-
-  GPIO_PinState led_state = GPIO_PIN_RESET;
+  next = format_date_time( next);
+  *next++ = '.';
+  *next++  = 'f';
+  next = format_2_digits( next, (sizeof(coordinates_t) + sizeof(measurement_data_t)) / sizeof(float));
 
   uint32_t writtenBytes = 0;
   uint8_t *buf_ptr = mem_buffer;
@@ -393,6 +337,8 @@ data_logger_runnable (void*)
     suspend (); // give up, logger unable to work
 
   int32_t sync_counter=0;
+
+  GPIO_PinState led_state = GPIO_PIN_RESET;
 
   while( true) // logger loop synchronized by communicator
     {
@@ -416,14 +362,15 @@ data_logger_runnable (void*)
       memcpy (mem_buffer, mem_buffer + MEM_BUFSIZE, rest);
       buf_ptr = mem_buffer + rest;
 
+#if uSD_LED_STATUS
+      HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, led_state);
+      led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
+#endif
+
       if( ++sync_counter >= 16)
 	{
-	  f_sync (&outfile);
 	  sync_counter = 0;
-#if uSD_LED_STATUS
-	  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, led_state);
-	  led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
-#endif
+	  f_sync (&outfile);
 #if LOG_MAGNETIC_CALIBRATION
 	  write_magnetic_calibration_file ( output_data.c);
 #endif
