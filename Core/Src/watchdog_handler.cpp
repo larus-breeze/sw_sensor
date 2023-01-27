@@ -60,14 +60,14 @@ void initialize_watchdog(void)
 void watchdog_runnable (void*)
 {
 #if ACTIVATE_WATCHDOG
+
+  delay( 3000); // allow system start w/o timeout danger
+
   acquire_privileges();
-
   initialize_watchdog();
-
   drop_privileges();
 
 #endif // ACTIVATE_WATCHDOG
-
 
   uint8_t rythm = 0;
   for (synchronous_timer t (40); true;)
