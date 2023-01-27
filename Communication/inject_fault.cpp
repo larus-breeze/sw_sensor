@@ -13,7 +13,7 @@ volatile void recursion(void)
 
 void runnable( void * p_fault_type)
 {
-  delay( 5000);
+  delay( 10000);
   switch( *(unsigned *)p_fault_type)
   {
     case 1:

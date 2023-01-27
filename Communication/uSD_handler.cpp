@@ -200,7 +200,20 @@ extern RecorderDataType myTraceBuffer;
 
 #endif // ************************************************************************
 
-  delay(1000); // wait until data has been saved and file is closed
+  // log one complete set of output data independent of data logging status
+  next = format_date_time( buffer);
+  *next++ = '.';
+  *next++  = 'f';
+  next = format_2_digits( next, sizeof( output_data_t) / sizeof(float));
+
+  fresult = f_open ( &fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
+  if (fresult == FR_OK)
+    {
+      fresult = f_write (&fp, (uint8_t*) &output_data, sizeof( output_data_t), &writtenBytes);
+      f_close( &fp);
+    }
+
+  delay(1000); // wait until data has been saved and file is closed (DMA...)
 
   while( true)
     /* wake watchdog */;
@@ -351,7 +364,7 @@ void uSD_handler_runnable (void*)
   *next++  = 'f';
   next = format_2_digits( next, (sizeof(coordinates_t) + sizeof(measurement_data_t)) / sizeof(float));
 
-  uint32_t writtenBytes = 0;
+  UINT writtenBytes = 0;
   uint8_t *buf_ptr = mem_buffer;
 
   write_EEPROM_dump( out_filename);
@@ -377,7 +390,7 @@ void uSD_handler_runnable (void*)
       if (buf_ptr < mem_buffer + MEM_BUFSIZE)
 	continue; // buffer only filled partially
 
-      fresult = f_write (&the_file, mem_buffer, MEM_BUFSIZE, (UINT*) &writtenBytes);
+      fresult = f_write (&the_file, mem_buffer, MEM_BUFSIZE, &writtenBytes);
       if( ! ((fresult == FR_OK) && (writtenBytes == MEM_BUFSIZE)))
 	while(true)
 	  suspend (); // give up, logger can not work
@@ -434,6 +447,8 @@ extern "C" void emergency_write_crashdump( char * file, int line)
   suspend();
   }
 
+COMMON bool watchdog_has_been_triggered = false;
+
 //!< helper task to stop everything and launch emergency logging
 void kill_amok_running_task( void *)
 {
@@ -441,7 +456,10 @@ void kill_amok_running_task( void *)
 	suspend();
 
   vTaskSuspend( (TaskHandle_t)(register_dump.active_TCB)); // probably the amok running task
-  watchdog_handler.suspend(); // avoid WWDG reset out of phase
+
+  if( watchdog_has_been_triggered)
+    watchdog_handler.suspend(); // avoid WWDG reset out of phase if already activated
+
   uSD_handler_task.set_priority(configMAX_PRIORITIES - 1); // set it to highest priority
   uSD_handler_task.notify_give();
   while( true) // job done
@@ -474,6 +492,8 @@ extern "C" void handle_watchdog_trigger( void)
   // remember what happened
   crashfile=(char *)"WATCHDOG";
   crashline=0;
+
+  watchdog_has_been_triggered = true;
 
   // triggger error logging
   uSD_handler_task.notify_give_from_ISR();

@@ -97,7 +97,7 @@ unsigned watchdog_counter = 0;
 void HAL_WWDG_EarlyWakeupCallback(WWDG_HandleTypeDef *handle)
 {
   ++watchdog_counter;	// give time for the uSD system to record the crash
-  if( watchdog_counter < 50) // then allow the watchdog to reset the uContoller
+  if( watchdog_counter < 100) // then allow the watchdog to reset the uContoller
     HAL_WWDG_Refresh (handle);
 }
 
