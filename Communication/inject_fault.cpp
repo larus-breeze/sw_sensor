@@ -43,7 +43,7 @@ void runnable( void * p_fault_type)
 	ASSERT( 0);
       return;
       break;
-    case 10:
+    case 7:
       while( true)
 	/* tease our watchdog */;
       break;
