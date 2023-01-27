@@ -27,7 +27,6 @@
 #include "FreeRTOS_wrapper.h"
 
 static COMMON WWDG_HandleTypeDef WwdgHandle;
-bool reset_by_watchdog_requested = false;
 
 void heartbeat (void)
 {
@@ -42,11 +41,8 @@ COMMON volatile uint32_t watchdog_min=0xffffffff;
 COMMON volatile uint32_t watchdog_max=0;
 #endif
 
-void watchdog_runnable (void*)
+void initialize_watchdog(void)
 {
-#if ACTIVATE_WATCHDOG
-  acquire_privileges();
-
   __HAL_RCC_WWDG_CLK_ENABLE();
   WwdgHandle.Instance = WWDG;
   WwdgHandle.Init.Prescaler = WWDG_PRESCALER_8;
@@ -59,6 +55,14 @@ void watchdog_runnable (void*)
 
   if (HAL_WWDG_Init (&WwdgHandle) != HAL_OK)
     Error_Handler ();
+}
+
+void watchdog_runnable (void*)
+{
+#if ACTIVATE_WATCHDOG
+  acquire_privileges();
+
+  initialize_watchdog();
 
   drop_privileges();
 
@@ -85,17 +89,21 @@ void watchdog_runnable (void*)
     }
 }
 
-RestrictedTask watchdog_handler ( watchdog_runnable, "WATCHDOG", configMINIMAL_STACK_SIZE, 0, WATCHDOG_TASK_PRIORITY);
+COMMON RestrictedTask watchdog_handler ( watchdog_runnable, "WATCHDOG", configMINIMAL_STACK_SIZE, 0, WATCHDOG_TASK_PRIORITY);
 
-extern "C" void finish_crash_handling( void);
+extern "C" void handle_watchdog_trigger( void);
+
+unsigned watchdog_counter = 0;
+void HAL_WWDG_EarlyWakeupCallback(WWDG_HandleTypeDef *handle)
+{
+  ++watchdog_counter;	// give time for the uSD system to record the crash
+  if( watchdog_counter < 50) // then allow the watchdog to reset the uContoller
+    HAL_WWDG_Refresh (handle);
+}
 
 extern "C" void WWDG_IRQHandler(void)
 {
-  if( reset_by_watchdog_requested) // we came here intentionally !
-    while( true)
-      ; // deadly ISR spinlock, leads to a core reset
-
-  HAL_WWDG_Refresh (&WwdgHandle); // reset watchdog one more time
-  finish_crash_handling(); // trigger logging
+  HAL_WWDG_IRQHandler(&WwdgHandle);
+  if( watchdog_counter < 2) // do this just once, watchdog_counter already incremented to 1
+    handle_watchdog_trigger();
 }
-

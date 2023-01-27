@@ -35,6 +35,7 @@
 #include "communicator.h"
 #include "emergency.h"
 #include "uSD_handler.h"
+#include "watchdog_handler.h"
 
 extern Semaphore setup_file_handling_completed;
 extern uint32_t UNIQUE_ID[4];
@@ -84,14 +85,11 @@ extern RestrictedTask uSD_handler_task; // will come downwards ...
 //!< write crash dump file and force MPU reset via watchdog
 void write_crash_dump( void)
 {
-  uSD_handler_task.set_priority(configMAX_PRIORITIES - 1); // set it to highest priority
-  vTaskSuspend( (TaskHandle_t)(register_dump.active_TCB)); // suspend the erroneous task
-
   FRESULT fresult;
   FIL fp;
   char buffer[50];
   char *next = buffer;
-  int32_t writtenBytes = 0;
+  UINT writtenBytes = 0;
 
 #if configUSE_TRACE_FACILITY // ************************************************
 #include "trcConfig.h"
@@ -109,32 +107,32 @@ void write_crash_dump( void)
   next=append_string( next, GIT_TAG_INFO);
   newline( next);
 
-  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+  f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"Hardware: ");
   next = utox( UNIQUE_ID[0], next, 8);
   newline( next);
 
-  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+  f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, crashfile);
   next=append_string( next, (char*)" Line: ");
   next = my_itoa( next, crashline);
   newline( next);
 
-  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+  f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"Task:     ");
   next=append_string( next, pcTaskGetName( (TaskHandle_t)(register_dump.active_TCB)));
   newline( next);
 
-  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+  f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"IPSR:     ");
   next = utox( register_dump.IPSR, next);
   newline( next);
 
-  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+  f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"PC:       ");
   next = utox( register_dump.stacked_pc, next);
@@ -143,13 +141,13 @@ void write_crash_dump( void)
   next = utox( register_dump.stacked_lr, next);
   newline( next);
 
-  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+  f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"BusFA:    ");
   next = utox( register_dump.Bus_Fault_Address, next);
   newline( next);
 
-  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+  f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"MemA:     ");
   next = utox( register_dump.Bad_Memory_Address, next);
@@ -159,7 +157,7 @@ void write_crash_dump( void)
   next = utox( register_dump.Memory_Fault_status, next);
   newline( next);
 
-  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+  f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"FPU_S:    ");
   next = utox( register_dump.FPU_StatusControlRegister, next);
@@ -169,13 +167,13 @@ void write_crash_dump( void)
   next = utox( register_dump.Usage_Fault_Status_Register, next);
   newline( next);
 
-  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+  f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"HardFS:   ");
   next = utox( register_dump.Hard_Fault_Status, next);
   newline( next);
 
-  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+  f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   f_close(&fp);
 
@@ -190,12 +188,12 @@ extern RecorderDataType myTraceBuffer;
 
   for( uint8_t *ptr=(uint8_t *)&myTraceBuffer; ptr < (uint8_t *)&myTraceBuffer + sizeof(RecorderDataType); ptr += 2048)
     {
-      size_t size = (uint8_t *)&myTraceBuffer + sizeof(RecorderDataType) - ptr;
+      UINT size = (uint8_t *)&myTraceBuffer + sizeof(RecorderDataType) - ptr;
       if( size > MEM_BUFSIZE)
 	size = MEM_BUFSIZE;
       memcpy( mem_buffer, ptr, size);
-      fresult = f_write (&fp, (const void *)mem_buffer, size, (UINT*) &writtenBytes);
-      if( writtenBytes != size)
+      fresult = f_write (&fp, (const void *)mem_buffer, size, &writtenBytes);
+      if( writtenBytes < size)
 	break;
     }
   f_close(&fp);
@@ -204,7 +202,6 @@ extern RecorderDataType myTraceBuffer;
 
   delay(1000); // wait until data has been saved and file is closed
 
-  reset_by_watchdog_requested = true; // avoiding deadly loop
   while( true)
     /* wake watchdog */;
 }
@@ -437,17 +434,21 @@ extern "C" void emergency_write_crashdump( char * file, int line)
   suspend();
   }
 
-void kill_amok_task( void *)
+//!< helper task to stop everything and launch emergency logging
+void kill_amok_running_task( void *)
 {
-  while( true)
-    {
-      suspend();
-      if( register_dump.active_TCB)
-	vTaskSuspend( (TaskHandle_t)(register_dump.active_TCB));
-    }
+  while ( 0 == register_dump.active_TCB)
+	suspend();
+
+  vTaskSuspend( (TaskHandle_t)(register_dump.active_TCB)); // probably the amok running task
+  watchdog_handler.suspend(); // avoid WWDG reset out of phase
+  uSD_handler_task.set_priority(configMAX_PRIORITIES - 1); // set it to highest priority
+  uSD_handler_task.notify_give();
+  while( true) // job done
+    suspend();
 }
 
-COMMON RestrictedTask amok_running_task_killer( kill_amok_task, "ANTI_AMOK", configMINIMAL_STACK_SIZE, 0, configMAX_PRIORITIES -1);
+RestrictedTask amok_running_task_killer( kill_amok_running_task, "ANTI_AMOK", configMINIMAL_STACK_SIZE, 0, configMAX_PRIORITIES -1);
 
 //!< this function is called in exception context
 extern "C" void finish_crash_handling( void)
@@ -464,5 +465,19 @@ extern "C" void finish_crash_handling( void)
   amok_running_task_killer.resume_from_ISR();
 }
 
+//!< this function is called if the watchdog has been woken up
+extern "C" void handle_watchdog_trigger( void)
+{
+  extern void * pxCurrentTCB;
+  register_dump.active_TCB = pxCurrentTCB;
+
+  // remember what happened
+  crashfile=(char *)"WATCHDOG";
+  crashline=0;
+
+  // triggger error logging
+  uSD_handler_task.notify_give_from_ISR();
+  amok_running_task_killer.resume_from_ISR();
+}
 
 #endif

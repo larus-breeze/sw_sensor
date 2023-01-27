@@ -106,5 +106,4 @@ extern float * probe; // debugging probes
 #define TRACE_ISR		0
 #define INJECT_ERROR_NUMBER	0
 
-
 #endif /* SRC_SYSTEM_CONFIGURATION_H_ */
