@@ -84,6 +84,7 @@ extern float * probe; // debugging probes
 #define PITOT_PRIORITY		STANDARD_TASK_PRIORITY + 2
 
 #define COMMUNICATOR_PRIORITY	STANDARD_TASK_PRIORITY + 2
+#define COMMUNICATOR_START_PRIORITY STANDARD_TASK_PRIORITY
 
 #define NMEA_USB_PRIORITY	STANDARD_TASK_PRIORITY + 3
 #define BLUETOOTH_PRIORITY	STANDARD_TASK_PRIORITY + 1
@@ -91,11 +92,14 @@ extern float * probe; // debugging probes
 #define CAN_PRIORITY		STANDARD_TASK_PRIORITY + 1
 #define WATCHDOG_TASK_PRIORITY	STANDARD_TASK_PRIORITY + 1 // todo change me to be lowest prio some day
 
-#define EMERGENCY_ISR_PRIORITY	11 // highest priority
-#define WATCHDOG_ISR_PRIORITY	12
-#define USB_ISR_PRIORITY	13
-#define SDIO_ISR_PRIORITY	14
-#define STANDARD_ISR_PRIORITY	15 // lowest priority
+#define EMERGENCY_ISR_PRIORITY	8 // highest priority
+#define USB_ISR_PRIORITY	9
+#define SDIO_ISR_PRIORITY	10
+
+#define STANDARD_ISR_PRIORITY	14
+#define WATCHDOG_ISR_PRIORITY	15 // lowest priority
+
+#define NMEA_START_DELAY	10000
 
 #define NMEA_REPORTING_PERIOD	250 // period in clock ticks for NMEA output
 

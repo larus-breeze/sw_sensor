@@ -40,12 +40,15 @@
 #define SPAN 0.5261f
 #define OFFSET 1638 // exakt 0.1 * 16384
 
-static void runnable( void *)
+static void runnable (void*)
 {
-	uint8_t data[4];
+restart:
 
-	I2C_Init( &hi2c1);
-	drop_privileges();
+  uint8_t data[4];
+
+  acquire_privileges ();
+  I2C_Init (&hi2c1);
+  drop_privileges();
 
 #if RUN_FXOS8700
 	float xyz_acc[] = { 0, 0, 0 };
@@ -65,25 +68,26 @@ static void runnable( void *)
 	}
 #endif
 #if RUN_PITOT_MODULE
-	if(I2C_OK == I2C_Read( &hi2c1, I2C_ADDRESS, data, 2))
-	    update_system_state_set( PITOT_SENSOR_AVAILABLE);
+  if (I2C_OK == I2C_Read (&hi2c1, I2C_ADDRESS, data, 2))
+    update_system_state_set (PITOT_SENSOR_AVAILABLE);
 
-	delay( 10); // wait for "next measurement available"
+  delay (10); // wait for "next measurement available"
 #endif
-	for( synchronous_timer t(10); true; t.sync())
-	{
+  for (synchronous_timer t (10); true; t.sync ())
+    {
 #if RUN_PITOT_MODULE
-		if(I2C_OK == I2C_Read( &hi2c1, I2C_ADDRESS, data, 2))
-		{
-			ASSERT(( data[0] & 0xC0)==0); 			// no error flags !
-			uint16_t raw_data = (data[0] << 8) | data[1];
-			output_data.m.pitot_pressure = ((float)( raw_data - OFFSET) * SPAN);		
-		}
-		else
-		{
-			//TODO: log Sensor read error. Shall we set Pitot pressure here to 0 to ensure
-			// faulty reading does not cause a wrong air speed?
-		}
+      if ((I2C_OK == I2C_Read (&hi2c1, I2C_ADDRESS, data, 2)
+	  && (data[0] & 0xC0) == 0)) // no error flags read
+	{
+	  uint16_t raw_data = (data[0] << 8) | data[1];
+	  output_data.m.pitot_pressure = ((float) (raw_data - OFFSET) * SPAN);
+	}
+      else
+	{
+	  output_data.m.pitot_pressure = 0.0f;
+	  update_system_state_clear (PITOT_SENSOR_AVAILABLE);
+	  goto restart;
+	}
 #endif
 #if RUN_FXOS8700
 		if(true == fxos8700_available)  // Only read value if sensor is available
@@ -103,9 +107,9 @@ static void runnable( void *)
 
 		}
 #endif
-	}
+    }
 }
 
-RestrictedTask pitot_reading ( runnable, "PITOT", 512, 0, PITOT_PRIORITY + portPRIVILEGE_BIT);
-
+RestrictedTask pitot_reading (runnable, "PITOT", 512, 0,
+			      PITOT_PRIORITY + portPRIVILEGE_BIT);
 

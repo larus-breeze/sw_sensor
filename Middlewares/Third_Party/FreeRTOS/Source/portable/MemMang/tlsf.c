@@ -5,6 +5,7 @@
 
 #include "tlsf.h"
 #include "tlsfbits.h"
+#include "my_assert.h"
 
 /*
 ** Constants.
@@ -686,7 +687,7 @@ int tlsf_check(tlsf_t tlsf)
 static void default_walker(void* ptr, size_t size, int used, void* user)
 {
 	(void)user;
-	__asm volatile ( "bkpt 0" );
+	      ASSERT( 0);
 //	printf("\t%p %s size: %x (%p)\n", ptr, used ? "used" : "free", (unsigned int)size, block_from_ptr(ptr));
 }
 
@@ -776,7 +777,7 @@ pool_t tlsf_add_pool(tlsf_t tlsf, void* mem, size_t bytes)
 
 	if (((ptrdiff_t)mem % ALIGN_SIZE) != 0)
 	{
-		__asm volatile ( "bkpt 0" );
+	      ASSERT( 0);
 //		printf("tlsf_add_pool: Memory must be aligned by %u bytes.\n",
 //			(unsigned int)ALIGN_SIZE);
 		return 0;
@@ -784,7 +785,7 @@ pool_t tlsf_add_pool(tlsf_t tlsf, void* mem, size_t bytes)
 
 	if (pool_bytes < block_size_min || pool_bytes > block_size_max)
 	{
-		__asm volatile ( "bkpt 0" );
+	      ASSERT( 0);
 #if 0
 #if defined (TLSF_64BIT)
 		printf("tlsf_add_pool: Memory size must be between 0x%x and 0x%x00 bytes.\n", 
@@ -877,7 +878,7 @@ tlsf_t tlsf_create(void* mem)
 
 	if (((tlsfptr_t)mem % ALIGN_SIZE) != 0)
 	{
-		__asm volatile ( "bkpt 0" );
+	      ASSERT( 0);
 //		printf("tlsf_create: Memory must be aligned to %u bytes.\n",
 //			(unsigned int)ALIGN_SIZE);
 		return 0;

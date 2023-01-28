@@ -25,6 +25,7 @@
 #include "stm32f4xx_hal.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "my_assert.h"
 
 #if configUSE_TRACE_FACILITY == 1
 #include "trcConfig.h"
@@ -136,5 +137,5 @@ uint64_t getTime_usec(void)
 void
 vApplicationStackOverflowHook(void)
 {
-  __asm volatile ( "bkpt 0" );
+  ASSERT( 0);
 }

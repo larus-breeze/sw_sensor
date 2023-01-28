@@ -120,7 +120,7 @@ can_driver_t::can_driver_t () :
 void can_driver_t::initialize(void)
 {
   if (HAL_CAN_DeInit (&CanHandle) != HAL_OK)
-      asm("bkpt 0");
+    ASSERT( 0);
 
   __HAL_RCC_CAN1_CLK_ENABLE();  // also required for CAN2 !!
 //  __HAL_RCC_CAN2_CLK_ENABLE();
@@ -167,10 +167,7 @@ void can_driver_t::initialize(void)
   CanHandle.Init.Prescaler = 6;
 
   if (HAL_CAN_Init (&CanHandle) != HAL_OK)
-    {
-      /* Initialization Error */
-      asm("bkpt 0");
-    }
+    ASSERT( 0);
 
   /*##-2- Configure the CAN Filter ###########################################*/
   sFilterConfig.FilterBank = 0;
@@ -185,22 +182,16 @@ void can_driver_t::initialize(void)
   sFilterConfig.SlaveStartFilterBank = 14;
 
   if (HAL_CAN_ConfigFilter (&CanHandle, &sFilterConfig) != HAL_OK)
-    {
-      /* Filter configuration Error */
-      asm("bkpt 0");
-    }
+    ASSERT( 0);
 
   /*##-3- Start the CAN peripheral ###########################################*/
   if (HAL_CAN_Start (&CanHandle) != HAL_OK)
-      asm("bkpt 0");
+    ASSERT( 0);
 
   /*##-4- Activate CAN RX notification #######################################*/
   if (HAL_CAN_ActivateNotification (&CanHandle, CAN_IT_RX_FIFO0_MSG_PENDING)
       != HAL_OK)
-    {
-      /* Notification Error */
-      asm("bkpt 0");
-    }
+    ASSERT( 0);
 
   uint32_t prioritygroup = NVIC_GetPriorityGrouping ();
 

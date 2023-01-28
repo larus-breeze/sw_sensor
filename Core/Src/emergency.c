@@ -56,8 +56,14 @@ void analyze_fault_stack(volatile unsigned int * hardfault_args)
   register_dump.stacked_pc  = ((unsigned long) hardfault_args[6]);
   register_dump.stacked_psr = ((unsigned long) hardfault_args[7]);
 
+  register_dump.Hard_Fault_Status = *(uint32_t *) 0xe000ed2c;
   register_dump.IPSR = __get_IPSR();
   register_dump.FPU_StatusControlRegister = __get_FPSCR();
+  register_dump.Bad_Memory_Address = *(int*) 0xe000ed34;
+  register_dump.Memory_Fault_status    = *(uint8_t*) 0xe000ed28;
+  register_dump.Bus_Fault_Address=*(uint32_t *)0xe000ed38;
+  register_dump.Bus_Fault_Status =*(uint8_t *) 0xe000ed29;
+  register_dump.Usage_Fault_Status_Register = * (uint16_t *)0xe000ed2a;
 
   extern void * pxCurrentTCB;
   register_dump.active_TCB = pxCurrentTCB;
@@ -92,7 +98,18 @@ void FPU_IRQHandler( void)
 void
 NMI_Handler(void)
 {
-  __asm volatile ( "bkpt 0" );
+  __asm volatile
+  (
+      " mov r5, #3                                                     \n"
+      " tst lr, #4                                                     \n"
+      " ite eq                                                         \n"
+      " mrseq r0, msp                                                  \n"
+      " mrsne r0, psp                                                  \n"
+      " ldr r1, [r0, #24]                                              \n"
+      " ldr r2, handler5u_address_const                                \n"
+      " bx r2                                                          \n"
+      " handler5u_address_const: .word analyze_fault_stack	       \n"
+  );
 }
 
 /**
@@ -103,7 +120,6 @@ NMI_Handler(void)
 void
 HardFault_Handler(void)
 {
-  register_dump.Hard_Fault_Status = *(uint32_t *) 0xe000ed2c;
   __asm volatile
   (
       " mov r5, #0                                              \n"
@@ -211,13 +227,6 @@ void DebugMon_Handler(void)
 {
 }
 
-#if 0
-void Default_Handler( void)
-{
-  uint32_t active_vector = *(NVIC->IABR);
-  asm("bkpt 0");
-}
-#endif
 /**
  * @brief  This function handles FreeRTOS's Stack Overflow exception.
  */
@@ -236,6 +245,25 @@ vApplicationMallocFailedHook(void)
   ASSERT(0);
 }
 
+/**
+ * @brief  This function handles FreeRTOS's out of memory exception.
+ */
+void illegal_interrupt_vector_hook(void)
+{
+  __asm volatile
+  (
+      " mov r5, #3                                                     \n"
+      " tst lr, #4                                                     \n"
+      " ite eq                                                         \n"
+      " mrseq r0, msp                                                  \n"
+      " mrsne r0, psp                                                  \n"
+      " ldr r1, [r0, #24]                                              \n"
+      " ldr r2, handler4u_address_const                                \n"
+      " bx r2                                                          \n"
+      " handler4u_address_const: .word analyze_fault_stack	       \n"
+  );
+}
+
 void vTaskSuspend(uint32_t);
 
 void vApplicationReturnFromTaskProcedureHook( void)
@@ -246,12 +274,11 @@ void vApplicationReturnFromTaskProcedureHook( void)
 
 void abort( void)
 {
-	   while(1)
-	  __asm volatile( "bkpt 0");
+  ASSERT( 0);
 }
 
 #define SHORTCUT( fkt_name) \
-void fkt_name(void) { while(1) {__asm volatile ( "bkpt 0" );} }
+void fkt_name(void) { while(1) { ASSERT(0);} }
 
 //SHORTCUT( _sbrk)
 SHORTCUT( _read)

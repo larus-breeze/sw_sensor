@@ -47,6 +47,11 @@ void runnable( void * p_fault_type)
       while( true)
 	/* tease our watchdog */;
       break;
+    case 8:
+	volatile unsigned d,e,f;
+	a=1; b=0;
+	c=a / b;
+      break;
     default:
       while( true) // defensively: go sleeping
 	suspend();

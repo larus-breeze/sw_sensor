@@ -28,6 +28,7 @@ COMMON output_data_t __ALIGNED(1024) output_data = { 0 };
 COMMON GNSS_type GNSS (output_data.c);
 
 extern RestrictedTask NMEA_task;
+extern RestrictedTask communicator_task;
 
 static ROM bool TRUE=true;
 static ROM bool FALSE=true;
@@ -40,10 +41,11 @@ void communicator_runnable (void*)
   organizer_t organizer;
   organizer.initialize_before_measurement();
 
-  uint16_t air_density_sensor_counter = 0;
   uint16_t GNSS_count = 0;
 
 #if WITH_DENSITY_DATA
+  uint16_t air_density_sensor_counter = 0;
+
   Queue<CANpacket> air_density_sensor_Q (2);
 
     {
@@ -114,6 +116,8 @@ void communicator_runnable (void*)
   NMEA_task.resume();
 
   unsigned synchronizer_10Hz = 10; // re-sampling 100Hz -> 10Hz
+
+  communicator_task.set_priority( COMMUNICATOR_PRIORITY); // lift priority
 
   // this is the MAIN data acquisition and processing loop
   while (true)
@@ -195,7 +199,7 @@ static uint32_t __ALIGNED(STACKSIZE*sizeof(uint32_t)) stack_buffer[STACKSIZE];
 static ROM TaskParameters_t p =
   { communicator_runnable, "COM",
   STACKSIZE, 0,
-  COMMUNICATOR_PRIORITY, stack_buffer,
+  COMMUNICATOR_START_PRIORITY, stack_buffer,
     {
       { COMMON_BLOCK, COMMON_SIZE,  portMPU_REGION_READ_WRITE },
       { (void*) 0x80f8000, 0x08000, portMPU_REGION_READ_WRITE }, // EEPROM access for MAG calib.

@@ -554,7 +554,6 @@ static void MX_GPIO_Init(void)
 //!< library error trap
 void Error_Handler( void)
 {
-	while( true)
-	  asm("bkpt 0");
+  ASSERT( 0);
 }
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -39,19 +39,23 @@ extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c
 
 static void runnable (void* data)
 {
+  delay( NMEA_START_DELAY);
 
-#if ACTIVATE_USB_NMEA
+  #if ACTIVATE_USB_NMEA
   MX_USB_DEVICE_Init();
   update_system_state_set( USB_OUTPUT_ACTIVE);
+  delay( 1);
 #endif
 
 #if ACTIVATE_USART_2_NMEA
   USART_2_Init ();
   update_system_state_set( USART_2_OUTPUT_ACTIVE);
+  delay( 1);
 #endif
 #if ACTIVATE_USART_1_NMEA
   USART_1_Init ();
   update_system_state_set( USART_1_OUTPUT_ACTIVE);
+  delay( 1);
 #endif
 
 #if ACTIVATE_SENSOR_DUMP // Sensor setup version ********************
@@ -78,6 +82,10 @@ static void runnable (void* data)
 	}
     }
 #endif // Sensor setup version ***************************************
+
+  while( output_data.c.sat_fix_type == 0) // wait for position fix
+    delay( 1000);
+  delay( 1000);
 
   for (synchronous_timer t (NMEA_REPORTING_PERIOD); true; t.sync ())
     {

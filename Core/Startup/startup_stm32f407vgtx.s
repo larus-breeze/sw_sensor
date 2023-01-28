@@ -110,9 +110,7 @@ LoopFillZerobss:
 */
     .section  .text.Default_Handler,"ax",%progbits
 Default_Handler:
-Infinite_Loop:
-	bkpt 0 // undefined interrupt handler triggered
-  	b  Infinite_Loop
+	b illegal_interrupt_vector_hook
   .size  Default_Handler, .-Default_Handler
 /******************************************************************************
 *

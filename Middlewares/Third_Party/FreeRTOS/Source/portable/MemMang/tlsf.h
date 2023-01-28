@@ -17,7 +17,7 @@
 */
 
 #include <stddef.h>
-#define tlsf_assert( x) if((x)==0) asm("bkpt 0")
+#define tlsf_assert( x) ASSERT( x)
 
 #if defined(__cplusplus)
 extern "C" {
