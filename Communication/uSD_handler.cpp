@@ -341,20 +341,6 @@ void uSD_handler_runnable (void*)
     }
 
   FIL the_file;
-  fresult = f_open (&the_file, (char *)"enable.logger", FA_READ);
-  logger_is_enabled = (fresult == FR_OK);
-  f_close( &the_file); // as this is just a dummy file
-
-  if( ! logger_is_enabled)
-    {
-      while( true)
-	{
-	notify_take (true); // wait for synchronization by crash detection
-	if( crashfile)
-	  write_crash_dump();
-	}
-    }
-
   char out_filename[30];
   char * next = out_filename;
 
@@ -368,6 +354,20 @@ void uSD_handler_runnable (void*)
   uint8_t *buf_ptr = mem_buffer;
 
   write_EEPROM_dump( out_filename);
+
+  fresult = f_open (&the_file, (char *)"enable.logger", FA_READ);
+  logger_is_enabled = (fresult == FR_OK);
+  f_close( &the_file); // as this is just a dummy file
+
+  if( ! logger_is_enabled)
+    {
+      while( true)
+	{
+	notify_take (true); // wait for synchronization by crash detection
+	if( crashfile)
+	  write_crash_dump();
+	}
+    }
 
   fresult = f_open (&the_file, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)
