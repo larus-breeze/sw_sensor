@@ -41,7 +41,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   char *s = NMEA_buf.string;
 
   s=append_string( s, "Sensor ID = ");
-  s=utox( UNIQUE_ID[0], s);
+  s=utox( s, UNIQUE_ID[0]);
   s=append_string( s, "\r\n");
 
   float squaresum;

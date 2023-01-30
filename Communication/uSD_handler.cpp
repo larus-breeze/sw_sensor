@@ -110,7 +110,7 @@ void write_crash_dump( void)
   f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"Hardware: ");
-  next = utox( UNIQUE_ID[0], next, 8);
+  next = utox( next, UNIQUE_ID[0], 8);
   newline( next);
 
   f_write (&fp, buffer, next-buffer, &writtenBytes);
@@ -129,48 +129,48 @@ void write_crash_dump( void)
   f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"IPSR:     ");
-  next = utox( register_dump.IPSR, next);
+  next = utox( next, register_dump.IPSR);
   newline( next);
 
   f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"PC:       ");
-  next = utox( register_dump.stacked_pc, next);
+  next = utox( next, register_dump.stacked_pc);
   newline( next);
   next=append_string( next, (char*)"LR:       ");
-  next = utox( register_dump.stacked_lr, next);
+  next = utox( next, register_dump.stacked_lr);
   newline( next);
 
   f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"BusFA:    ");
-  next = utox( register_dump.Bus_Fault_Address, next);
+  next = utox(  next, register_dump.Bus_Fault_Address);
   newline( next);
 
   f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"MemA:     ");
-  next = utox( register_dump.Bad_Memory_Address, next);
+  next = utox( next, register_dump.Bad_Memory_Address);
   newline( next);
 
   next=append_string( next, (char*)"MemFS:    ");
-  next = utox( register_dump.Memory_Fault_status, next);
+  next = utox( next, register_dump.Memory_Fault_status);
   newline( next);
 
   f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"FPU_S:    ");
-  next = utox( register_dump.FPU_StatusControlRegister, next);
+  next = utox( next, register_dump.FPU_StatusControlRegister);
   newline( next);
 
   next=append_string( next, (char*)"UsgFS:    ");
-  next = utox( register_dump.Usage_Fault_Status_Register, next);
+  next = utox( next, register_dump.Usage_Fault_Status_Register);
   newline( next);
 
   f_write (&fp, buffer, next-buffer, &writtenBytes);
 
   next=append_string( buffer, (char*)"HardFS:   ");
-  next = utox( register_dump.Hard_Fault_Status, next);
+  next = utox( next, register_dump.Hard_Fault_Status);
   newline( next);
 
   f_write (&fp, buffer, next-buffer, &writtenBytes);
@@ -237,7 +237,7 @@ void write_EEPROM_dump( const char * filename)
 
   f_write (&fp, GIT_TAG_INFO, strlen(GIT_TAG_INFO), (UINT*) &writtenBytes);
   f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
-  utox( UNIQUE_ID[0], buffer, 8);
+  utox( buffer, UNIQUE_ID[0], 8);
   buffer[8]='\r';
   buffer[9]='\n';
   f_write (&fp, buffer, 10, (UINT*) &writtenBytes);
