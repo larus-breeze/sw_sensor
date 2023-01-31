@@ -33,6 +33,7 @@
 #include "communicator.h"
 #include "system_state.h"
 #include "sensor_dump.h"
+#include "uSD_handler.h"
 
 COMMON string_buffer_t NMEA_buf;
 extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c
@@ -58,30 +59,30 @@ static void runnable (void* data)
   delay( 1);
 #endif
 
-#if ACTIVATE_SENSOR_DUMP // Sensor setup version ********************
-  MX_USB_DEVICE_Init(); // force using the USB ACM device
-  unsigned i=0;
-  for ( synchronous_timer t (10); true; t.sync ())
-    {
-      decimate_sensor_observations( output_data);
-      ++i;
-      if( i >=50)
-	{
-	  i=0;
-	  format_sensor_dump( output_data, NMEA_buf);
-	  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);
-	  USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+  if( dump_sensor_readings)
+  {
+    MX_USB_DEVICE_Init(); // force using the USB ACM device
+    unsigned i=0;
+    for ( synchronous_timer t (10); true; t.sync ())
+      {
+        decimate_sensor_observations( output_data);
+        ++i;
+        if( i >=50)
+  	{
+  	  i=0;
+  	  format_sensor_dump( output_data, NMEA_buf);
+  	  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);
+  	  USBD_CDC_TransmitPacket(&hUsbDeviceFS);
 
 #if ACTIVATE_USART_1_NMEA
-      USART_1_transmit_DMA( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
+        USART_1_transmit_DMA( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
 #endif
 #if ACTIVATE_USART_2_NMEA
-      USART_2_transmit_DMA( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
+        USART_2_transmit_DMA( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
 #endif
-
-	}
-    }
-#endif // Sensor setup version ***************************************
+  	}
+      }
+  }
 
   while( output_data.c.sat_fix_type == 0) // wait for position fix
     delay( 1000);

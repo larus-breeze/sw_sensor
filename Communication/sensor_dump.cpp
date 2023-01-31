@@ -112,6 +112,17 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = format_2_digits( s, output_data.c.second);
   s=append_string( s, "\r\n");
 
+  s=append_string( s, "NAV Induction: ");
+  for( unsigned i=0; i<3; ++i)
+    {
+      s = integer_to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss.e[i], s);
+      *s++=' ';
+    }
+
+  s=append_string( s, "-> ");
+  s = integer_to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss.abs(), s);
+
+  s=append_string( s, "\r\n");
   s=append_string( s, "\r\n");
 
   *s = 0;

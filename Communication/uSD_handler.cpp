@@ -45,6 +45,10 @@ COMMON Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue(
 COMMON char *crashfile;
 COMMON unsigned crashline;
 COMMON bool logger_is_enabled;
+COMMON bool magnetic_gound_calibration;
+COMMON bool dump_sensor_readings;
+
+COMMON Semaphore magnetic_calibration_done;
 
 #if RUN_DATA_LOGGER
 
@@ -332,28 +336,33 @@ void uSD_handler_runnable (void*)
   read_configuration_file(); // read configuration file if it is present on the SD card
   setup_file_handling_completed.signal();
 
-  // wait until a GNSS timestamp is available.
-  while (output_data.c.sat_fix_type == 0)
-    {
-      if( crashfile)
-	write_crash_dump();
-      delay (100);
-    }
+  delay( 100); // give communicator a moment to initialize
 
   FIL the_file;
-  char out_filename[30];
-  char * next = out_filename;
-
-  // generate filename based on timestamp
-  next = format_date_time( next);
-  *next++ = '.';
-  *next++  = 'f';
-  next = format_2_digits( next, (sizeof(coordinates_t) + sizeof(measurement_data_t)) / sizeof(float));
 
   UINT writtenBytes = 0;
   uint8_t *buf_ptr = mem_buffer;
 
-  write_EEPROM_dump( out_filename);
+  fresult = f_open (&the_file, (char *)"magnetic.calibration", FA_READ);
+  magnetic_gound_calibration = (fresult == FR_OK);
+  f_close( &the_file); // as this is just a dummy file
+
+  fresult = f_open (&the_file, (char *)"sensor.readings", FA_READ);
+  dump_sensor_readings = (fresult == FR_OK);
+  f_close( &the_file); // as this is just a dummy file
+
+  if( magnetic_gound_calibration)
+    {
+      write_EEPROM_dump( (char *)"before_calibration");
+      magnetic_calibration_done.wait();
+      write_EEPROM_dump( (char *)"after_calibration");
+      while( 1)
+	{
+	notify_take (true); // wait for synchronization by crash detection
+	if( crashfile)
+	  write_crash_dump();
+	}
+    }
 
   fresult = f_open (&the_file, (char *)"enable.logger", FA_READ);
   logger_is_enabled = (fresult == FR_OK);
@@ -368,6 +377,25 @@ void uSD_handler_runnable (void*)
 	  write_crash_dump();
 	}
     }
+
+  // wait until a GNSS timestamp is available.
+  while (output_data.c.sat_fix_type == 0)
+    {
+      if( crashfile)
+	write_crash_dump();
+      delay (100);
+    }
+
+  // generate filename based on timestamp
+  char out_filename[30];
+  char * next = out_filename;
+  next = format_date_time( next);
+
+  write_EEPROM_dump( out_filename); // now we have date+time
+
+  *next++ = '.';
+  *next++  = 'f';
+  next = format_2_digits( next, (sizeof(coordinates_t) + sizeof(measurement_data_t)) / sizeof(float));
 
   fresult = f_open (&the_file, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)

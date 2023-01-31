@@ -19,6 +19,7 @@
 #include "GNSS_driver.h"
 #include "CAN_distributor.h"
 #include "uSD_handler.h"
+#include "compass_ground_calibration.h"
 
 extern "C" void sync_logger (void);
 
@@ -119,10 +120,27 @@ void communicator_runnable (void*)
 
   communicator_task.set_priority( COMMUNICATOR_PRIORITY); // lift priority
 
+  compass_ground_calibration_t compass_ground_calibration;
+  unsigned magnetic_ground_calibrator_countdown = 100 * 60 * 1; // 1 minute
+
   // this is the MAIN data acquisition and processing loop
   while (true)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
+
+      if( magnetic_gound_calibration && (magnetic_ground_calibrator_countdown > 0))
+	{
+	  --magnetic_ground_calibrator_countdown;
+	  compass_ground_calibration.feed(output_data.m.mag);
+	  if( 0 == magnetic_ground_calibrator_countdown)
+	    {
+	      compass_calibration_t new_calibration;
+	      compass_ground_calibration.get_calibration_result(new_calibration.calibration);
+	      new_calibration.calibration_done = true;
+	      new_calibration.write_into_EEPROM();
+	      magnetic_calibration_done.signal();
+	    }
+	}
 
       if (GNSS_new_data_ready) // triggered after 100 or 150ms, GNSS-dependent
 	{
