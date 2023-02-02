@@ -52,7 +52,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
     {
       squaresum += SQR( output_data.m.acc.e[i]);
       s = integer_to_ascii_2_decimals( 100.0f * output_data.m.acc.e[i] , s);
-      *s++ = '\t';
+      *s++ = ' ';
     }
   s = integer_to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
   s=append_string( s, "\r\n");
@@ -62,7 +62,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   for( unsigned i=0; i<3; ++i)
     {
       s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * output_data.m.gyro.e[i] , s);
-      *s++ = '\t';
+      *s++ = ' ';
     }
   s=append_string( s, "\r\n");
 
@@ -72,7 +72,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
     {
       squaresum += SQR( output_data.m.mag.e[i]);
       s = integer_to_ascii_2_decimals( 100.0f * output_data.m.mag.e[i] , s);
-      *s++ = '\t';
+      *s++ = ' ';
     }
   s = integer_to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
   s=append_string( s, "\r\n");
@@ -121,6 +121,11 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
 
   s=append_string( s, "-> ");
   s = integer_to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss.abs(), s);
+  s=append_string( s, "\r\n");
+
+  s=append_string( s, "Mag. Inclination: ");
+  float inclination = ATAN2( output_data.nav_induction_gnss.e[DOWN], output_data.nav_induction_gnss.e[NORTH]);
+  s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * inclination, s);
 
   s=append_string( s, "\r\n");
   s=append_string( s, "\r\n");
