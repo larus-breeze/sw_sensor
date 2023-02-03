@@ -121,13 +121,15 @@ void communicator_runnable (void*)
   communicator_task.set_priority( COMMUNICATOR_PRIORITY); // lift priority
 
   compass_ground_calibration_t compass_ground_calibration;
-  unsigned magnetic_ground_calibrator_countdown = 100 * 60 * 1; // 1 minute
+  unsigned magnetic_ground_calibrator_countdown = 100 * 60 * 2; // 2 minutes
 
   // this is the MAIN data acquisition and processing loop
   while (true)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
 
+      // if we are in magnetic calibration mode:
+      // do this here as a side-job and switch off it's flag at the end
       if( magnetic_gound_calibration && (magnetic_ground_calibrator_countdown > 0))
 	{
 	  --magnetic_ground_calibrator_countdown;
@@ -139,6 +141,7 @@ void communicator_runnable (void*)
 	      new_calibration.calibration_done = true;
 	      new_calibration.write_into_EEPROM();
 	      magnetic_calibration_done.signal();
+	      magnetic_gound_calibration = false;
 	    }
 	}
 

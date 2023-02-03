@@ -1,5 +1,8 @@
 #include "sensor_dump.h"
 #include "ascii_support.h"
+#include "NMEA_format.h"
+#include "embedded_math.h"
+#include "uSD_handler.h"
 
 uint64_t pabs_sum, samples, noise_energy;
 
@@ -128,6 +131,30 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * inclination, s);
 
   s=append_string( s, "\r\n");
+
+  // here we report a fake vario value indicating the maximum magnetic field strength
+  if( magnetic_gound_calibration)
+    {
+      unsigned max_acc_value_axis = 0;
+      float max_abs_acceleration = -1.0f;
+      for( unsigned axis = 0; axis < 3; ++axis)
+        if( abs( output_data.m.acc.e[axis]) > max_abs_acceleration)
+          {
+    	max_abs_acceleration = fabs( output_data.m.acc.e[axis]);
+    	max_acc_value_axis = axis;
+          }
+
+      float vario = (fabs(output_data.m.mag.e[max_acc_value_axis]) - 0.5f) * 5.0f;
+      format_PLARV ( vario, 0.0f, 0.0f, 0.0f, s);
+      s = NMEA_append_tail( s);
+    }
+  // here we report a fake vario value indicating the magnetic error
+  else
+    {
+      float vario = output_data.magnetic_disturbance * -5.0f;
+      format_PLARV ( vario, 0.0f, 0.0f, 0.0f, s);
+      s = NMEA_append_tail( s);
+    }
   s=append_string( s, "\r\n");
 
   *s = 0;

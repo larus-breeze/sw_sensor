@@ -356,6 +356,7 @@ void uSD_handler_runnable (void*)
       write_EEPROM_dump( (char *)"before_calibration");
       magnetic_calibration_done.wait();
       write_EEPROM_dump( (char *)"after_calibration");
+      f_unlink((char *)"magnetic.calibration");
       while( 1)
 	{
 	notify_take (true); // wait for synchronization by crash detection
@@ -367,16 +368,6 @@ void uSD_handler_runnable (void*)
   fresult = f_open (&the_file, (char *)"enable.logger", FA_READ);
   logger_is_enabled = (fresult == FR_OK);
   f_close( &the_file); // as this is just a dummy file
-
-  if( ! logger_is_enabled)
-    {
-      while( true)
-	{
-	notify_take (true); // wait for synchronization by crash detection
-	if( crashfile)
-	  write_crash_dump();
-	}
-    }
 
   // wait until a GNSS timestamp is available.
   while (output_data.c.sat_fix_type == 0)
@@ -391,7 +382,17 @@ void uSD_handler_runnable (void*)
   char * next = out_filename;
   next = format_date_time( next);
 
-  write_EEPROM_dump( out_filename); // now we have date+time
+  write_EEPROM_dump( out_filename); // now we have date+time, start logging
+
+  if( ! logger_is_enabled) // in this case we only wait for a possible crash dump
+    {
+      while( true)
+	{
+	notify_take (true); // wait for synchronization by crash detection
+	if( crashfile)
+	  write_crash_dump();
+	}
+    }
 
   *next++ = '.';
   *next++  = 'f';
