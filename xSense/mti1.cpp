@@ -1,3 +1,27 @@
+/**
+ * @file 	mti1.cpp
+ * @brief 	driver task for the Mti1 Inertial Measurement Unit
+ * @author: 	Dr. Klaus Schaefer
+ * @copyright 	Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
+ * @license 	This project is released under the GNU Public License GPL-3.0
+
+    <Larus Flight Sensor Firmware>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ **************************************************************************/
+
 #include "system_configuration.h"
 #include "main.h"
 #include "stm32f4xx_hal.h"
@@ -8,19 +32,26 @@
 #include "xbusmessageid.h"
 #include "cmsis_gcc.h"
 #include "stdint.h"
+#include "communicator.h"
+#include "system_state.h"
 
 #if RUN_MTi_1_MODULE
 
+// fine-tuned MTi timing parameters
+#define LONGEST_WAIT_4_MTI_MS 400
+#define PLANNED_DELAY_4_MTI_MS 20
+#define DAQ_LOOP_WAIT_4_MTI_MS 15
+
+// used GPIO pins
 #define IMU_PSEL0  GPIO_PIN_10
 #define IMU_PSEL1  GPIO_PIN_11
 #define IMU_DRDY   GPIO_PIN_12
 #define IMU_NRST   GPIO_PIN_13
 #define IMU_PORT   GPIOD
 
-COMMON Semaphore MTi_ready;
+COMMON Semaphore MTi_ready(1, 0, (char *)"MTi_RDY"); //!< ISR -> task synchronizing semaphore
 
-void
-sync_communicator (void);
+void sync_communicator (void);
 
 extern RestrictedTask mti_driver;
 
@@ -36,8 +67,7 @@ init_ports_and_reset_mti (void) // GPIO stuff
   EXTI15_10_Handle = xTraceSetISRProperties("EXTI15_10", 15);
 #endif
 
-  GPIO_InitTypeDef GPIO_InitStruct =
-    { 0 };
+  GPIO_InitTypeDef GPIO_InitStruct ={ 0 };
 
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
@@ -62,7 +92,7 @@ init_ports_and_reset_mti (void) // GPIO stuff
   HAL_NVIC_EnableIRQ (EXTI15_10_IRQn);
 
   HAL_GPIO_WritePin ( IMU_PORT, IMU_NRST, GPIO_PIN_RESET);
-  delay (100);
+  delay (PLANNED_DELAY_4_MTI_MS);
   HAL_GPIO_WritePin ( IMU_PORT, IMU_NRST, GPIO_PIN_SET);
   delay (1);
 }
@@ -100,25 +130,25 @@ readDataFrom_MTI (MtsspInterface *device, uint8_t *buf)
 	{
 	  float_word x;
 	  x.u = __REV (*(uint32_t*) (buf + 0x07 + 0));
-	  output_data.m.acc[0] = x.f;
+	  output_data.m.acc[0] = - x.f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x07 + 4));
 	  output_data.m.acc[1] = x.f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x07 + 8));
-	  output_data.m.acc[2] = x.f;
+	  output_data.m.acc[2] = - x.f;
 
 	  x.u = __REV (*(uint32_t*) (buf + 0x16 + 0));
-	  output_data.m.gyro[0] = isnormal(x.f) ? x.f : 0.0f;
+	  output_data.m.gyro[0] = isnormal(x.f) ? - x.f : 0.0f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x16 + 4));
 	  output_data.m.gyro[1] = isnormal(x.f) ? x.f : 0.0f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x16 + 8));
-	  output_data.m.gyro[2] = isnormal(x.f) ? x.f : 0.0f;
+	  output_data.m.gyro[2] = isnormal(x.f) ? - x.f : 0.0f;
 
 	  x.u = __REV (*(uint32_t*) (buf + 0x25 + 0));
-	  output_data.m.mag[0] = x.f;
+	  output_data.m.mag[0] = - x.f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x25 + 4));
 	  output_data.m.mag[1] = x.f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x25 + 8));
-	  output_data.m.mag[2] = x.f;
+	  output_data.m.mag[2] = - x.f;
 	}
     }
 }
@@ -126,8 +156,7 @@ readDataFrom_MTI (MtsspInterface *device, uint8_t *buf)
 /**
  * @brief EXTI15_10 interrupt handler
  */
-extern "C" void
-EXTI15_10_IRQHandler (void)
+extern "C" void EXTI15_10_IRQHandler (void)
 {
 #if TRACE_ISR == 1
   vTraceStoreISRBegin(EXTI15_10_Handle);
@@ -145,8 +174,7 @@ EXTI15_10_IRQHandler (void)
  * @param GPIO_Pin: Specifies the pins connected EXTI line
  * @retval None
  */
-void
-HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
+void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == IMU_DRDY)
     MTi_ready.signal_from_ISR ();
@@ -154,20 +182,17 @@ HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 
 /*!	\brief Returns the value of the DataReady line
  */
-static bool
-checkDataReadyLine (void)
+static inline bool checkDataReadyLine (void)
 {
   return HAL_GPIO_ReadPin ( IMU_PORT, IMU_DRDY) == GPIO_PIN_SET;
 }
 
 static ROM uint8_t config_data[] = // config: ACC GYRO MAG STATUS
-      { 0x40, 0x20, 0x00, 0x64, 0x80, 0x20, 0x00, 0x64, 0xC0, 0x20, 0x00, 0x64,
-	  0xE0, 0x20, 0x00, 0x00 };
+      { 0x40, 0x20, 0x00, 0x64, 0x80, 0x20, 0x00, 0x64, 0xC0, 0x20, 0x00, 0x64, 0xE0, 0x20, 0x00, 0x00 };
 // "wrong" config:
 //{0x80,0x30,0x00,0x00,0x40,0x20,0x00,0x64,0x80,0x20,0x00,0x64,0xC0,0x20,0x00,0x64,0xE0,0x20,0x00,0x00};
 
-static bool
-check_for_correct_configuration (uint8_t *data)
+static bool check_for_correct_configuration (uint8_t *data)
 {
   unsigned counter = 0;
   for (const uint8_t *my_config = config_data; *my_config == *data; ++counter)
@@ -178,26 +203,16 @@ check_for_correct_configuration (uint8_t *data)
   return counter == sizeof(config_data) - 2;
 }
 
-inline void
-wait_until_MTi_reports_data_ready (void)
+static void run (void*)
 {
-//	xTaskNotifyStateClear(MTi_task);
-//	notify_take(1, 10);
-//	for( bool ready=checkDataReadyLine(); ! ready; ready=checkDataReadyLine())
-//		delay(2);
-  while (!checkDataReadyLine ())
-    MTi_ready.wait (20);
-}
-
-static void
-run (void*)
-{
-  acquire_privileges();
-
 #if TRACE_ISR == 1
+	acquire_privileges();
 	chn = xTraceRegisterString("MTi-ISR");
+	drop_privileges();
 #endif
+restart:
 
+  acquire_privileges();
   init_ports_and_reset_mti ();
   drop_privileges();
 
@@ -205,18 +220,23 @@ run (void*)
   MtsspDriverSpi SPI_driver;
   MtsspInterface IMU_interface (&SPI_driver);
 
-  delay (100);
+  delay (LONGEST_WAIT_4_MTI_MS); // MTi 1 typically needs 168ms to reset itself
 
-  wait_until_MTi_reports_data_ready ();
+  if( false == checkDataReadyLine())
+	goto restart;
+
   readDataFrom_MTI (&IMU_interface, buf);
 
-  delay (100);
+  delay (PLANNED_DELAY_4_MTI_MS);
+
   while (true) // until configuration has been set successfully
     {
       XbusMessage read_cnf (XMID_ReqOutputConfig);
       IMU_interface.sendXbusMessage (&read_cnf);
 
-      wait_until_MTi_reports_data_ready ();
+      if( false == MTi_ready.wait (LONGEST_WAIT_4_MTI_MS))
+	goto restart;
+
       readDataFrom_MTI (&IMU_interface, buf);
 
       if (check_for_correct_configuration (buf + 4)) // skip header -> + 4
@@ -228,16 +248,16 @@ run (void*)
       XbusMessage go_cnf (XMID_GotoConfig);
       IMU_interface.sendXbusMessage (&go_cnf);
 
-      delay (100);
+      delay (PLANNED_DELAY_4_MTI_MS);
 
       XbusMessage msg (XMID_SetOutputConfig);
       msg.m_length = sizeof(config_data);
       msg.m_data = (uint8_t*) config_data;
       IMU_interface.sendXbusMessage (&msg);
 
-      delay (100);
+      if( false == MTi_ready.wait (LONGEST_WAIT_4_MTI_MS))
+	goto restart;
 
-      wait_until_MTi_reports_data_ready ();
       readDataFrom_MTI (&IMU_interface, buf);
       if (check_for_correct_configuration (buf + 2))
 	{
@@ -248,26 +268,40 @@ run (void*)
 
   XbusMessage cnf (XMID_GotoMeasurement);
   IMU_interface.sendXbusMessage (&cnf);
-  wait_until_MTi_reports_data_ready ();
+
+  if( false == MTi_ready.wait (LONGEST_WAIT_4_MTI_MS))
+	goto restart;
+
   readDataFrom_MTI (&IMU_interface, buf);
+
+  // the *second* DAC loop has been observed taking 35 ms
+  // so: do some dummy wait + read loops here
+  for( unsigned i = 0; i < 5; ++i)
+    {
+      if( false == MTi_ready.wait (LONGEST_WAIT_4_MTI_MS))
+	  goto restart;
+      readDataFrom_MTI (&IMU_interface, buf);
+    }
 
   while (true)
     {
-      wait_until_MTi_reports_data_ready ();
+      if( false == MTi_ready.wait (DAQ_LOOP_WAIT_4_MTI_MS))
+	goto restart;
+
       readDataFrom_MTI (&IMU_interface, buf);
 
-      sync_communicator (); // trigger computations
+      sync_communicator (); // trigger computations @ 100Hz
     }
 }
 
-#define STACKSIZE 128
+#define STACKSIZE 256
 
 static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 
 static ROM TaskParameters_t p =
   { run, "IMU",
   STACKSIZE, 0,
-  MTI_PRIORITY + 2, stack_buffer,
+  MTI_PRIORITY, stack_buffer,
     {
       { COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
       { 0, 0, 0 },

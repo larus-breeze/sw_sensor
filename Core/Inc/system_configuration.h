@@ -1,8 +1,27 @@
 /**
- * @file    system_configuration.h
- * @brief   system-wide tweaks
- * @author  Dr. Klaus Schaefer klaus.schaefer@h-da.de
- */
+ * @file    	system_configuration.h
+ * @brief   	system-wide tweaks
+ * @author	Dr. Klaus Schaefer
+ * @copyright 	Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
+ * @license 	This project is released under the GNU Public License GPL-3.0
+
+    <Larus Flight Sensor Firmware>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ **************************************************************************/
+
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
@@ -10,37 +29,19 @@ extern float * probe; // debugging probes
 
 #include "persistent_data.h"
 
-#if 1 // must be set for simulation
-#define INFILE "infile.f46" // switches on offline calculation and defines filename
-#define IN_DATA_LENGTH 46
-#define OUTFILE "outfile.f100"
-#define MAXSPEED_CALCULATION	1 // not realtime but 100% CPU duty cycle
+#define RUN_DATA_LOGGER			1
 
-#define LOG_FORMAT_2020		1
+#define PARALLEL_MAGNETIC_AHRS		0 // run second AHRS without SAT compass usage
+#define INCLUDING_NANO			1
 
-#define RUN_DATA_LOGGER		1
-#define LOG_OBSERVATIONS	0 // log IMU + pressure data
-#define LOG_COORDINATES		0 // log GNSS data
-#define LOG_OUTPUT_DATA		1 // logging all inclusive
-
-#else
-
-#define RUN_DATA_LOGGER		1
-#define LOG_OBSERVATIONS	1 // log IMU + pressure data
-#define LOG_COORDINATES		1 // log GNSS data
-#define LOG_OUTPUT_DATA		0 // logging all inclusive
-
-#endif
-
-#define PARALLEL_MAGNETIC_AHRS	0 // run second AHRS without SAT compass usage
-#define N_PROBES		0 // debugging probes somewhere in the code
-
-#define OLD_COORD_FORMAT 	0
-
-#define LOG_MAGNETIC_CALIBRATION 	1
+#define WRITE_MAG_CALIB_EEPROM		1
+#define LOG_MAGNETIC_CALIBRATION 	0
 #define WRITE_EEPROM_DEFAULTS		0
-
-#define DKCOM 1
+#define USE_HARDWARE_EEPROM		1
+#define WITH_DENSITY_DATA		0
+#define GNSS_VERTICAL_SPEED_INVERTED	0 // for simulation with old data
+#define MEASURE_GNSS_REFRESH_TIME	0
+#define USE_LARUS_NMEA_EXTENSIONS	1
 
 #define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
 #define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
@@ -48,119 +49,65 @@ extern float * probe; // debugging probes
 #define WIND_SHORTTERM_F_BY_FS 	( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
 #define VARIO_F_BY_FS          	( 1.0f / 2.0f / 100.0f)      	// 2s @ 100Hz
 
-#define DISABLE_CIRCLING_STATE 	0
-#if DISABLE_CIRCLING_STATE != 1
-#define CIRCLE_LIMIT 		(10 * 100) //!< 10 * 1/100 s delay into / out of circling state
-#define STABLE_CIRCLING_LIMIT	(30 * 100) // seconds @ 100 Hz for MAG auto calibration
-#endif
-
-#define USE_CROSS_ACCELERATION_WHILE_CIRCLING true
-
-#define MINIMUM_MAG_CALIBRATION_SAMPLES 6000
-#define MAG_CALIB_LETHARGY	0.8f // percentage of remaining old calibration info
-#define MAG_CALIBRATION_CHANGE_LIMIT 5.0e-4f // variance average of changes: 3 * { offset, scale }
-
-#define USE_GNSS_VARIO		1 // else pressure-vario
-
-#if DKCOM == 1 // *******************************************************************
-
-#define BLUETOOTH_NAME		"AT+NAMED-KCOM"
 #define ACTIVATE_USB_NMEA	1
 
-#else // **************************************************************************
+#define WITH_LOWCOST_SENSORS	0
 
-#define BLUETOOTH_NAME		"AT+NAMEALBATROS2"
-#define ACTIVATE_USB_NMEA	0
-
-#endif // **************************************************************************
-
-#define ACTIVATE_WATCHDOG	1
-#define WATCHDOG_STATISTICS 	0
-
-#ifdef INFILE
-#define RUN_GNSS		0
-#define RUN_GNSS_HEADING	0
-#define RUN_MTi_1_MODULE 	0
-#define RUN_MS5611_MODULE 	0
-#define RUN_L3GD20 		0
-#define RUN_FXOS8700		0
-#define RUN_PITOT_MODULE 	0
-
-#else
 #define RUN_GNSS		1
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
-#define RUN_L3GD20 		1
-#define RUN_FXOS8700		1
+#define RUN_L3GD20 		0
+#define RUN_FXOS8700		0
 #define RUN_PITOT_MODULE 	1
-
-#endif
 
 #define RUN_CAN_TESTER		0
 #define TEST_EEPROM		0
 
-#define ACTIVATE_BLUETOOTH_NMEA	1
+#define ACTIVATE_USART_1_NMEA	1
 #define ACTIVATE_USART_2_NMEA	1
 
-#define ACTIVATE_USB_TEST	0
+#define ACTIVATE_SENSOR_DUMP	0
+
 #define ACTIVATE_BLUETOOTH_TEST	0
 
 #define uSD_LED_STATUS		1
 
-#define RUN_COMMUNICATOR	1 // normal mode
-#define RUN_CAN_OUTPUT		1
-
 #define RUN_SPI_TESTER		0
 #define RUN_SDIO_TEST		0
+#define RUN_USART_1_TEST	0
 #define RUN_USART_2_TEST	0
 
-#define MTI_PRIORITY		(STANDARD_TASK_PRIORITY + 2)
+#define MTI_PRIORITY		STANDARD_TASK_PRIORITY + 3
 
-#define MS5611_PRIORITY		(STANDARD_TASK_PRIORITY + 1)
-#define L3GD20_PRIORITY		(STANDARD_TASK_PRIORITY + 1)
-#define PITOT_PRIORITY		(STANDARD_TASK_PRIORITY + 1)
+#define MS5611_PRIORITY		STANDARD_TASK_PRIORITY + 2
+#define L3GD20_PRIORITY		STANDARD_TASK_PRIORITY + 2
+#define PITOT_PRIORITY		STANDARD_TASK_PRIORITY + 2
 
-#define COMMUNICATOR_PRIORITY	(STANDARD_TASK_PRIORITY + 1)
+#define COMMUNICATOR_PRIORITY	STANDARD_TASK_PRIORITY + 2
+#define COMMUNICATOR_START_PRIORITY STANDARD_TASK_PRIORITY
 
-#define NMEA_USB_PRIORITY	(STANDARD_TASK_PRIORITY + 2)
-#define BLUETOOTH_PRIORITY	STANDARD_TASK_PRIORITY
+#define NMEA_USB_PRIORITY	STANDARD_TASK_PRIORITY + 3
+#define BLUETOOTH_PRIORITY	STANDARD_TASK_PRIORITY + 1
 #define LOGGER_PRIORITY		STANDARD_TASK_PRIORITY
-#define CAN_PRIORITY		STANDARD_TASK_PRIORITY
-#define LOGGER_PRIORITY		STANDARD_TASK_PRIORITY
+#define CAN_PRIORITY		STANDARD_TASK_PRIORITY + 1
+#define WATCHDOG_TASK_PRIORITY	STANDARD_TASK_PRIORITY + 1 // todo change me to be lowest prio some day
 
-#define EMERGENCY_ISR_PRIORITY	12 // highest priority
-#define USB_ISR_PRIORITY	13
-#define SDIO_ISR_PRIORITY	14
-#define STANDARD_ISR_PRIORITY	15 // lowest priority
+#define EMERGENCY_ISR_PRIORITY	8 // highest priority
+#define USB_ISR_PRIORITY	9
+#define SDIO_ISR_PRIORITY	10
+
+#define STANDARD_ISR_PRIORITY	14
+#define WATCHDOG_ISR_PRIORITY	15 // lowest priority
+
+#define NMEA_START_DELAY	10000
 
 #define NMEA_REPORTING_PERIOD	250 // period in clock ticks for NMEA output
 
 #define ACTIVATE_FPU_EXCEPTION_TRAP 1 // todo I want to be SET !
 #define SET_FPU_FLUSH_TO_ZERO	1
-
-enum
-{
-	GNSS_AVAILABLE 		= 1,
-	D_GNSS_AVAILABLE 	= 2,
-
-	MTI_SENSOR_AVAILABE 	= 0x10,
-	FXOS_SENSOR_AVAILABLE 	= 0x20,
-	L3GD20_SENSOR_AVAILABLE = 0x40,
-	MS5611_STATIC_AVAILABLE = 0x80,
-	MS5611_PITOT_AVAILABLE  = 0x100,
-	PITOT_SENSOR_AVAILABLE 	= 0x200,
-
-	USB_OUTPUT_ACTIVE	= 0x1000,
-	BLUEZ_OUTPUT_ACTIVE	= 0x2000,
-	CAN_OUTPUT_ACTIVE	= 0x4000,
-	USART_2_OUTPUT_ACTIVE	= 0x8000
-};
-
-extern volatile unsigned system_state;
-
-inline void update_system_state_set( unsigned value)
-{
-	__atomic_or_fetch ( &system_state, value, __ATOMIC_ACQUIRE);
-}
+#define ACTIVATE_WATCHDOG	1
+#define WATCHDOG_STATISTICS 	0
+#define TRACE_ISR		0
+#define INJECT_ERROR_NUMBER	0
 
 #endif /* SRC_SYSTEM_CONFIGURATION_H_ */

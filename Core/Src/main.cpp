@@ -1,23 +1,26 @@
-/* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under Ultimate Liberty license
-  * SLA0044, the "License"; You may not use this file except in compliance with
-  * the License. You may obtain a copy of the License at:
-  *                             www.st.com/SLA0044
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
+ * @file 	main.c
+ * @brief       Main program body
+ * @author	Dr. Klaus Schaefer
+ * @copyright 	Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
+ * @license 	This project is released under the GNU Public License GPL-3.0
+
+    <Larus Flight Sensor Firmware>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ **************************************************************************/
 #include "system_configuration.h"
 #include "main.h"
 #include "embedded_memory.h"
@@ -30,7 +33,7 @@
 #include "my_assert.h"
 #include "common.h"
 
-COMMON volatile unsigned system_state;
+COMMON volatile uint32_t system_state;
 
 COMMON ADC_HandleTypeDef hadc1;
 
@@ -70,10 +73,7 @@ static void MX_SPI2_Init(void);
 static void MX_USART6_UART_Init(void);
 static void MX_ADC1_Init(void);
 
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
+//! The application entry point.
 int main(void)
 {
   SystemClock_Config();
@@ -122,7 +122,6 @@ int main(void)
   UNIQUE_ID[2]=*(uint32_t *)0x1fff7a14;
   UNIQUE_ID[3]=*(uint32_t *)0x1fff7a18;
   UNIQUE_ID[0]=UNIQUE_ID[1] ^ UNIQUE_ID[2] ^ UNIQUE_ID[3];
-  UNIQUE_ID[0] ^= ((UNIQUE_ID[0]) >> 16);
 
 #if WRITE_EEPROM_DEFAULTS
   void write_EEPROM_defaults( void);
@@ -397,42 +396,6 @@ static void MX_SPI2_Init(void)
 
 }
 
-#if 0 // moved into extra driver
-
-/**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART2_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART2_Init 0 */
-
-  /* USER CODE END USART2_Init 0 */
-
-  /* USER CODE BEGIN USART2_Init 1 */
-
-  /* USER CODE END USART2_Init 1 */
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART2_Init 2 */
-
-  /* USER CODE END USART2_Init 2 */
-
-}
-#endif
-
 /**
   * @brief USART6 Initialization Function
   * @param None
@@ -588,28 +551,9 @@ static void MX_GPIO_Init(void)
 
 }
 
- /**
-  * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM1 interrupt took place, inside
-  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-  * a global variable "uwTick" used as application time base.
-  * @param  htim : TIM handle
-  * @retval None
-  */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  /* USER CODE BEGIN Callback 0 */
-
-  /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM1) {
-    HAL_IncTick();
-  }
-  /* USER CODE BEGIN Callback 1 */
-
-  /* USER CODE END Callback 1 */
-}
+//!< library error trap
 void Error_Handler( void)
 {
-	asm("bkpt 0");
+  ASSERT( 0);
 }
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

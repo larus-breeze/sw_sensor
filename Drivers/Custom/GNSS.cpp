@@ -4,13 +4,16 @@
 #include "math.h"
 #include "main.h"
 #include "common.h"
+#include "AHRS.h"
+#include "system_state.h"
 
 COMMON bool GNSS_new_data_ready;
 COMMON bool D_GNSS_new_data_ready;
+COMMON int64_t FAT_time; //!< DOS FAT time for file usage
 
 #define SCALE_MM 0.001f
-#define SCALE_CM 0.01f
 #define SCALE_MM_NEG -0.001f
+#define SCALE_CM 0.01f
 #define DEG_2_METER 111111.111e-7f // (10000 / 90) m / degree on great circle
 #define ANGLE_SCALE (double)1e-7
 
@@ -19,10 +22,13 @@ GNSS_type::GNSS_type( coordinates_t & coo) :
 		latitude_reference(0),
 		longitude_reference(0),
 		latitude_scale(	0.0f),
-		FAT_time(0),
 		coordinates( coo),
 		num_SV(0)
 	{}
+
+#if MEASURE_GNSS_REFRESH_TIME
+COMMON float delta_t;
+#endif
 
 GNSS_Result GNSS_type::update(const uint8_t * data)
 {
@@ -48,37 +54,22 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	    pvt.second * 1000  +
 	    pvt.nano   / 1000000; // ns -> ms , see uBlox documentation. nano is SIGNED !
 
-	float delta_t = (float)(day_time_ms - old_timestamp_ms) * 0.001f;
+#if MEASURE_GNSS_REFRESH_TIME == 0
+	float delta_t;
+#endif
+
+	delta_t = (float)(day_time_ms - old_timestamp_ms) * 0.001f;
 	old_timestamp_ms = day_time_ms;
 
 	/* Pack date and time into a DWORD variable */
 	FAT_time = ((pvt.year - 1980) << 25) + (pvt.month << 21) + (pvt.day << 16)
 			+ (pvt.hour << 11) + (pvt.minute << 5) + (pvt.second >> 1);
 
-	fix_type = (FIX_TYPE) (pvt.fix_type);
-	if (( (pvt.fix_flags & 1) == 0) || (pvt.sAcc > 250))
-	  {
-	  coordinates.velocity[NORTH] 		= NAN;
-	  coordinates.velocity[EAST] 		= NAN;
-	  coordinates.velocity[DOWN] 		= NAN;
-	  coordinates.acceleration[NORTH] 	= NAN;
-	  coordinates.acceleration[EAST] 	= NAN;
-
-	  GNSS_new_data_ready = true;
-
-	  return GNSS_NO_FIX;
-	  }
-
-#if LOG_FORMAT_2020
-	num_SV=pvt.num_SV;
-#else
-	coordinates.SATS_number=pvt.num_SV;
+	coordinates.SATS_number = num_SV = pvt.num_SV;
 	if( pvt.fix_type == 3) // 3 -> 3D-fix
 	  coordinates.sat_fix_type |= SAT_FIX;
 	else
 	  coordinates.sat_fix_type &= ! SAT_FIX;
-
-#endif
 
 	if (latitude_reference == 0)
 	{
@@ -130,14 +121,32 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 
 	coordinates.velocity[NORTH] = velocity_north;
 	coordinates.velocity[EAST]  = velocity_east;
-	coordinates.velocity[DOWN]  = pvt.velocity[DOWN]  * SCALE_MM_NEG;
+	coordinates.velocity[DOWN]  = pvt.velocity[DOWN]  * SCALE_MM;
 
 	coordinates.speed_motion    = pvt.gSpeed * SCALE_MM;
 	coordinates.heading_motion  = pvt.gTrack * 1e-5f;
 
 	GNSS_new_data_ready = true;
 
-	return GNSS_HAVE_FIX;
+	fix_type = (FIX_TYPE) (pvt.fix_type);
+	if( (pvt.fix_flags & 1) == 0)	// todo someday modify me for aerobatics support
+	//	if (( (pvt.fix_flags & 1) == 0) || (pvt.sAcc > 250)) // todo modify me for M9N GNSS support
+//	if (( (pvt.fix_flags & 1) == 0) || (pvt.sAcc > 1000)) // todo patch number 1000 just an estimate
+	  {
+	  coordinates.velocity[NORTH] 		= NAN; // todo remove NAN usage !
+	  coordinates.velocity[EAST] 		= NAN;
+	  coordinates.velocity[DOWN] 		= NAN;
+	  coordinates.acceleration[NORTH] 	= NAN;
+	  coordinates.acceleration[EAST] 	= NAN;
+
+	  update_system_state_clear( GNSS_AVAILABLE);
+	  return GNSS_NO_FIX;
+	  }
+	else
+	  {
+	    update_system_state_set( GNSS_AVAILABLE);
+	    return GNSS_HAVE_FIX;
+	  }
 }
 
 GNSS_Result GNSS_type::update_delta(const uint8_t * data)
@@ -168,16 +177,14 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 	  {
 	    // 1e-5 deg -> rad
 	    coordinates.relPosHeading = (float)(p.relPosheading) * 1.745329252e-7f;
-#ifndef LOG_FORMAT_2020
+	    update_system_state_set( D_GNSS_AVAILABLE);
 	    coordinates.sat_fix_type |= SAT_HEADING;
-#endif
 	  }
 	else
 	  {
 	    coordinates.relPosHeading = NAN;
-#ifndef LOG_FORMAT_2020
-	    coordinates.sat_fix_type &= ! SAT_HEADING;
-#endif
+	    update_system_state_clear( D_GNSS_AVAILABLE);
+	    coordinates.sat_fix_type &= ~SAT_HEADING;
 	  }
 	D_GNSS_new_data_ready = true;
 	return res;
@@ -188,11 +195,9 @@ GNSS_type::update_combined (uint8_t *data)
 {
   GNSS_Result res = GNSS.update(data);
   if( res != GNSS_HAVE_FIX)
-	return res;
+      return res;
 
   res = GNSS.update_delta(data + sizeof( uBlox_pvt) + 8);
 
-  if(  res == GNSS_HAVE_FIX)
-    update_system_state_set( D_GNSS_AVAILABLE);
   return res;
 }

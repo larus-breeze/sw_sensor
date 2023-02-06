@@ -1,44 +1,93 @@
 /** *****************************************************************************
- * @file    emergency.c
- * @author  Dr. Klaus Schaefer Hochschule Darmstadt schaefer.eit.h-da.de
- * @brief   Error handling routines
- ******************************************************************************/
+ * @file    	emergency.c
+ * @brief   	Error handling routines
+ * @author  	Dr. Klaus Schaefer
+ * @copyright 	Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
+ * @license 	This project is released under the GNU Public License GPL-3.0
+
+    <Larus Flight Sensor Firmware>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ **************************************************************************/
 
 #include <stdint.h>
 #include "my_assert.h"
 #include "stm32f407xx.h"
+#include "emergency.h"
+#include "embedded_memory.h"
 
-// "core dump" memory
-volatile unsigned int stacked_r0;
-volatile unsigned int stacked_r1;
-volatile unsigned int stacked_r2;
-volatile unsigned int stacked_r3;
-volatile unsigned int stacked_r12;
-volatile unsigned int stacked_lr;
-volatile unsigned int stacked_pc;
-volatile unsigned int stacked_psr;
+void sync_logger(void );
 
-uint32_t Bus_Fault_Address;
-uint32_t Bad_Memory_Address;
-uint32_t Fault_status;
-uint32_t Bad_Instruction_Address;
-uint8_t  Bus_Fault_Status;
-uint16_t Usage_Fault_Status_Register;
+COMMON register_dump_t register_dump;
 
 /**
  * @brief  This function handles exceptions triggered by bad parameters to lib functions
  */
-void
-assert_failed(uint8_t* file, uint32_t line)
+void assert_failed(uint8_t* file, uint32_t line)
 {
-  __asm volatile ( "bkpt 0" );
+  emergency_write_crashdump( file, line);
+  while(1)
+    MPU_vTaskSuspend(0);
+}
+
+extern void finish_crash_handling(void);
+
+void analyze_fault_stack(volatile unsigned int * hardfault_args)
+{
+  register_dump.stacked_r0 = ((unsigned long) hardfault_args[0]);
+  register_dump.stacked_r1 = ((unsigned long) hardfault_args[1]);
+  register_dump.stacked_r2 = ((unsigned long) hardfault_args[2]);
+  register_dump.stacked_r3 = ((unsigned long) hardfault_args[3]);
+
+  register_dump.stacked_r12 = ((unsigned long) hardfault_args[4]);
+  register_dump.stacked_lr  = ((unsigned long) hardfault_args[5]);
+  register_dump.stacked_pc  = ((unsigned long) hardfault_args[6]);
+  register_dump.stacked_psr = ((unsigned long) hardfault_args[7]);
+
+  register_dump.Hard_Fault_Status = *(uint32_t *) 0xe000ed2c;
+  register_dump.IPSR = __get_IPSR();
+  register_dump.FPU_StatusControlRegister = __get_FPSCR();
+  register_dump.Bad_Memory_Address = *(int*) 0xe000ed34;
+  register_dump.Memory_Fault_status    = *(uint8_t*) 0xe000ed28;
+  register_dump.Bus_Fault_Address=*(uint32_t *)0xe000ed38;
+  register_dump.Bus_Fault_Status =*(uint8_t *) 0xe000ed29;
+  register_dump.Usage_Fault_Status_Register = * (uint16_t *)0xe000ed2a;
+
+  extern void * pxCurrentTCB;
+  register_dump.active_TCB = pxCurrentTCB;
+
+  finish_crash_handling();
 }
 
 void FPU_IRQHandler( void)
 {
-//  while( 1) // todo patch: this loop will be ended by the watchdog.
-//    asm("bkpt 0");
-  asm("bx lr");
+  register_dump.FPU_StatusControlRegister = __get_FPSCR();
+  // patch FPFSR on the stack FPU context to avoid triggering the FPU IRQ recursively
+  *(__IO uint32_t*)(FPU->FPCAR +0x40) = register_dump.FPU_StatusControlRegister & ~0x8f;
+  __asm volatile
+  (
+      " mov r5, #0                                                     \n"
+      " tst lr, #4                                                     \n"
+      " ite eq                                                         \n"
+      " mrseq r0, msp                                                  \n"
+      " mrsne r0, psp                                                  \n"
+      " ldr r1, [r0, #24]                                              \n"
+      " ldr r2, handler1_address_const                                 \n"
+      " bx r2                                                          \n"
+      " handler1_address_const: .word analyze_fault_stack   	       \n"
+  );
 }
 
 /**
@@ -49,26 +98,18 @@ void FPU_IRQHandler( void)
 void
 NMI_Handler(void)
 {
-  __asm volatile ( "bkpt 0" );
-}
-
-void
-pop_registers_from_fault_stack(volatile unsigned int * hardfault_args)
-{
-  stacked_r0 = ((unsigned long) hardfault_args[0]);
-  stacked_r1 = ((unsigned long) hardfault_args[1]);
-  stacked_r2 = ((unsigned long) hardfault_args[2]);
-  stacked_r3 = ((unsigned long) hardfault_args[3]);
-
-  stacked_r12 = ((unsigned long) hardfault_args[4]);
-  stacked_lr = ((unsigned long) hardfault_args[5]);
-  stacked_pc = ((unsigned long) hardfault_args[6]);
-  stacked_psr = ((unsigned long) hardfault_args[7]);
-
-  /* Inspect stacked_pc to locate the offending instruction. */
-  __asm volatile ( "bkpt 0" );
-  __asm volatile ( "bx	lr" );
-
+  __asm volatile
+  (
+      " mov r5, #3                                                     \n"
+      " tst lr, #4                                                     \n"
+      " ite eq                                                         \n"
+      " mrseq r0, msp                                                  \n"
+      " mrsne r0, psp                                                  \n"
+      " ldr r1, [r0, #24]                                              \n"
+      " ldr r2, handler5u_address_const                                \n"
+      " bx r2                                                          \n"
+      " handler5u_address_const: .word analyze_fault_stack	       \n"
+  );
 }
 
 /**
@@ -81,15 +122,15 @@ HardFault_Handler(void)
 {
   __asm volatile
   (
-      " mov r5, #0                                                     \n"
-      " tst lr, #4                                                     \n"
-      " ite eq                                                         \n"
-      " mrseq r0, msp                                                  \n"
-      " mrsne r0, psp                                                  \n"
-      " ldr r1, [r0, #24]                                              \n"
-      " ldr r2, handler3_address_const                                 \n"
-      " bx r2                                                          \n"
-      " handler3_address_const: .word pop_registers_from_fault_stack   \n"
+      " mov r5, #0                                              \n"
+      " tst lr, #4                                              \n"
+      " ite eq                                                  \n"
+      " mrseq r0, msp                                           \n"
+      " mrsne r0, psp                                           \n"
+      " ldr r1, [r0, #24]                                       \n"
+      " ldr r2, handler2_address_const                          \n"
+      " bx r2                                                   \n"
+      " handler2_address_const: .word analyze_fault_stack	\n"
   );
 }
 
@@ -101,8 +142,8 @@ HardFault_Handler(void)
 void
 MemManage_Handler(void)
 {
-	  Bad_Memory_Address = *(int*) 0xe000ed34;
-	  Fault_status    = *(uint8_t*) 0xe000ed28;
+  register_dump.Bad_Memory_Address = *(int*) 0xe000ed34;
+  register_dump.Memory_Fault_status    = *(uint8_t*) 0xe000ed28;
   // If you are stranded here:
   // Check Bad_Memory_Address and Bad_Instruction_Address !
 	  // 0x92 : Stack overflow (push)
@@ -111,16 +152,15 @@ MemManage_Handler(void)
 
   __asm volatile
   (
-      " tst lr, #4                      		\n"
-      " ite eq                          		\n"
-      " mrseq r0, msp                   		\n"
-      " mrsne r0, psp                   		\n"
-      " ldr r1, [r0, #24]                    	\n"
-      " ldr r2, instruction_address_const  		\n"
-      " str r1, [r2]                    		\n"
-      " bkpt	0			                	\n"
-      " bx lr                               	\n"
-      " instruction_address_const: .word Bad_Instruction_Address \n"
+      " mov r5, #0                                                     \n"
+      " tst lr, #4                                                     \n"
+      " ite eq                                                         \n"
+      " mrseq r0, msp                                                  \n"
+      " mrsne r0, psp                                                  \n"
+      " ldr r1, [r0, #24]                                              \n"
+      " ldr r2, handler3_address_const                                 \n"
+      " bx r2                                                          \n"
+      " handler3_address_const: .word analyze_fault_stack   	       \n"
   );
 }
 
@@ -132,8 +172,8 @@ MemManage_Handler(void)
 void
 BusFault_Handler(void)
 {
-  Bus_Fault_Address=*(uint32_t *)0xe000ed38;
-  Bus_Fault_Status =*(uint8_t *) 0xe000ed29;
+  register_dump.Bus_Fault_Address=*(uint32_t *)0xe000ed38;
+  register_dump.Bus_Fault_Status =*(uint8_t *) 0xe000ed29;
 	// bus fault status:
 	// 0x92 stacking error address valid
 	// 0x80 Bus_Fault_Address valid
@@ -150,9 +190,9 @@ BusFault_Handler(void)
       " mrseq r0, msp                                                  \n"
       " mrsne r0, psp                                                  \n"
       " ldr r1, [r0, #24]                                              \n"
-      " ldr r2, handler3b_address_const                                \n"
+      " ldr r2, handler4_address_const                                 \n"
       " bx r2                                                          \n"
-      " handler3b_address_const: .word pop_registers_from_fault_stack  \n"
+      " handler4_address_const: .word analyze_fault_stack  \n"
   );
 }
 
@@ -163,7 +203,7 @@ BusFault_Handler(void)
  */
 void __attribute__(( naked )) UsageFault_Handler(void)
 {
-  Usage_Fault_Status_Register = * (uint16_t *)0xe000ed2a;
+  register_dump.Usage_Fault_Status_Register = * (uint16_t *)0xe000ed2a;
   __asm volatile
   (
       " mov r5, #3                                                     \n"
@@ -174,7 +214,7 @@ void __attribute__(( naked )) UsageFault_Handler(void)
       " ldr r1, [r0, #24]                                              \n"
       " ldr r2, handler3u_address_const                                \n"
       " bx r2                                                          \n"
-      " handler3u_address_const: .word pop_registers_from_fault_stack  \n"
+      " handler3u_address_const: .word analyze_fault_stack	       \n"
   );
 }
 
@@ -187,20 +227,13 @@ void DebugMon_Handler(void)
 {
 }
 
-#if 0
-void Default_Handler( void)
-{
-  uint32_t active_vector = *(NVIC->IABR);
-  asm("bkpt 0");
-}
-#endif
 /**
  * @brief  This function handles FreeRTOS's Stack Overflow exception.
  */
 void
 vApplicationStackOverflowHook(void)
 {
-  __asm volatile ( "bkpt 0" );
+  ASSERT(0);
 }
 
 /**
@@ -209,7 +242,26 @@ vApplicationStackOverflowHook(void)
 void
 vApplicationMallocFailedHook(void)
 {
-  __asm volatile ( "bkpt 0" );
+  ASSERT(0);
+}
+
+/**
+ * @brief  This function handles FreeRTOS's out of memory exception.
+ */
+void illegal_interrupt_vector_hook(void)
+{
+  __asm volatile
+  (
+      " mov r5, #3                                                     \n"
+      " tst lr, #4                                                     \n"
+      " ite eq                                                         \n"
+      " mrseq r0, msp                                                  \n"
+      " mrsne r0, psp                                                  \n"
+      " ldr r1, [r0, #24]                                              \n"
+      " ldr r2, handler4u_address_const                                \n"
+      " bx r2                                                          \n"
+      " handler4u_address_const: .word analyze_fault_stack	       \n"
+  );
 }
 
 void vTaskSuspend(uint32_t);
@@ -222,15 +274,14 @@ void vApplicationReturnFromTaskProcedureHook( void)
 
 void abort( void)
 {
-	   while(1)
-	  __asm volatile( "bkpt 0");
+  ASSERT( 0);
 }
 
 #define SHORTCUT( fkt_name) \
-void fkt_name(void) { while(1) {__asm volatile ( "bkpt 0" );} }
+void fkt_name(void) { while(1) { ASSERT(0);} }
 
 //SHORTCUT( _sbrk)
 SHORTCUT( _read)
-SHORTCUT( _write)
+//SHORTCUT( _write)
 SHORTCUT( __cxa_pure_virtual)
 SHORTCUT( __wrap___aeabi_unwind_cpp_pr0)

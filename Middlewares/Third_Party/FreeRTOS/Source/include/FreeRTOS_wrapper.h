@@ -365,6 +365,10 @@ public:
 	{
 		vTaskSuspend(task_handle);
 	}
+	inline void set_priority( UBaseType_t uxNewPriority)
+	{
+	  vTaskPrioritySet( task_handle, uxNewPriority);
+	}
 	//! Resume task execution, callable ONLY from a task !
 	inline void resume(void) const
 	{
@@ -373,7 +377,8 @@ public:
 	//! Resume task execution, callable ONLY from ISR !
 	inline void resume_from_ISR(void) const
 	{
-		xTaskResumeFromISR(task_handle);
+		BaseType_t HigherPriorityTaskWoken = xTaskResumeFromISR(task_handle);
+		portEND_SWITCHING_ISR(HigherPriorityTaskWoken);
 	}
 	//! Wait for task notification
 	//!

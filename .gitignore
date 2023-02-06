@@ -1,6 +1,7 @@
-Debug/*
 /Debug/
+/Release/
 /.settings/language.settings.xml
 /Core/Inc/git-commit-version.h
-/Release/
-/STM3240G_Eval/
+/debug timing/
+/release/
+/the_soar_instrument debug timing.launch

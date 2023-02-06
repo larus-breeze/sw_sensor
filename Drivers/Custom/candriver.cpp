@@ -1,6 +1,7 @@
 #include "system_configuration.h"
 #include "FreeRTOS_wrapper.h"
 
+#include "generic_CAN_driver.h"
 #include "candriver.h"
 
 #include "stm32f4xx_hal.h"
@@ -108,8 +109,8 @@ namespace CAN_driver_ISR
 } // namespace CAN_driver_ISR
 
 can_driver_t::can_driver_t () :
-    RX_queue (20),
-    TX_queue (20),
+    RX_queue (20,"CAN_RX"),
+    TX_queue (20,"CAN_RX"),
     reset_timer( 10000, CAN_reset_timer_callback, false),
     locked( true)
 {
@@ -119,7 +120,7 @@ can_driver_t::can_driver_t () :
 void can_driver_t::initialize(void)
 {
   if (HAL_CAN_DeInit (&CanHandle) != HAL_OK)
-      asm("bkpt 0");
+    ASSERT( 0);
 
   __HAL_RCC_CAN1_CLK_ENABLE();  // also required for CAN2 !!
 //  __HAL_RCC_CAN2_CLK_ENABLE();
@@ -166,10 +167,7 @@ void can_driver_t::initialize(void)
   CanHandle.Init.Prescaler = 6;
 
   if (HAL_CAN_Init (&CanHandle) != HAL_OK)
-    {
-      /* Initialization Error */
-      asm("bkpt 0");
-    }
+    ASSERT( 0);
 
   /*##-2- Configure the CAN Filter ###########################################*/
   sFilterConfig.FilterBank = 0;
@@ -184,22 +182,16 @@ void can_driver_t::initialize(void)
   sFilterConfig.SlaveStartFilterBank = 14;
 
   if (HAL_CAN_ConfigFilter (&CanHandle, &sFilterConfig) != HAL_OK)
-    {
-      /* Filter configuration Error */
-      asm("bkpt 0");
-    }
+    ASSERT( 0);
 
   /*##-3- Start the CAN peripheral ###########################################*/
   if (HAL_CAN_Start (&CanHandle) != HAL_OK)
-      asm("bkpt 0");
+    ASSERT( 0);
 
   /*##-4- Activate CAN RX notification #######################################*/
   if (HAL_CAN_ActivateNotification (&CanHandle, CAN_IT_RX_FIFO0_MSG_PENDING)
       != HAL_OK)
-    {
-      /* Notification Error */
-      asm("bkpt 0");
-    }
+    ASSERT( 0);
 
   uint32_t prioritygroup = NVIC_GetPriorityGrouping ();
 
@@ -225,6 +217,11 @@ void can_driver_t::initialize(void)
 void CAN_reset_timer_callback( TimerHandle_t)
 {
   CAN_driver.initialize();
+}
+
+bool CAN_send( const CANpacket &p, unsigned max_delay)
+{
+  CAN_driver.send(p, max_delay);
 }
 
 #if RUN_CAN_TESTER
