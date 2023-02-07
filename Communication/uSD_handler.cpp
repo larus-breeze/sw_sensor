@@ -76,14 +76,6 @@ char * format_date_time( char * target)
   return target;
 }
 
-//!< append carriage return and newline and advance pointer
-void newline( char * &next)
-{
-  *next++ = '\r';
-  *next++ = '\n';
-  *next = 0;
-}
-
 extern RestrictedTask uSD_handler_task; // will come downwards ...
 
 //!< write crash dump file and force MPU reset via watchdog
