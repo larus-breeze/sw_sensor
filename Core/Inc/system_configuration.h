@@ -69,6 +69,7 @@ extern float * probe; // debugging probes
 #define ACTIVATE_SENSOR_DUMP	0
 
 #define ACTIVATE_BLUETOOTH_TEST	0
+#define ACTIVATE_BLUETOOTH_HM19 1
 
 #define uSD_LED_STATUS		1
 
