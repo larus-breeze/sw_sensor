@@ -43,15 +43,9 @@ extern float * probe; // debugging probes
 #define MEASURE_GNSS_REFRESH_TIME	0
 #define USE_LARUS_NMEA_EXTENSIONS	1
 
-#define AVG_VARIO_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
-#define WIND_AVG_F_BY_FS 	( 1.0f / 30.0f / 10.0f) 	// assuming 10 Hz update
-
-#define WIND_SHORTTERM_F_BY_FS 	( 1.0f / 5.0f / 100.0f) 	// 5s @ 100Hz
-#define VARIO_F_BY_FS          	( 1.0f / 2.0f / 100.0f)      	// 2s @ 100Hz
-
 #define ACTIVATE_USB_NMEA	1
 
-#define WITH_LOWCOST_SENSORS	0
+#define WITH_LOWCOST_SENSORS	0 // 1 for Larus MK1 with L3GD20 gyro and FXOS8700 acc + mag chips
 
 #define RUN_GNSS		1
 #define RUN_MTi_1_MODULE 	1
