@@ -30,6 +30,7 @@
 #include "usbd_cdc.h"
 #include "usart_1_driver.h"
 #include "usart_2_driver.h"
+#include "bluetooth_HM19.h"
 #include "communicator.h"
 #include "system_state.h"
 #include "sensor_dump.h"
@@ -97,7 +98,7 @@ static void runnable (void* data)
       USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);
       USBD_CDC_TransmitPacket(&hUsbDeviceFS);
 #endif
-#if ACTIVATE_BLUETOOTH_NMEA
+#if ACTIVATE_BLUETOOTH_HM19
       Bluetooth_Transmit( (uint8_t *)(NMEA_buf.string), NMEA_buf.length);
 #endif
 #if ACTIVATE_USART_1_NMEA
