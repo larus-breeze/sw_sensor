@@ -43,7 +43,7 @@ IPAddress netmask(255, 255, 255, 0);
 #define SERIAL0_TXPIN 1             // transmit Pin UART0
 #define SERIAL0_TCP_PORT 8882      // Wifi Port UART0
 /*************************  COM Port 1 *******************************/
-#define UART_BAUD1 19200            // Baudrate UART1
+#define UART_BAUD1 38400            // Baudrate UART1
 #define SERIAL_PARAM1 SERIAL_8N1    // Data/Parity/Stop UART1
 #define SERIAL1_RXPIN 16            // receive Pin UART1
 #define SERIAL1_TXPIN 17            // transmit Pin UART1
@@ -277,6 +277,7 @@ void loop()
         if(SerialBT.hasClient())      
           SerialBT.write(buf2[num], i2[num]);               
 #endif  
+		COM[1]->write(buf2[num],i2[num]); // echo to RS232 output
         i2[num] = 0;
       }
     }    
