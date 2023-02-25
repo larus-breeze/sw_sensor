@@ -12,3 +12,8 @@
 - CAN interface
 - Bluetooth
 - RS232
+
+# How to use it: 
+Clone repository including the submodules using the **command line**: 
+
+      git clone --recurse-submodules https://github.com/larus-breeze/sw_sensor
