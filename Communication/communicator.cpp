@@ -20,6 +20,8 @@
 #include "CAN_distributor.h"
 #include "uSD_handler.h"
 #include "compass_ground_calibration.h"
+#include "persistent_data.h"
+#include "EEPROM_defaults.h"
 
 extern "C" void sync_logger (void);
 
@@ -38,6 +40,9 @@ void communicator_runnable (void*)
 {
   // wait until configuration file read
   setup_file_handling_completed.wait();
+
+  if( ! all_EEPROM_parameters_existing())
+      write_EEPROM_defaults();
 
   organizer_t organizer;
   organizer.initialize_before_measurement();

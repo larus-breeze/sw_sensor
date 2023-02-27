@@ -25,8 +25,6 @@
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
-extern float * probe; // debugging probes
-
 #include "persistent_data.h"
 
 #define RUN_DATA_LOGGER			1
