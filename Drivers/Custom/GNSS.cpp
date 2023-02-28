@@ -59,6 +59,7 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 #endif
 
 	delta_t = (float)(day_time_ms - old_timestamp_ms) * 0.001f;
+	ASSERT( delta_t > 0.001f); // avoid dividing by zero below
 	old_timestamp_ms = day_time_ms;
 
 	/* Pack date and time into a DWORD variable */
@@ -108,16 +109,8 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	float velocity_north = pvt.velocity[NORTH] * SCALE_MM;
 	float velocity_east  = pvt.velocity[EAST] * SCALE_MM;
 
-	if( isnan( coordinates.velocity[NORTH])) // we had no GNSS no fix before
-	  {
-	    coordinates.acceleration[NORTH]= 0.0f;
-	    coordinates.acceleration[EAST] = 0.0f;
-	  }
-	else
-	  {
-	    coordinates.acceleration[NORTH]= (velocity_north - coordinates.velocity[NORTH]) / delta_t;
-	    coordinates.acceleration[EAST] = (velocity_east  - coordinates.velocity[EAST])  / delta_t;
-	  }
+	coordinates.acceleration[NORTH]= (velocity_north - coordinates.velocity[NORTH]) / delta_t;
+	coordinates.acceleration[EAST] = (velocity_east  - coordinates.velocity[EAST])  / delta_t;
 
 	coordinates.velocity[NORTH] = velocity_north;
 	coordinates.velocity[EAST]  = velocity_east;
@@ -130,17 +123,15 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 
 	fix_type = (FIX_TYPE) (pvt.fix_type);
 	if( (pvt.fix_flags & 1) == 0)	// todo someday modify me for aerobatics support
-	//	if (( (pvt.fix_flags & 1) == 0) || (pvt.sAcc > 250)) // todo modify me for M9N GNSS support
-//	if (( (pvt.fix_flags & 1) == 0) || (pvt.sAcc > 1000)) // todo patch number 1000 just an estimate
 	  {
-	  coordinates.velocity[NORTH] 		= NAN; // todo remove NAN usage !
-	  coordinates.velocity[EAST] 		= NAN;
-	  coordinates.velocity[DOWN] 		= NAN;
-	  coordinates.acceleration[NORTH] 	= NAN;
-	  coordinates.acceleration[EAST] 	= NAN;
+	    coordinates.velocity[NORTH] 	= 0.0f;
+	    coordinates.velocity[EAST] 		= 0.0f;
+	    coordinates.velocity[DOWN] 		= 0.0f;
+	    coordinates.acceleration[NORTH] 	= 0.0f;
+	    coordinates.acceleration[EAST] 	= 0.0f;
 
-	  update_system_state_clear( GNSS_AVAILABLE);
-	  return GNSS_NO_FIX;
+	    update_system_state_clear( GNSS_AVAILABLE);
+	    return GNSS_NO_FIX;
 	  }
 	else
 	  {
