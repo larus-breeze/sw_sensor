@@ -173,7 +173,7 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 	  }
 	else
 	  {
-	    coordinates.relPosHeading = NAN;
+	    coordinates.relPosHeading = 0.0f;
 	    update_system_state_clear( D_GNSS_AVAILABLE);
 	    coordinates.sat_fix_type &= ~SAT_HEADING;
 	  }
