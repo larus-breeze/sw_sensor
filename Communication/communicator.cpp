@@ -34,7 +34,7 @@ extern RestrictedTask NMEA_task;
 extern RestrictedTask communicator_task;
 
 static ROM bool TRUE=true;
-static ROM bool FALSE=true;
+static ROM bool FALSE=false;
 
 void communicator_runnable (void*)
 {
