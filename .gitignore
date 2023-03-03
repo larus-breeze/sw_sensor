@@ -5,4 +5,4 @@
 /Core/Inc/git-commit-tag.h
 /debug timing/
 /release/
-/the_soar_instrument debug timing.launch
+*.launch
