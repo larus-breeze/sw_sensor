@@ -156,7 +156,7 @@ void communicator_runnable (void*)
 	  GNSS_new_data_ready = false;
 	}
 
-      organizer.on_new_pressure_data(output_data); // todo check this update rate
+      organizer.on_new_pressure_data(output_data);
       organizer.update_every_10ms(output_data);
 
       --synchronizer_10Hz;
