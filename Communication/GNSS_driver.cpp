@@ -89,7 +89,8 @@ static uint8_t __ALIGNED(256) buffer[RECEIVE_BUFFER_SIZE];
 
 #if MEASURE_GNSS_REFRESH_TIME
 uint64_t getTime_usec_privileged(void);
-COMMON uint64_t delta,start;
+COMMON uint64_t delta,start,gnss_max;
+COMMON uint64_t gnss_min=-1;
 #endif
 
 void
@@ -109,6 +110,10 @@ USART_3_runnable (void *using_DGNSS)
 
 #if MEASURE_GNSS_REFRESH_TIME
       delta = getTime_usec_privileged() - start;
+      if( delta >gnss_max)
+	gnss_max=delta;
+      if( delta < gnss_min)
+	gnss_min=delta;
       start = getTime_usec_privileged();
 #endif
 

@@ -20,6 +20,8 @@
 #include "CAN_distributor.h"
 #include "uSD_handler.h"
 #include "compass_ground_calibration.h"
+#include "persistent_data.h"
+#include "EEPROM_defaults.h"
 
 extern "C" void sync_logger (void);
 
@@ -32,12 +34,15 @@ extern RestrictedTask NMEA_task;
 extern RestrictedTask communicator_task;
 
 static ROM bool TRUE=true;
-static ROM bool FALSE=true;
+static ROM bool FALSE=false;
 
 void communicator_runnable (void*)
 {
   // wait until configuration file read
   setup_file_handling_completed.wait();
+
+  if( ! all_EEPROM_parameters_existing())
+      write_EEPROM_defaults();
 
   organizer_t organizer;
   organizer.initialize_before_measurement();
@@ -151,7 +156,7 @@ void communicator_runnable (void*)
 	  GNSS_new_data_ready = false;
 	}
 
-      organizer.on_new_pressure_data(output_data); // todo check this update rate
+      organizer.on_new_pressure_data(output_data);
       organizer.update_every_10ms(output_data);
 
       --synchronizer_10Hz;

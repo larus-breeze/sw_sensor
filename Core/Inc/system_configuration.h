@@ -25,8 +25,6 @@
 #ifndef SRC_SYSTEM_CONFIGURATION_H_
 #define SRC_SYSTEM_CONFIGURATION_H_
 
-extern float * probe; // debugging probes
-
 #include "persistent_data.h"
 
 #define RUN_DATA_LOGGER			1
@@ -85,7 +83,7 @@ extern float * probe; // debugging probes
 #define BLUETOOTH_PRIORITY	STANDARD_TASK_PRIORITY + 1
 #define LOGGER_PRIORITY		STANDARD_TASK_PRIORITY
 #define CAN_PRIORITY		STANDARD_TASK_PRIORITY + 1
-#define WATCHDOG_TASK_PRIORITY	STANDARD_TASK_PRIORITY + 1 // todo change me to be lowest prio some day
+#define WATCHDOG_TASK_PRIORITY	STANDARD_TASK_PRIORITY + 1
 
 #define EMERGENCY_ISR_PRIORITY	8 // highest priority
 #define USB_ISR_PRIORITY	9
@@ -98,7 +96,7 @@ extern float * probe; // debugging probes
 
 #define NMEA_REPORTING_PERIOD	250 // period in clock ticks for NMEA output
 
-#define ACTIVATE_FPU_EXCEPTION_TRAP 1 // todo I want to be SET !
+#define ACTIVATE_FPU_EXCEPTION_TRAP 1 // I want to be SET !
 #define SET_FPU_FLUSH_TO_ZERO	1
 #define ACTIVATE_WATCHDOG	1
 #define WATCHDOG_STATISTICS 	0
