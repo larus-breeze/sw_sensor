@@ -522,7 +522,8 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : MTi_1IMU_PSEL0_Pin MTi_1IMU_PSEL1_Pin MTi_1IMU_NRST_Pin GPS_RESETN_Pin
                            LED_STATUS1_Pin LED_STATUS2_Pin LED_STATUS3_Pin BL_RESETB_Pin */
   GPIO_InitStruct.Pin = MTi_1IMU_PSEL0_Pin|MTi_1IMU_PSEL1_Pin|MTi_1IMU_NRST_Pin|GPS_RESETN_Pin
-                          |LED_STATUS1_Pin|LED_STATUS2_Pin|LED_STATUS3_Pin|BL_RESETB_Pin;
+                          |LED_STATUS1_Pin|LED_STATUS2_Pin|LED_STATUS3_Pin|BL_RESETB_Pin|
+			  LED_ERROR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
