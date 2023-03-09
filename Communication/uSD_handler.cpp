@@ -232,6 +232,7 @@ void write_EEPROM_dump( const char * filename)
     return;
 
   f_write (&fp, GIT_TAG_INFO, strlen(GIT_TAG_INFO), (UINT*) &writtenBytes);
+  f_write (&fp, GIT_COMMIT_HASH, strlen(GIT_COMMIT_HASH), (UINT*) &writtenBytes);
   f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
   utox( buffer, UNIQUE_ID[0], 8);
   buffer[8]='\r';
