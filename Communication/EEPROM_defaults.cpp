@@ -47,14 +47,15 @@ void write_EEPROM_defaults( void)
   write_EEPROM_value( MAG_STD_DEVIATION, 0.009999f);
 
   // time constants
-  status = write_EEPROM_value( VARIO_TC, VARIO_F_BY_FS);
+  status = write_EEPROM_value( VARIO_TC, DEFAULT_VARIO_TC);
   ASSERT( ! status);
-  status = write_EEPROM_value( VARIO_INT_TC, AVG_VARIO_F_BY_FS);
+  status = write_EEPROM_value( VARIO_INT_TC, DEFAULT_AVG_VARIO_TC);
   ASSERT( ! status);
-
-  status = write_EEPROM_value( WIND_TC, WIND_SHORTTERM_F_BY_FS);
+  status = write_EEPROM_value( WIND_TC, DEFAULT_WIND_TC);
   ASSERT( ! status);
-  status = write_EEPROM_value( MEAN_WIND_TC, WIND_AVG_F_BY_FS);
+  status = write_EEPROM_value( MEAN_WIND_TC, DEFAULT_WIND_AVG_TC);
+  ASSERT( ! status);
+  status = write_EEPROM_value( VETF, DEFAULT_VETF);
   ASSERT( ! status);
 
   status = write_EEPROM_value( DECLINATION, 0.0f * M_PI_F / 180.0);
