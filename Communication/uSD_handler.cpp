@@ -232,6 +232,7 @@ void write_EEPROM_dump( const char * filename)
     return;
 
   f_write (&fp, GIT_TAG_INFO, strlen(GIT_TAG_INFO), (UINT*) &writtenBytes);
+  f_write (&fp, GIT_COMMIT_HASH, strlen(GIT_COMMIT_HASH), (UINT*) &writtenBytes);
   f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
   utox( buffer, UNIQUE_ID[0], 8);
   buffer[8]='\r';
@@ -244,6 +245,20 @@ void write_EEPROM_dump( const char * filename)
       bool result = read_EEPROM_value( PERSISTENT_DATA[index].id, value);
       if( result == HAL_OK)
 	{
+	    // angle format conversion where necessary
+	      switch( PERSISTENT_DATA[index].id)
+	      {
+		case SENS_TILT_ROLL:
+		case SENS_TILT_NICK:
+		case SENS_TILT_YAW:
+		case DECLINATION:
+		case INCLINATION:
+		  value *= 180.0 / M_PI_F;
+		break;
+		default:
+		break;
+	      }
+
 	      next = buffer;
 	      next = format_2_digits(next, PERSISTENT_DATA[index].id);
 	      *next++=' ';
