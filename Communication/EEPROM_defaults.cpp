@@ -17,7 +17,7 @@ void write_EEPROM_defaults( void)
   ASSERT( ! status);
   status = write_EEPROM_value( SENS_TILT_NICK, 0.0f);
   ASSERT( ! status);
-  status = write_EEPROM_value( SENS_TILT_YAW,  0.0f);   // looking backwards
+  status = write_EEPROM_value( SENS_TILT_YAW,  0.0f);
   ASSERT( ! status);
 
   status = write_EEPROM_value( ANT_BASELENGTH, 1.0f);

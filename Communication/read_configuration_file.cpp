@@ -134,6 +134,26 @@ void read_configuration_file(void)
 	continue;
       float value = string2float( linebuffer + name_len + 6);
 
+      // angle identifiers need format conversion degrees -> rad
+      switch( identifier)
+      {
+	case SENS_TILT_ROLL:
+	case SENS_TILT_NICK:
+	case SENS_TILT_YAW:
+	case DECLINATION:
+	case INCLINATION:
+	  value *= M_PI_F / 180.0;
+
+	  while( value > M_PI_F)
+	    value -= M_PI_F * 2.0f;
+	  while( value < -M_PI_F)
+	    value += M_PI_F * 2.0f;
+
+	break;
+	default:
+	break;
+      }
+
 #if TEST_MODULE
       status = write_EEPROM_value_dummy( identifier, value);
 #else
