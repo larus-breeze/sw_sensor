@@ -1,6 +1,6 @@
 01 SensTilt_Roll = 0
 02 SensTilt_Nick = 0
-03 SensTilt_Yaw = -0
+03 SensTilt_Yaw = 0
 04 Pitot_Offset = 0.0
 05 Pitot_Span = 1.0
 06 QNH-delta = 0.0
