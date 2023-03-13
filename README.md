@@ -1,5 +1,5 @@
-# Firmware Sensor
-- Firmware for https://github.com/larus-breeze/hw_sensor 
+# Software Sensor
+- For hardware design: https://github.com/larus-breeze/hw_sensor 
 
 ## Facts
 - STM32CubeIDE
@@ -10,21 +10,34 @@
 - Static pressure 
 - Differential pressure
 - CAN interface
-- Bluetooth
+- Bluetooth via HM19 (HW-1.0)  ESP32 (HW-2.0)
 - RS232
 
 # How to use it
-Clone repository including the submodules using the **command line**: 
+Some usefull git commands to work with this repository and the included submodule **command line**: 
 
-      git clone --recurse-submodules https://github.com/larus-breeze/sw_sensor
+Clone via https:
+
+    git clone --recurse-submodules https://github.com/larus-breeze/sw_sensor
+    
+Clone via ssh:
+
+    git clone --recurse-submodules git@github.com:larus-breeze/sw_sensor.git
+
+Switch to a branch:
+
+    git checkout branch_name --recurse-submodules
       
-      git clone --recurse-submodules git@github.com:larus-breeze/sw_sensor.git
+Pull latest changes:
 
+    git pull --recurse-submodules
+
+      
       
 # Build Configurations
 - Debug   (This should be used currently)
 - debug timing
-- release
+- release (currently not maintained)
 TODO: describe which one to use?  relase e.g. disables the flight data logging, why do we want to remove this feature in the release version?
 
 

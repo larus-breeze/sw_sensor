@@ -51,13 +51,11 @@ void write_EEPROM_defaults( void)
   ASSERT( ! status);
   status = write_EEPROM_value( VARIO_INT_TC, DEFAULT_AVG_VARIO_TC);
   ASSERT( ! status);
-
   status = write_EEPROM_value( WIND_TC, DEFAULT_WIND_TC);
   ASSERT( ! status);
   status = write_EEPROM_value( MEAN_WIND_TC, DEFAULT_WIND_AVG_TC);
   ASSERT( ! status);
-
-  status = write_EEPROM_value( VETF, DEFAULT_WIND_AVG_TC);
+  status = write_EEPROM_value( VETF, DEFAULT_VETF);
   ASSERT( ! status);
 
   status = write_EEPROM_value( DECLINATION, 0.0f * M_PI_F / 180.0);

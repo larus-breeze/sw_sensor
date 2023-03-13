@@ -95,6 +95,8 @@ void heartbeat(void);
 #define LED_STATUS2_GPIO_Port GPIOD
 #define LED_STATUS3_Pin GPIO_PIN_5
 #define LED_STATUS3_GPIO_Port GPIOD
+#define LED_ERROR_Pin GPIO_PIN_6
+#define LED_ERROR_GPIO_Port GPIOD
 #define BL_RESETB_Pin GPIO_PIN_7
 #define BL_RESETB_GPIO_Port GPIOD
 #define FXOS8700_RST_Pin GPIO_PIN_4

@@ -130,14 +130,10 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	    coordinates.acceleration[NORTH] 	= 0.0f;
 	    coordinates.acceleration[EAST] 	= 0.0f;
 
-	    update_system_state_clear( GNSS_AVAILABLE);
 	    return GNSS_NO_FIX;
 	  }
 	else
-	  {
-	    update_system_state_set( GNSS_AVAILABLE);
 	    return GNSS_HAVE_FIX;
-	  }
 }
 
 GNSS_Result GNSS_type::update_delta(const uint8_t * data)
@@ -168,13 +164,11 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 	  {
 	    // 1e-5 deg -> rad
 	    coordinates.relPosHeading = (float)(p.relPosheading) * 1.745329252e-7f;
-	    update_system_state_set( D_GNSS_AVAILABLE);
 	    coordinates.sat_fix_type |= SAT_HEADING;
 	  }
 	else
 	  {
 	    coordinates.relPosHeading = 0.0f;
-	    update_system_state_clear( D_GNSS_AVAILABLE);
 	    coordinates.sat_fix_type &= ~SAT_HEADING;
 	  }
 	D_GNSS_new_data_ready = true;

@@ -132,7 +132,16 @@ void read_configuration_file(void)
 	continue;
       if( linebuffer[name_len+4] != '=')
 	continue;
-      float value = string2float( linebuffer + name_len + 6);
+
+      float value = atof( linebuffer + name_len + 6);
+
+      // eventually: angle format conversion degree -> rad
+      for( unsigned test_id = 0; test_id < N_ANGLE_CODING_IDENTIFIERS; ++test_id)
+	{
+	  if( identifier == ANGLE_CODING_IDENTIFIERS[test_id])
+		  value *= M_PI_F / 180.0;
+	}
+
 
       // angle identifiers need format conversion degrees -> rad
       switch( identifier)

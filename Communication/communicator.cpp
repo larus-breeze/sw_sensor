@@ -22,6 +22,7 @@
 #include "compass_ground_calibration.h"
 #include "persistent_data.h"
 #include "EEPROM_defaults.h"
+#include "system_state.h"
 
 extern "C" void sync_logger (void);
 
@@ -81,6 +82,7 @@ void communicator_runnable (void*)
 	  delay (100);
 
 	organizer.update_GNSS_data (output_data.c);
+	update_system_state_set( GNSS_AVAILABLE);
 	GNSS_new_data_ready = false;
       }
       break;
@@ -88,7 +90,6 @@ void communicator_runnable (void*)
       {
 	  {
 	    Task usart3_task (USART_3_runnable, "GNSS", 256, (void *)&FALSE, STANDARD_TASK_PRIORITY+1);
-
 	    Task usart4_task (USART_4_runnable, "D-GNSS", 256, 0, STANDARD_TASK_PRIORITY + 1);
 	  }
 
@@ -96,6 +97,7 @@ void communicator_runnable (void*)
 	  delay (100);
 
 	organizer.update_GNSS_data (output_data.c);
+	update_system_state_set( GNSS_AVAILABLE | D_GNSS_AVAILABLE);
 	GNSS_new_data_ready = false;
       }
       break;
@@ -107,6 +109,7 @@ void communicator_runnable (void*)
 	  delay (100);
 
 	organizer.update_GNSS_data (output_data.c);
+	update_system_state_set( GNSS_AVAILABLE | D_GNSS_AVAILABLE);
 	GNSS_new_data_ready = false;
       }
       break;
@@ -127,6 +130,7 @@ void communicator_runnable (void*)
 
   compass_ground_calibration_t compass_ground_calibration;
   unsigned magnetic_ground_calibrator_countdown = 100 * 60 * 2; // 2 minutes
+  unsigned GNSS_watchdog = 0;
 
   // this is the MAIN data acquisition and processing loop
   while (true)
@@ -150,10 +154,24 @@ void communicator_runnable (void*)
 	    }
 	}
 
-      if (GNSS_new_data_ready) // triggered after 100 or 150ms, GNSS-dependent
+      if (GNSS_new_data_ready) // triggered after 75ms or 200ms, GNSS-dependent
 	{
 	  organizer.update_GNSS_data (output_data.c);
 	  GNSS_new_data_ready = false;
+	  update_system_state_set( GNSS_AVAILABLE);
+	  if( GNSS_configuration > GNSS_M9N)
+	    update_system_state_set( D_GNSS_AVAILABLE);
+	  GNSS_watchdog=0;
+	}
+      else
+	{
+	  if( GNSS_watchdog < 20)
+	      ++GNSS_watchdog;
+	  else // we got no data form GNSS receiver
+	    {
+	      output_data.c.sat_fix_type = SAT_FIX_NONE;
+	      update_system_state_clear( GNSS_AVAILABLE | D_GNSS_AVAILABLE);
+	    }
 	}
 
       organizer.on_new_pressure_data(output_data);
@@ -180,6 +198,10 @@ void communicator_runnable (void*)
 	}
       else
 	HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
+
+      // service the red error LED
+      HAL_GPIO_WritePin ( LED_ERROR_GPIO_Port, LED_ERROR_Pin,
+	    essential_sensors_available( GNSS_configuration > GNSS_M9N) ? GPIO_PIN_RESET : GPIO_PIN_SET);
 
       if (++count_10Hz >= 10) // resample 100Hz -> 10Hz
 	{

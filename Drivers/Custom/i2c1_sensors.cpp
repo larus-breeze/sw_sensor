@@ -81,6 +81,7 @@ restart:
 	{
 	  uint16_t raw_data = (data[0] << 8) | data[1];
 	  output_data.m.pitot_pressure = ((float) (raw_data - OFFSET) * SPAN);
+	  update_system_state_set (PITOT_SENSOR_AVAILABLE);
 	}
       else
 	{
