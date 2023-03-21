@@ -1,5 +1,5 @@
 /**
- * @file 	main.c
+ * @file 	MPU_initialization.cpp
  * @brief       Main program body
  * @author	Dr. Klaus Schaefer
  * @copyright 	Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
@@ -73,15 +73,14 @@ static void MX_SPI2_Init(void);
 static void MX_USART6_UART_Init(void);
 static void MX_ADC1_Init(void);
 
-//! The application entry point.
-int main(void)
+//! Initialization of MPU, clock system, interfaces etc
+extern "C" int MPU_initialization(void)
 {
   SystemClock_Config();
   SystemCoreClockUpdate();
 
   // precise error vectors
-  SCB->SHCSR |= (SCB_SHCSR_BUSFAULTENA_Msk | SCB_SHCSR_MEMFAULTENA_Msk
-      | SCB_SHCSR_USGFAULTENA_Msk);
+  SCB->SHCSR |= (SCB_SHCSR_BUSFAULTENA_Msk | SCB_SHCSR_MEMFAULTENA_Msk | SCB_SHCSR_USGFAULTENA_Msk);
 
 #if SET_FPU_FLUSH_TO_ZERO
   uint32_t fpscr = __get_FPSCR(); // set FPU flush to zero mode
@@ -129,7 +128,6 @@ int main(void)
   write_EEPROM_defaults();
 #endif
 
-  asm("b vTaskStartScheduler"); // point of no return
 }
 
 /**
