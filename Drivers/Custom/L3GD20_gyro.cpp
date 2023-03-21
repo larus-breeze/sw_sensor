@@ -27,6 +27,7 @@
 #include "spi.h"
 #include "stm_l3gd20.h"
 #include "communicator.h"
+#include "system_state.h"
 
 #if RUN_L3GD20
 
@@ -54,7 +55,7 @@ static void runnable (void*)
 static ROM TaskParameters_t p =
 {
     runnable,
-    "CHIPSNS",
+    "L3GD20",
     128,
     0,
     L3GD20_PRIORITY,
