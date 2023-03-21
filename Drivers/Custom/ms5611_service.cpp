@@ -1,5 +1,5 @@
 /**
- @file 		ms5611.cpp
+ @file 		ms5611_service.cpp
  @brief 	MS5611 pressure sensor driver
  @author: 	Maximilian Betz
  @copyright 	Copyright 2021 Maximilian Betz. All rights reserved.
