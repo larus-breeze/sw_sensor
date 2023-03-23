@@ -72,8 +72,16 @@ void runnable( void * p_fault_type)
       break;
     case 8:
 	volatile unsigned d,e,f;
-	a=1; b=0;
-	c=a / b;
+	d = 1; e = 1; f=0;
+	d = e / f;
+      break;
+    case 9: // FPU underflow
+	a=1.0;
+	while( true)
+	  {
+	    a = a / 1000.0f;
+	    delay(1);
+	  }
       break;
     default:
       while( true) // defensively: go sleeping
