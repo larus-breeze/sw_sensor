@@ -57,11 +57,8 @@ static ROM bool FALSE=false;
 
 void communicator_runnable (void*)
 {
-  // wait until configuration file read
+  // wait until configuration file read if one is given
   setup_file_handling_completed.wait();
-
-  if( ! all_EEPROM_parameters_existing())
-      write_EEPROM_defaults();
 
   organizer_t organizer;
   organizer.initialize_before_measurement();

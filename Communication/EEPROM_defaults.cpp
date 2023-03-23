@@ -25,6 +25,7 @@
 #include "my_assert.h"
 #include "NAV_tuning_parameters.h"
 #include "embedded_math.h"
+#include "EEPROM_defaults.h"
 
 //! helper function, in use until manual configuration is implemented
 void write_EEPROM_defaults( void)
