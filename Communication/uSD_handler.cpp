@@ -215,7 +215,7 @@ extern RecorderDataType myTraceBuffer;
     /* wake watchdog */;
 }
 
-void write_EEPROM_dump( const char * filename)
+bool write_EEPROM_dump( const char * filename)
 {
   FRESULT fresult;
   FIL fp;
@@ -229,10 +229,9 @@ void write_EEPROM_dump( const char * filename)
 
   fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)
-    return;
+    return fresult;
 
   f_write (&fp, GIT_TAG_INFO, strlen(GIT_TAG_INFO), (UINT*) &writtenBytes);
-  f_write (&fp, GIT_COMMIT_HASH, strlen(GIT_COMMIT_HASH), (UINT*) &writtenBytes);
   f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
   utox( buffer, UNIQUE_ID[0], 8);
   buffer[8]='\r';
@@ -245,39 +244,30 @@ void write_EEPROM_dump( const char * filename)
       bool result = read_EEPROM_value( PERSISTENT_DATA[index].id, value);
       if( result == HAL_OK)
 	{
-	    // angle format conversion where necessary
-	      switch( PERSISTENT_DATA[index].id)
-	      {
-		case SENS_TILT_ROLL:
-		case SENS_TILT_NICK:
-		case SENS_TILT_YAW:
-		case DECLINATION:
-		case INCLINATION:
-		  value *= 180.0 / M_PI_F;
-		break;
-		default:
-		break;
-	      }
+	  if( PERSISTENT_DATA[index].is_an_angle)
+	    value *= 180.0 / M_PI_F; // format it human readable
 
-	      next = buffer;
-	      next = format_2_digits(next, PERSISTENT_DATA[index].id);
-	      *next++=' ';
-	      next = append_string( next, PERSISTENT_DATA[index].mnemonic);
-	      next = append_string (next," = ");
-	      next = my_ftoa (next, value);
-	      *next++='\r';
-	      *next++='\n';
-	      *next=0;
-	      fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
-	      if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
-		{
-		f_close(&fp);
-	        return;
-		}
+	  next = buffer;
+	  next = format_2_digits(next, PERSISTENT_DATA[index].id);
+	  *next++=' ';
+	  next = append_string( next, PERSISTENT_DATA[index].mnemonic);
+	  next = append_string (next," = ");
+	  next = my_ftoa (next, value);
+	  *next++='\r';
+	  *next++='\n';
+	  *next=0;
+
+	  fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+	  if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
+	    {
+	      f_close(&fp);
+	      return fresult; // give up ...
+	    }
 	}
       }
 
   f_close(&fp);
+  return FR_OK;
 }
 
 void write_magnetic_calibration_file (const coordinates_t &c)
@@ -325,10 +315,17 @@ void uSD_handler_runnable (void*)
   HAL_SD_DeInit (&hsd);
   delay (1000);
 
-  // wait until sd card is detected
+  // wait 10s until sd card is detected
   for( int i=10; i>0 && (! BSP_PlatformIsDetected()); --i)
       delay (1000);
   delay (100); // wait until card is plugged correctly
+
+  if(! BSP_PlatformIsDetected())
+    {
+      setup_file_handling_completed.signal();
+      while(true)
+	suspend (); // give up, logger can not work
+    }
 
   FRESULT fresult;
   fresult = f_mount (&fatfs, "", 0);
@@ -339,6 +336,9 @@ void uSD_handler_runnable (void*)
       while(true)
 	suspend (); // give up, logger can not work
     }
+
+  // LED on to signal "uSD active"
+  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
 
   read_configuration_file(); // read configuration file if it is present on the SD card
   setup_file_handling_completed.signal();
@@ -429,7 +429,11 @@ void uSD_handler_runnable (void*)
       fresult = f_write (&the_file, mem_buffer, MEM_BUFSIZE, &writtenBytes);
       if( ! ((fresult == FR_OK) && (writtenBytes == MEM_BUFSIZE)))
 	while(true)
-	  suspend (); // give up, logger can not work
+	  {
+	    // LED off to signal "no uSD activity"
+	      HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
+	      suspend (); // give up, logger can not work
+	  }
 
       uint32_t rest = buf_ptr - (mem_buffer + MEM_BUFSIZE);
       memcpy (mem_buffer, mem_buffer + MEM_BUFSIZE, rest);

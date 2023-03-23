@@ -36,38 +36,8 @@ void write_EEPROM_defaults( void)
   status = lock_EEPROM( false);
   assert( status == false);
 
-  status = 	    write_EEPROM_value( SENS_TILT_ROLL, 0.0f);
-  status = status | write_EEPROM_value( SENS_TILT_NICK, 0.0f);
-  status = status | write_EEPROM_value( SENS_TILT_YAW,  0.0f);
-
-  status = status | write_EEPROM_value( ANT_BASELENGTH, 1.0f);
-  status = status | write_EEPROM_value( ANT_SLAVE_DOWN, 0.0f);
-  status = status | write_EEPROM_value( ANT_SLAVE_RIGHT, 0.0f);
-  status = status | write_EEPROM_value( GNSS_CONFIGURATION, (float)GNSS_M9N);
-
-  status = status | write_EEPROM_value( PITOT_OFFSET, 0.0f);
-  status = status | write_EEPROM_value( PITOT_SPAN, 1.0f);
-  status = status | write_EEPROM_value( QNH_OFFSET, 0.0f);
-
-  status = status | write_EEPROM_value( MAG_X_OFF, 0.0f);
-  status = status | write_EEPROM_value( MAG_X_SCALE, 1.0f);
-  status = status | write_EEPROM_value( MAG_Y_OFF, 0.0f);
-  status = status | write_EEPROM_value( MAG_Y_SCALE, 1.0f);
-  status = status | write_EEPROM_value( MAG_Z_OFF, 0.0f);
-  status = status | write_EEPROM_value( MAG_Z_SCALE, 1.0f);
-  status = status | write_EEPROM_value( MAG_STD_DEVIATION, 0.009999f);
-  status = status | write_EEPROM_value( MAG_AUTO_CALIB, 1.0f);
-  status = status | write_EEPROM_value( MAG_EARTH_AUTO, 0.0f);
-
-  // time constants
-  status = status | write_EEPROM_value( VARIO_TC, DEFAULT_VARIO_TC);
-  status = status | write_EEPROM_value( VARIO_INT_TC, DEFAULT_AVG_VARIO_TC);
-  status = status | write_EEPROM_value( WIND_TC, DEFAULT_WIND_TC);
-  status = status | write_EEPROM_value( MEAN_WIND_TC, DEFAULT_WIND_AVG_TC);
-  status = status | write_EEPROM_value( VETF, DEFAULT_VETF);
-
-  status = status | write_EEPROM_value( DECLINATION, 0.0f * M_PI_F / 180.0);
-  status = status | write_EEPROM_value( INCLINATION, +65.5f * M_PI_F / 180.0);
+  for( unsigned index = 0; index < PERSISTENT_DATA_ENTRIES; ++index)
+      status |= write_EEPROM_value( PERSISTENT_DATA[index].id, PERSISTENT_DATA[index].default_value);
 
   assert( status == false); // be sure there was no error
 

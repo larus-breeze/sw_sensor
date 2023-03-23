@@ -89,16 +89,6 @@ private:
   bool eof;
 };
 
-int read_identifier( char *s)
-  {
-    if( s[2] != ' ')
-      return -1;
-    int identifier = atoi( s);
-    if( ( identifier > 0) && ( identifier < EEPROM_PARAMETER_ID_END))
-	return identifier;
-    return EEPROM_PARAMETER_ID_END; // error
-  }
-
 #if TEST_MODULE
 unsigned write_EEPROM_value_dummy( EEPROM_PARAMETER_ID identifier, float value)
 {
@@ -120,48 +110,36 @@ void read_configuration_file(void)
   ASSERT( ! status);
 #endif
 
-  // get and program all readable configuration lines
+  // get all readable configuration lines and program data into EEPROM
   while( file_reader.read_line( linebuffer))
     {
-      EEPROM_PARAMETER_ID identifier = (EEPROM_PARAMETER_ID)read_identifier( linebuffer);
-      if( identifier == EEPROM_PARAMETER_ID_END)
-	continue;
-      const persistent_data_t *param = find_parameter_from_ID(identifier);
-      unsigned name_len = strlen( param->mnemonic);
-      if( 0 != strncmp( param->mnemonic,linebuffer+3, name_len))
-	continue;
+      if( linebuffer[2] != ' ')
+        continue; // bad format
+
+      EEPROM_PARAMETER_ID identifier = (EEPROM_PARAMETER_ID)atoi( linebuffer);
+      const persistent_data_t *this_persistent_parameter = find_parameter_from_ID( identifier);
+
+      if( this_persistent_parameter == 0)
+	continue; // we did not find this one
+
+      unsigned name_len = strlen( this_persistent_parameter->mnemonic);
+      if( 0 != strncmp( this_persistent_parameter->mnemonic, linebuffer+3, name_len))
+	continue; // parameter name does not match
+
       if( linebuffer[name_len+4] != '=')
-	continue;
+	continue; // bad format again
 
       float value = atof( linebuffer + name_len + 6);
 
-      // eventually: angle format conversion degree -> rad
-      for( unsigned test_id = 0; test_id < N_ANGLE_CODING_IDENTIFIERS; ++test_id)
+      if( this_persistent_parameter->is_an_angle)
 	{
-	  if( identifier == ANGLE_CODING_IDENTIFIERS[test_id])
-		  value *= M_PI_F / 180.0;
-	}
-
-
-      // angle identifiers need format conversion degrees -> rad
-      switch( identifier)
-      {
-	case SENS_TILT_ROLL:
-	case SENS_TILT_NICK:
-	case SENS_TILT_YAW:
-	case DECLINATION:
-	case INCLINATION:
 	  value *= M_PI_F / 180.0;
-
+	  // map angle range
 	  while( value > M_PI_F)
 	    value -= M_PI_F * 2.0f;
 	  while( value < -M_PI_F)
 	    value += M_PI_F * 2.0f;
-
-	break;
-	default:
-	break;
-      }
+	}
 
 #if TEST_MODULE
       status = write_EEPROM_value_dummy( identifier, value);
