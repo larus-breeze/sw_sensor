@@ -8,3 +8,5 @@ git show --no-patch --no-notes --pretty='#define GIT_COMMIT_TIME "%cI"%n' >> Cor
 echo -n "#define GIT_TAG_INFO \""  >> Core/Inc/git-commit-version.h
 git describe --always --dirty --tags > Core/Inc/git-commit-tag.h
 echo -e $(cat Core/Inc/git-commit-tag.h)\" >> Core/Inc/git-commit-version.h
+
+#python3 scripts/create-decimal-version-info.py
