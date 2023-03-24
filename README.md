@@ -1,5 +1,5 @@
 # Software Sensor
-- For hardware design: https://github.com/larus-breeze/hw_sensor 
+- For hardware design see: https://github.com/larus-breeze/hw_sensor 
 
 ## Facts
 - STM32CubeIDE
@@ -11,7 +11,7 @@
 - Differential pressure
 - CAN interface
 - Bluetooth via HM19 (HW-1.0)  ESP32 (HW-2.0)
-- RS232
+- RS232 NMEA output channels
 
 # How to use it
 Some usefull git commands to work with this repository and the included submodule **command line**: 
@@ -35,11 +35,8 @@ Pull latest changes:
       
       
 # Build Configurations
-- Debug   (This should be used currently)
-- debug timing
-- release (currently not maintained)
-TODO: describe which one to use?  relase e.g. disables the flight data logging, why do we want to remove this feature in the release version?
-
+- Release used for release versions (Max. optimized, no debug info)
+- Debug  used for normal development
 
 # Flash and prepare the sensor hardware
 ## STM32

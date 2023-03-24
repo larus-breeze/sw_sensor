@@ -36,6 +36,7 @@
 #include "emergency.h"
 #include "uSD_handler.h"
 #include "watchdog_handler.h"
+#include "EEPROM_defaults.h"
 
 extern Semaphore setup_file_handling_completed;
 extern uint32_t UNIQUE_ID[4];
@@ -215,7 +216,7 @@ extern RecorderDataType myTraceBuffer;
     /* wake watchdog */;
 }
 
-void write_EEPROM_dump( const char * filename)
+bool write_EEPROM_dump( const char * filename)
 {
   FRESULT fresult;
   FIL fp;
@@ -229,10 +230,9 @@ void write_EEPROM_dump( const char * filename)
 
   fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)
-    return;
+    return fresult;
 
   f_write (&fp, GIT_TAG_INFO, strlen(GIT_TAG_INFO), (UINT*) &writtenBytes);
-  f_write (&fp, GIT_COMMIT_HASH, strlen(GIT_COMMIT_HASH), (UINT*) &writtenBytes);
   f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
   utox( buffer, UNIQUE_ID[0], 8);
   buffer[8]='\r';
@@ -245,39 +245,30 @@ void write_EEPROM_dump( const char * filename)
       bool result = read_EEPROM_value( PERSISTENT_DATA[index].id, value);
       if( result == HAL_OK)
 	{
-	    // angle format conversion where necessary
-	      switch( PERSISTENT_DATA[index].id)
-	      {
-		case SENS_TILT_ROLL:
-		case SENS_TILT_NICK:
-		case SENS_TILT_YAW:
-		case DECLINATION:
-		case INCLINATION:
-		  value *= 180.0 / M_PI_F;
-		break;
-		default:
-		break;
-	      }
+	  if( PERSISTENT_DATA[index].is_an_angle)
+	    value *= 180.0 / M_PI_F; // format it human readable
 
-	      next = buffer;
-	      next = format_2_digits(next, PERSISTENT_DATA[index].id);
-	      *next++=' ';
-	      next = append_string( next, PERSISTENT_DATA[index].mnemonic);
-	      next = append_string (next," = ");
-	      next = my_ftoa (next, value);
-	      *next++='\r';
-	      *next++='\n';
-	      *next=0;
-	      fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
-	      if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
-		{
-		f_close(&fp);
-	        return;
-		}
+	  next = buffer;
+	  next = format_2_digits(next, PERSISTENT_DATA[index].id);
+	  *next++=' ';
+	  next = append_string( next, PERSISTENT_DATA[index].mnemonic);
+	  next = append_string (next," = ");
+	  next = my_ftoa (next, value);
+	  *next++='\r';
+	  *next++='\n';
+	  *next=0;
+
+	  fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+	  if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
+	    {
+	      f_close(&fp);
+	      return fresult; // give up ...
+	    }
 	}
       }
 
   f_close(&fp);
+  return FR_OK;
 }
 
 void write_magnetic_calibration_file (const coordinates_t &c)
@@ -322,13 +313,35 @@ void write_magnetic_calibration_file (const coordinates_t &c)
 //!< this executable takes care of all uSD reading and writing
 void uSD_handler_runnable (void*)
 {
+  // if no EEPROM data exist: write default values
+  // later we will take care of the individual configuration
+  if( ! all_EEPROM_parameters_existing())
+      write_EEPROM_defaults();
+
+restart:
+
   HAL_SD_DeInit (&hsd);
   delay (1000);
 
-  // wait until sd card is detected
+  // wait max. 10s until sd card is detected
   for( int i=10; i>0 && (! BSP_PlatformIsDetected()); --i)
       delay (1000);
   delay (100); // wait until card is plugged correctly
+
+  if(! BSP_PlatformIsDetected())
+    {
+      setup_file_handling_completed.signal(); // give up waiting for configuration
+      while(true) // wait until uSD plugged in and restart the uSD handler afterwards
+	{
+	  delay(1000);
+	  if( BSP_PlatformIsDetected())
+	    goto restart;
+	}
+    }
+
+  HAL_StatusTypeDef hresult = HAL_SD_Init (&hsd);
+  if( hresult != HAL_OK)
+    goto restart;
 
   FRESULT fresult;
   fresult = f_mount (&fatfs, "", 0);
@@ -336,9 +349,22 @@ void uSD_handler_runnable (void*)
   if (fresult != FR_OK)
     {
       setup_file_handling_completed.signal();
-      while(true)
-	suspend (); // give up, logger can not work
+      while(true) // wait until uSD UN-plugged
+	{
+	  delay(1000);
+	  if( ! BSP_PlatformIsDetected())
+	    break;
+	}
+      while(true) // wait until uSD plugged in and restart the uSD handler afterwards
+	{
+	  if( BSP_PlatformIsDetected())
+	    goto restart;
+	  delay(1000);
+	}
     }
+
+  // LED on to signal "uSD active"
+  HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
 
   read_configuration_file(); // read configuration file if it is present on the SD card
   setup_file_handling_completed.signal();
@@ -351,6 +377,8 @@ void uSD_handler_runnable (void*)
   uint8_t *buf_ptr = mem_buffer;
 
   fresult = f_open (&the_file, (char *)"magnetic.calibration", FA_READ);
+  if( fresult == FR_DISK_ERR)
+    goto restart;
   magnetic_gound_calibration = (fresult == FR_OK);
   f_close( &the_file); // as this is just a dummy file
 
@@ -407,11 +435,16 @@ void uSD_handler_runnable (void*)
 
   fresult = f_open (&the_file, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)
-    suspend (); // give up, logger unable to work
+    {
+      while( true)
+	{
+	notify_take (true); // wait for synchronization by crash detection
+	if( crashfile)
+	  write_crash_dump();
+	}
+    }
 
   int32_t sync_counter=0;
-
-  GPIO_PinState led_state = GPIO_PIN_RESET;
 
   while( true) // logger loop synchronized by communicator
     {
@@ -428,16 +461,25 @@ void uSD_handler_runnable (void*)
 
       fresult = f_write (&the_file, mem_buffer, MEM_BUFSIZE, &writtenBytes);
       if( ! ((fresult == FR_OK) && (writtenBytes == MEM_BUFSIZE)))
-	while(true)
-	  suspend (); // give up, logger can not work
+	  {
+	    HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
+	    while( true)
+	      {
+	      notify_take (true); // wait for synchronization by crash detection
+	      if( crashfile)
+		write_crash_dump();
+	      }
+	  }
 
       uint32_t rest = buf_ptr - (mem_buffer + MEM_BUFSIZE);
       memcpy (mem_buffer, mem_buffer + MEM_BUFSIZE, rest);
       buf_ptr = mem_buffer + rest;
 
 #if uSD_LED_STATUS
-      HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, led_state);
-      led_state = led_state == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET;
+      if( (sync_counter & 0x3) == 0)
+	HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
+      else
+	HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
 #endif
 
       if( ++sync_counter >= 16)

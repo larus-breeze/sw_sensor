@@ -1,6 +1,6 @@
 /**
  * @file        main.h
- * @brief       Header for main.c file.
+ * @brief       Definitions for our hardware
  * @author	Dr. Klaus Schaefer
  * @copyright 	Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
  * @license 	This project is released under the GNU Public License GPL-3.0

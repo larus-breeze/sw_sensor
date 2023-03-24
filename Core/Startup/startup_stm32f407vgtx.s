@@ -59,7 +59,6 @@ defined in linker script */
   .weak  Reset_Handler
   .type  Reset_Handler, %function
 Reset_Handler:  
-  ldr   sp, =_estack     /* set stack pointer */
 
 /* Copy the data segment initializers from flash to SRAM */  
   movs  r1, #0
@@ -89,16 +88,21 @@ LoopFillZerobss:
   cmp  r2, r3
   bcc  FillZerobss
 
-/* Call the clock system intitialization function.*/
+/* Memory settings, VTOR set */
   bl  SystemInit   
 
+/* RTOS memory manager initialization */
   bl initialize_RTOS_memory
 
-/* Call static constructors */
-    bl __libc_init_array
-/* Call the application's entry point.*/
-  bl  main
-  bx  lr    
+/* Call static constructors and create tasks */
+  bl __libc_init_array
+
+/* Call the MPU initialization routine */
+  bl  MPU_initialization
+
+/* start the RTOS */
+  b vTaskStartScheduler
+
 .size  Reset_Handler, .-Reset_Handler
 
 /**

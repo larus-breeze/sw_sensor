@@ -1,40 +1,26 @@
 /**
  * @file    FreeRTOS_wrapper.h
- * @brief   Comfortable versions of FreeRTOS's functions
- * @author  Dr. Klaus Schaefer schaefer@eit.h-da.de
- */
-// doxygen mainpage
-/**
- * @file    FreeRTOS_wrapper.h
- * @brief   Comfortable versions of FreeRTOS's functions
- * @author  Dr. Klaus Schaefer schaefer@eit.h-da.de
- * @mainpage
- *
- * Basic mechanisms (APIs)
- *
- * @see Class Task
- * @see suspend()
- * @see resume()
- * @see delay()
- * @see vTaskDelayUntil()
- * @see Class Semaphore
- * @see Class Mutex
- * @see Class Queue
- * @see Class timer
- *
- * Advanced mechanisms (APIs)
- *
- * @see Class RestrictedTask
- * @see Class active_object
- * @see Class MessageBuffer
- * @see Class StreamBuffer
- * @see Class event_group
- * @see Class timer
- * @see Class synchronous_timer
- *
- * Original FreeRTOS APIs
- * <a href="modules.html">Modules</a>
- */
+ * @brief   Comfortable C++ and template versions of the FreeRTOS's API
+ * @author	Dr. Klaus Schaefer
+ * @copyright 	Copyright 2021 Dr. Klaus Schaefer. All rights reserved.
+ * @license 	This project is released under the GNU Public License GPL-3.0
+
+    <Larus Flight Sensor Firmware>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ **************************************************************************/
 
 #ifndef FREERTOSWRAPPER_H_
 #define FREERTOSWRAPPER_H_
