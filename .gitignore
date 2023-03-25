@@ -1,9 +1,9 @@
-/Debug/
-/Release/
-/.settings/language.settings.xml
-/Core/Inc/git-commit-version.h
-/Core/Inc/git-commit-tag.h
-/debug timing/
-/release/
-*.launch
-/FLASH/
+sw_stm32/Debug/
+sw_stm32/Release/
+sw_stm32/.settings/language.settings.xml
+sw_stm32/Core/Inc/git-commit-version.h
+sw_stm32/Core/Inc/git-commit-tag.h
+sw_stm32/debug timing/
+sw_stm32/release/
+sw_stm32/*.launch
+sw_stm32/FLASH/
