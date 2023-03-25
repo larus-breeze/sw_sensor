@@ -78,6 +78,15 @@ static uint16_t EE_VerifyPageFullyErased(uint32_t Address);
   */
 uint16_t EE_Init(void)
 {
+  /* Copy EEPROM Parameter IDs to the VirtAddVarTab. NOTE: This is not optimal as NB_OF_VAR shall be set to
+   * PERSISTENT_DATA_ENTRIES but this value is not available for a define. NB_OF_VAR is slightly to large because
+   * some IDs in EEPROM_PARAMETER_ID are skipped but easier to implement. */
+  ASSERT(PERSISTENT_DATA_ENTRIES < NB_OF_VAR);
+  for(unsigned int i = 0; i < PERSISTENT_DATA_ENTRIES; i++){
+      ASSERT(PERSISTENT_DATA[i].id < 0xFFFF); // Only ids < 0xFFFF are allowed.
+      VirtAddVarTab[i] = PERSISTENT_DATA[i].id;
+  }
+
   uint16_t PageStatus0 = 6, PageStatus1 = 6;
   uint16_t VarIdx = 0;
   uint16_t EepromStatus = 0, ReadStatus = 0;
