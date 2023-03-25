@@ -1,0 +1,5 @@
+[submodule "lib"]
+	path = sw_sensor/lib
+	url = git@github.com:larus-breeze/sw_sensor_algorithms.git
+	
+	
