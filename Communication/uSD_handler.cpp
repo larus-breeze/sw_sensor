@@ -22,7 +22,7 @@
 
  **************************************************************************/
 
- #include "system_configuration.h"
+#include "system_configuration.h"
 #include "main.h"
 #include "FreeRTOS_wrapper.h"
 #include "fatfs.h"
@@ -37,12 +37,12 @@
 #include "uSD_handler.h"
 #include "watchdog_handler.h"
 #include "EEPROM_defaults.h"
+#include "magnetic_induction_report.h"
 
 extern Semaphore setup_file_handling_completed;
 extern uint32_t UNIQUE_ID[4];
 extern bool reset_by_watchdog_requested;
 
-COMMON Queue< linear_least_square_result<float>[3] > magnetic_calibration_queue(4,"M_CALIB");
 COMMON char *crashfile;
 COMMON unsigned crashline;
 COMMON bool logger_is_enabled;
@@ -50,8 +50,7 @@ COMMON bool magnetic_gound_calibration;
 COMMON bool dump_sensor_readings;
 
 COMMON Semaphore magnetic_calibration_done;
-
-#if RUN_DATA_LOGGER
+COMMON magnetic_induction_report_t magnetic_induction_report;
 
 FATFS fatfs;
 extern SD_HandleTypeDef hsd;
@@ -271,20 +270,21 @@ bool write_EEPROM_dump( const char * filename)
   return FR_OK;
 }
 
-void write_magnetic_calibration_file (const coordinates_t &c)
+void write_magnetic_calibration_file ( void)
 {
   FRESULT fresult;
+  FILINFO filinfo;
   FIL fp;
   char buffer[50];
   char *next = buffer;
-  linear_least_square_result<float> data[3];
   int32_t writtenBytes = 0;
 
-  if (false == magnetic_calibration_queue.receive (data, 0))
-    return;
+  fresult = f_stat("magnetic", &filinfo);
+  if( false == ((fresult == 1) && (filinfo.fattrib & AM_DIR)))
+    return; // directory does not exist -> do not write file
 
+  next = append_string( next, "magnetic/");
   next = format_date_time( next);
-  *next++ = (char)(data[0].id);
   append_string(next, ".mcl");
 
   fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
@@ -294,19 +294,29 @@ void write_magnetic_calibration_file (const coordinates_t &c)
   for( unsigned i=0; i<3; ++i)
     {
       char *next = buffer;
-      next = my_ftoa (next, data[i].y_offset);
-      *next++='\t';
-      next = my_ftoa (next, data[i].slope);
-      *next++='\t';
-      next = my_ftoa (next, data[i].variance_offset);
-      *next++='\t';
-      next = my_ftoa (next, data[i].variance_slope);
-      *next++='\t';
+      next = my_ftoa (next, magnetic_induction_report.calibration[i].offset);
+      *next++=' ';
+      next = my_ftoa (next, magnetic_induction_report.calibration[i].scale);
+      *next++=' ';
+      next = my_ftoa (next, SQRT( magnetic_induction_report.calibration[i].variance));
+      *next++=' ';
       fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
       if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
         return;
     }
-  f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
+
+  float3vector induction = magnetic_induction_report.nav_induction;
+  for( unsigned i=0; i<3; ++i)
+    {
+      next = my_ftoa (next, induction[i]);
+      *next++=' ';
+    }
+
+  next = my_ftoa (next, magnetic_induction_report.nav_induction_std_deviation);
+  *next++='\r';
+  *next++='\n';
+
+  f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
   f_close(&fp);
 }
 
@@ -486,9 +496,8 @@ restart:
 	{
 	  sync_counter = 0;
 	  f_sync (&the_file);
-#if LOG_MAGNETIC_CALIBRATION
-	  write_magnetic_calibration_file ( output_data.c);
-#endif
+	  if( magnetic_calibration_done.wait( 0))
+	    write_magnetic_calibration_file ();
 	}
     }
 }
@@ -578,4 +587,8 @@ extern "C" void handle_watchdog_trigger( void)
   amok_running_task_killer.resume_from_ISR();
 }
 
-#endif
+void report_magnetic_calibration_has_changed( magnetic_induction_report_t *p_magnetic_induction_report)
+{
+  magnetic_induction_report = *p_magnetic_induction_report;
+  magnetic_calibration_done.signal();
+}
