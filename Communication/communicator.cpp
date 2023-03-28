@@ -160,12 +160,12 @@ void communicator_runnable (void*)
 	  compass_ground_calibration.feed(output_data.m.mag);
 	  if( 0 == magnetic_ground_calibrator_countdown)
 	    {
-	      compass_calibration_t new_calibration;
+	      compass_calibration_t <int64_t, float> new_calibration;
 	      compass_ground_calibration.get_calibration_result(new_calibration.calibration);
 	      new_calibration.calibration_done = true;
 	      new_calibration.write_into_EEPROM();
 	      magnetic_calibration_done.signal();
-	      magnetic_gound_calibration = false;
+	      magnetic_gound_calibration = false; // stop this procedure
 	    }
 	}
 

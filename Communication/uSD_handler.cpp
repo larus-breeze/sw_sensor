@@ -587,7 +587,7 @@ extern "C" void handle_watchdog_trigger( void)
   amok_running_task_killer.resume_from_ISR();
 }
 
-void report_magnetic_calibration_has_changed( magnetic_induction_report_t *p_magnetic_induction_report)
+void report_magnetic_calibration_has_changed(magnetic_induction_report_t * p_magnetic_induction_report, char)
 {
   magnetic_induction_report = *p_magnetic_induction_report;
   magnetic_calibration_done.signal();
