@@ -275,12 +275,12 @@ void write_magnetic_calibration_file ( void)
   FRESULT fresult;
   FILINFO filinfo;
   FIL fp;
-  char buffer[50];
+  char buffer[100];
   char *next = buffer;
   int32_t writtenBytes = 0;
 
   fresult = f_stat("magnetic", &filinfo);
-  if( false == ((fresult == 1) && (filinfo.fattrib & AM_DIR)))
+  if( false == ((fresult == FR_OK) && (filinfo.fattrib & AM_DIR)))
     return; // directory does not exist -> do not write file
 
   next = append_string( next, "magnetic/");
@@ -305,6 +305,7 @@ void write_magnetic_calibration_file ( void)
         return;
     }
 
+  next = buffer;
   float3vector induction = magnetic_induction_report.nav_induction;
   for( unsigned i=0; i<3; ++i)
     {
