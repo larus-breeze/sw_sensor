@@ -251,8 +251,7 @@ void communicator_runnable (void*)
 	}
 
       organizer.report_data ( output_data);
-      if( logger_is_enabled)
-	sync_logger (); // kick logger @ 100 Hz
+      sync_logger (); // kick logger @ 100 Hz
     }
 }
 

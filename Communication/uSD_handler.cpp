@@ -45,7 +45,6 @@ extern bool reset_by_watchdog_requested;
 
 COMMON char *crashfile;
 COMMON unsigned crashline;
-COMMON bool logger_is_enabled;
 COMMON bool magnetic_gound_calibration;
 COMMON bool dump_sensor_readings;
 
