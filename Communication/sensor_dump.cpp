@@ -149,7 +149,9 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = integer_to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss.abs(), s);
   s=append_string( s, "\r\n");
 
-  s=append_string( s, "Mag. Inclination: ");
+  s=append_string( s, "True Heading= ");
+  s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * output_data.euler.y, s);
+  s=append_string( s, " Inclination= ");
   float inclination = ATAN2( output_data.nav_induction_gnss.e[DOWN], output_data.nav_induction_gnss.e[NORTH]);
   s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * inclination, s);
 
