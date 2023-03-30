@@ -154,8 +154,12 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = integer_to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss.abs(), s);
   s=append_string( s, "\r\n");
 
+  float heading = heading_decimator.get_output();
+  if( heading < 0)
+    heading += 360.0f;
   s=append_string( s, "True Heading= ");
-  s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * heading_decimator.get_output(), s);
+  s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * heading, s);
+
   s=append_string( s, " Inclination= ");
   s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * inclination_decimator.get_output(), s);
   s=append_string( s, "\r\n");
