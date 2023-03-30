@@ -162,7 +162,10 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
 
   s=append_string( s, " Inclination= ");
   s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * inclination_decimator.get_output(), s);
-  s=append_string( s, "\r\n");
+
+  s=append_string( s, " MagAnomaly= ");
+  s = integer_to_ascii_2_decimals( output_data.magnetic_disturbance * 10000.0f, s);
+  s=append_string( s, " %\r\n");
 
   // here we report a fake vario value indicating the maximum magnetic field strength
   if( magnetic_gound_calibration)
