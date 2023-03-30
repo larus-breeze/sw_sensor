@@ -155,7 +155,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s=append_string( s, "\r\n");
 
   float heading = heading_decimator.get_output();
-  if( heading < 0)
+  if( heading < 0.0f)
     heading += 360.0f;
   s=append_string( s, "True Heading= ");
   s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * heading, s);
