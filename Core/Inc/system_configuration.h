@@ -26,6 +26,7 @@
 #define SRC_SYSTEM_CONFIGURATION_H_
 
 #include "persistent_data.h"
+#include "git-commit-version.h"
 
 #define RUN_DATA_LOGGER			1
 
