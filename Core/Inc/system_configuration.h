@@ -26,6 +26,7 @@
 #define SRC_SYSTEM_CONFIGURATION_H_
 
 #include "persistent_data.h"
+#include "git-commit-version.h"
 
 #define INCLUDING_NANO			1
 
