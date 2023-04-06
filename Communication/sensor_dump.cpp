@@ -26,8 +26,11 @@
 #include "NMEA_format.h"
 #include "embedded_math.h"
 #include "uSD_handler.h"
+#include "pt2.h"
 
-uint64_t pabs_sum, samples, noise_energy;
+COMMON uint64_t pabs_sum, samples, noise_energy;
+COMMON pt2 <float, float> heading_decimator( 0.01);
+COMMON pt2 <float, float> inclination_decimator( 0.01);
 
 #define RAD_2_DEGREES_100 5729.6f
 
@@ -45,6 +48,8 @@ void decimate_sensor_observations( const output_data_t &output_data)
   pabs_sum += (uint64_t)(output_data.m.static_pressure);
   ++samples;
   noise_energy += SQR( (uint64_t)(output_data.m.static_pressure + 0.5f) - pabs_sum / samples);
+  heading_decimator.respond( output_data.euler.y);
+  inclination_decimator.respond( ATAN2( output_data.nav_induction_gnss.e[DOWN], output_data.nav_induction_gnss.e[NORTH]));
 }
 
 statistics get_sensor_data( void)
@@ -149,11 +154,18 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = integer_to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss.abs(), s);
   s=append_string( s, "\r\n");
 
-  s=append_string( s, "Mag. Inclination: ");
-  float inclination = ATAN2( output_data.nav_induction_gnss.e[DOWN], output_data.nav_induction_gnss.e[NORTH]);
-  s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * inclination, s);
+  float heading = heading_decimator.get_output();
+  if( heading < 0.0f)
+    heading += 2.0f * M_PI_F;
+  s=append_string( s, "True Heading= ");
+  s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * heading, s);
 
-  s=append_string( s, "\r\n");
+  s=append_string( s, " Inclination= ");
+  s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * inclination_decimator.get_output(), s);
+
+  s=append_string( s, " MagAnomaly= ");
+  s = integer_to_ascii_2_decimals( output_data.magnetic_disturbance * 10000.0f, s);
+  s=append_string( s, " %\r\n");
 
   // here we report a fake vario value indicating the maximum magnetic field strength
   if( magnetic_gound_calibration)
