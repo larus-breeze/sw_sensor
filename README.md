@@ -47,6 +47,11 @@ Pull latest changes:
 - Flash the *.ino file below ESP32_Firmware with arduino studio and the esp32 usb connector
 
 ## Prepare an sd-card with configuration files
-- put a sensor_config.txt file (example in Configuration_files) TODO: describe how to configure the sensor parameters in the sensor_config.txt file
-- put an empty "enable.logger" file on the sd card to enable logging the measurement data with 100Hz
-- TODO: describe the features by putting empty sensor.readings and magnetic.calibration files on the sd-card.
+- put a sensor_config.txt file (example in Configuration_files) in the sd cards root directory. Adjust nick, roll, yaw in degree according to the sensors mounting orientation. All angles set to 0 (default) means an orientation so that the pilot can see the LEDs and USB connectors and Rj45 connectors and tubes are in flight direction. It is adwised to check the configured orientation by observing the heading, roll and nick angle using an ahrs display. Initially a not so correct heading is acceptable as the magnetic calibration algorithm needs some time in the air to find the calibration parameters. A 30 minutes flight with some right and left turns should be sufficient. 
+- Create a directory with the name "logger" to enable logging of all measurement data with 100Hz
+- Create a directory with the name "magnetic" to enable the logging of magnetic calibration events. There should be a few of these events initially are installing the sensor. 
+
+### Additional developer option:
+- Put an empty file with the name: "sensor.readings" in order to switch the serial output format from Larus NMEA syntax to pure sensor raw data values.
+- Additionally put an empty file with the name "magnetic.calibration" onto the sd-card in order to start a magnetic ground calibration. This is a development feature and not required, nor advised for normal operation. 
+
