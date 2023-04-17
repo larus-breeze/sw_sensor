@@ -32,30 +32,28 @@ Pull latest changes:
 
     git pull --recurse-submodules  
       
-# Build Configurations
+# STM32 Build Configurations
 - Release used for release versions (Max. optimized, no debug info)
-- Debug  used for development
+- Debug used for development
 
 # Flash and prepare the sensor hardware
 ## STM32
 - Flash via USB using the STM32CubeProgrammer and a compiled binary sw_sensor.elf file from here: https://github.com/larus-breeze/sw_sensor/releases  
-Hold the Boot Button pressed on power-on to start the STM32 in the DFU bootloader mode.
-Use "STM32CubeProgrammer" to flash the STM32 micro-controller in USB-DFU-mode.
+Hold the Boot Button on power-on to start the STM32 in the DFU bootloader mode.
+Use the STM32CubeProgrammer to flash the binary to the STM32 micro-controller.
 
 ## ESP32 controller
-- Flash the *.ino file below ESP32_Firmware with arduino studio and the esp32 usb connector.
+- Flash the *.ino file in ESP32_Firmware with arduino studio via the esp32 usb connector.
 - Optionally: Use the arduino IDE to change the device name and the RF mode (Bluetooth or WLAN).
 
 ## Prepare an sd-card with configuration files
-- put a sensor_config.txt file (example in Configuration_files) in the sd cards root directory. Adjust nick, roll, yaw in degree according to the sensors mounting orientation. 
-All angles set to 0 (default) means an orientation so that the pilot can see the LEDs and USB connectors and Rj45 connectors and tubes are in flight direction. 
-It is advised to check the configured orientation by observing the heading, roll and nick angle using an ahrs display, e.g. using OpenSoar' horizon display. 
-Initially the heading may be inaccurate as the magnetic calibration algorithm needs some time in the air to find the exact calibration parameters. 
+- put a sensor_config.txt file (template in configuration/) in the sd cards root directory. Adjust the parameters as described in configuration/README.md
+Initially the heading may be inaccurate as the magnetic calibration algorithm needs some time in the air to find the exact calibration. 
 A 30 minutes flight with some right and left turns should be sufficient to calibrate the compass module. 
 - Optionally: Create a directory with the name "logger" to enable logging of all measurement data with 100Hz
 - Optionally: Create a directory with the name "magnetic" to enable the logging of magnetic calibration events. 
 There should be a few of these events during the calibration process. 
-If you observe frequent additional events you probabely have moving ferromagnetic parts in the vicinity of the magnetometer.  
+If you observe frequent additional events you probabely have moving ferromagnetic parts in the vicinity of the magnetometer.
 
 ### Additional developer options:
 - Put an empty file with the name: "sensor.readings" in order to switch the serial output format from Larus NMEA syntax to pure sensor raw data values.
