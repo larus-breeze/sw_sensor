@@ -167,6 +167,18 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = integer_to_ascii_2_decimals( output_data.magnetic_disturbance * 10000.0f, s);
   s=append_string( s, " %\r\n");
 
+  if( output_data.c.sat_fix_type == (SAT_FIX | SAT_HEADING))
+    {
+      float baselength = output_data.c.relPosNED.abs();
+      s=append_string( s, "BaseLength/m= ");
+      s = integer_to_ascii_2_decimals( baselength * 100.0f, s);
+      s=append_string( s, " SlaveDown = ");
+      s = integer_to_ascii_2_decimals( output_data.c.relPosNED.e[DOWN] * 100.0f, s);
+      s=append_string( s, " DGNSS-Hdg= ");
+      s = integer_to_ascii_1_decimal( 572.96f * output_data.c.relPosHeading, s);
+      s=append_string( s, "\r\n");
+    }
+
   // here we report a fake vario value indicating the maximum magnetic field strength
   if( magnetic_gound_calibration)
     {
