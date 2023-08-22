@@ -82,17 +82,17 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   for( unsigned i=0; i<3; ++i)
     {
       squaresum += SQR( output_data.m.acc.e[i]);
-      s = integer_to_ascii_2_decimals( 100.0f * output_data.m.acc.e[i] , s);
+      s = to_ascii_2_decimals( 100.0f * output_data.m.acc.e[i] , s);
       *s++ = ' ';
     }
-  s = integer_to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
+  s = to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
   s=append_string( s, "\r\n");
 
   s=append_string( s, "gyro  ");
   squaresum=0.0f;
   for( unsigned i=0; i<3; ++i)
     {
-      s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * output_data.m.gyro.e[i] , s);
+      s = to_ascii_2_decimals( RAD_2_DEGREES_100 * output_data.m.gyro.e[i] , s);
       *s++ = ' ';
     }
   s=append_string( s, "\r\n");
@@ -102,14 +102,14 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   for( unsigned i=0; i<3; ++i)
     {
       squaresum += SQR( output_data.m.mag.e[i]);
-      s = integer_to_ascii_2_decimals( 100.0f * output_data.m.mag.e[i] , s);
+      s = to_ascii_2_decimals( 100.0f * output_data.m.mag.e[i] , s);
       *s++ = ' ';
     }
-  s = integer_to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
+  s = to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
   s=append_string( s, "\r\n");
 
   s=append_string( s, "pitot / Pa ");
-  s = integer_to_ascii_2_decimals( 100.0f * output_data.m.pitot_pressure , s);
+  s = to_ascii_2_decimals( 100.0f * output_data.m.pitot_pressure , s);
   s=append_string( s, "\r\n");
 
   statistics present_stat = get_sensor_data();
@@ -120,19 +120,19 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
     }
 
   s=append_string( s, "pabs / hPa ");
-  s = integer_to_ascii_2_decimals( stat.mean , s);
+  s = to_ascii_2_decimals( stat.mean , s);
   s=append_string( s, "\r\n");
 
   s=append_string( s, "pabs RMS / Pa ");
-  s = integer_to_ascii_2_decimals( stat.rms * 100.0f , s);
+  s = to_ascii_2_decimals( stat.rms * 100.0f , s);
   s=append_string( s, "\r\n");
 
   s=append_string( s, "temp  ");
-  s = integer_to_ascii_2_decimals( 100.0f * output_data.m.static_sensor_temperature , s);
+  s = to_ascii_2_decimals( 100.0f * output_data.m.static_sensor_temperature , s);
   s=append_string( s, "\r\n");
 
   s=append_string( s, "Ubatt  ");
-  s = integer_to_ascii_2_decimals( 100.0f * output_data.m.supply_voltage , s);
+  s = to_ascii_2_decimals( 100.0f * output_data.m.supply_voltage , s);
   s=append_string( s, "\r\n");
 
   s=append_string( s, "GNSS time ");
@@ -146,36 +146,36 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s=append_string( s, "NAV Induction: ");
   for( unsigned i=0; i<3; ++i)
     {
-      s = integer_to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss.e[i], s);
+      s = to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss.e[i], s);
       *s++=' ';
     }
 
   s=append_string( s, "-> ");
-  s = integer_to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss.abs(), s);
+  s = to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss.abs(), s);
   s=append_string( s, "\r\n");
 
   float heading = heading_decimator.get_output();
   if( heading < 0.0f)
     heading += 2.0f * M_PI_F;
   s=append_string( s, "True Heading= ");
-  s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * heading, s);
+  s = to_ascii_2_decimals( RAD_2_DEGREES_100 * heading, s);
 
   s=append_string( s, " Inclination= ");
-  s = integer_to_ascii_2_decimals( RAD_2_DEGREES_100 * inclination_decimator.get_output(), s);
+  s = to_ascii_2_decimals( RAD_2_DEGREES_100 * inclination_decimator.get_output(), s);
 
   s=append_string( s, " MagAnomaly= ");
-  s = integer_to_ascii_2_decimals( output_data.magnetic_disturbance * 10000.0f, s);
+  s = to_ascii_2_decimals( output_data.magnetic_disturbance * 10000.0f, s);
   s=append_string( s, " %\r\n");
 
   if( output_data.c.sat_fix_type == (SAT_FIX | SAT_HEADING))
     {
       float baselength = output_data.c.relPosNED.abs();
       s=append_string( s, "BaseLength/m= ");
-      s = integer_to_ascii_2_decimals( baselength * 100.0f, s);
+      s = to_ascii_2_decimals( baselength * 100.0f, s);
       s=append_string( s, " SlaveDown = ");
-      s = integer_to_ascii_2_decimals( output_data.c.relPosNED.e[DOWN] * 100.0f, s);
+      s = to_ascii_2_decimals( output_data.c.relPosNED.e[DOWN] * 100.0f, s);
       s=append_string( s, " DGNSS-Hdg= ");
-      s = integer_to_ascii_1_decimal( 572.96f * output_data.c.relPosHeading, s);
+      s = to_ascii_1_decimal( 572.96f * output_data.c.relPosHeading, s);
       s=append_string( s, "\r\n");
     }
 
