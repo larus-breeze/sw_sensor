@@ -26,7 +26,7 @@
 
 #include <FreeRTOS_wrapper.h>
 #include "navigator.h"
-#include "flight_observer.h"
+#include "variometer.h"
 #include "serial_io.h"
 #include "NMEA_format.h"
 #include "common.h"

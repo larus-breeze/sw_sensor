@@ -49,7 +49,7 @@ void decimate_sensor_observations( const output_data_t &output_data)
   ++samples;
   noise_energy += SQR( (uint64_t)(output_data.m.static_pressure + 0.5f) - pabs_sum / samples);
   heading_decimator.respond( output_data.euler.y);
-  inclination_decimator.respond( ATAN2( output_data.nav_induction_gnss.e[DOWN], output_data.nav_induction_gnss.e[NORTH]));
+  inclination_decimator.respond( ATAN2( output_data.nav_induction_gnss[DOWN], output_data.nav_induction_gnss[NORTH]));
 }
 
 statistics get_sensor_data( void)
@@ -81,8 +81,8 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   squaresum=0.0f;
   for( unsigned i=0; i<3; ++i)
     {
-      squaresum += SQR( output_data.m.acc.e[i]);
-      s = to_ascii_2_decimals( 100.0f * output_data.m.acc.e[i] , s);
+      squaresum += SQR( output_data.m.acc[i]);
+      s = to_ascii_2_decimals( 100.0f * output_data.m.acc[i] , s);
       *s++ = ' ';
     }
   s = to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
@@ -92,7 +92,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   squaresum=0.0f;
   for( unsigned i=0; i<3; ++i)
     {
-      s = to_ascii_2_decimals( RAD_2_DEGREES_100 * output_data.m.gyro.e[i] , s);
+      s = to_ascii_2_decimals( RAD_2_DEGREES_100 * output_data.m.gyro[i] , s);
       *s++ = ' ';
     }
   s=append_string( s, "\r\n");
@@ -101,8 +101,8 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   squaresum=0.0f;
   for( unsigned i=0; i<3; ++i)
     {
-      squaresum += SQR( output_data.m.mag.e[i]);
-      s = to_ascii_2_decimals( 100.0f * output_data.m.mag.e[i] , s);
+      squaresum += SQR( output_data.m.mag[i]);
+      s = to_ascii_2_decimals( 100.0f * output_data.m.mag[i] , s);
       *s++ = ' ';
     }
   s = to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
@@ -146,7 +146,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s=append_string( s, "NAV Induction: ");
   for( unsigned i=0; i<3; ++i)
     {
-      s = to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss.e[i], s);
+      s = to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss[i], s);
       *s++=' ';
     }
 
@@ -173,7 +173,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
       s=append_string( s, "BaseLength/m= ");
       s = to_ascii_2_decimals( baselength * 100.0f, s);
       s=append_string( s, " SlaveDown = ");
-      s = to_ascii_2_decimals( output_data.c.relPosNED.e[DOWN] * 100.0f, s);
+      s = to_ascii_2_decimals( output_data.c.relPosNED[DOWN] * 100.0f, s);
       s=append_string( s, " DGNSS-Hdg= ");
       s = to_ascii_1_decimal( 572.96f * output_data.c.relPosHeading, s);
       s=append_string( s, "\r\n");
@@ -185,13 +185,13 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
       unsigned max_acc_value_axis = 0;
       float max_abs_acceleration = -1.0f;
       for( unsigned axis = 0; axis < 3; ++axis)
-        if( abs( output_data.m.acc.e[axis]) > max_abs_acceleration)
+        if( abs( output_data.m.acc[axis]) > max_abs_acceleration)
           {
-    	max_abs_acceleration = fabs( output_data.m.acc.e[axis]);
+    	max_abs_acceleration = fabs( output_data.m.acc[axis]);
     	max_acc_value_axis = axis;
           }
 
-      float vario = (fabs(output_data.m.mag.e[max_acc_value_axis]) - 0.5f) * 5.0f;
+      float vario = (fabs(output_data.m.mag[max_acc_value_axis]) - 0.5f) * 5.0f;
       format_PLARV ( vario, 0.0f, 0.0f, 0.0f, s);
       s = NMEA_append_tail( s);
     }
