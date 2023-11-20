@@ -1,0 +1,15 @@
+[app]
+elf = "Release/sw_sensor.elf"
+addr_start = 0x0800_0000
+addr_max = 0x0807_ffff
+
+[copy]
+elf = "Image_Loader/copy_stm32f407_1m.elf"
+addr_start = 0x0808_1000
+addr_max = 0x0808_1fff
+
+[image]
+name = "image.bin"
+addr_storage = 0x0808_0000
+hw_version = "1.0.0"
+sw_version = "0.1.0.2"
