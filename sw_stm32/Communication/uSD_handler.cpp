@@ -320,6 +320,108 @@ void write_magnetic_calibration_file ( void)
   f_close(&fp);
 }
 
+//!< find software image file and load it if applicable
+bool read_software_update(void)
+{
+  FIL the_file;
+  FRESULT fresult;
+  UINT bytes_read;
+  uint32_t flash_address = 0x80000;
+  unsigned status;
+  bool last_block_read = false;
+
+  // try to open new software image file
+  fresult = f_open (&the_file, (char *)"image.bin", FA_READ);
+  if( fresult != FR_OK)
+    return false;
+
+  // read first block
+  fresult = f_read(&the_file, mem_buffer, MEM_BUFSIZE, &bytes_read);
+  if( (fresult != FR_OK) || (bytes_read  < MEM_BUFSIZE))
+    {
+      f_close(&the_file);
+      return false;
+    }
+
+  // compare against flash content
+  uint32_t *mem_ptr;
+  uint32_t *flash_ptr;
+  bool image_is_equal = true;
+
+  for( mem_ptr=(uint32_t *)mem_buffer, flash_ptr=(uint32_t *)flash_address; mem_ptr < (uint32_t *)(mem_buffer + MEM_BUFSIZE); ++mem_ptr, ++flash_ptr)
+    if(*mem_ptr != *flash_ptr)
+      {
+	image_is_equal = false;
+	break;
+      }
+
+  if( image_is_equal)
+    return false;
+
+  status = HAL_FLASH_Unlock();
+  if(status != HAL_OK)
+    return false;
+
+  // for an unknown reason error flags need to be reset
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP);
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPERR);
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_WRPERR);
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGAERR);
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGPERR);
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGSERR);
+
+  // erase flash range 0x08080000 - 0x080DFFFF
+  uint32_t SectorError = 0;
+  FLASH_EraseInitTypeDef pEraseInit;
+  pEraseInit.TypeErase = FLASH_TYPEERASE_SECTORS;
+  pEraseInit.NbSectors = 1;
+  pEraseInit.VoltageRange = VOLTAGE_RANGE_3;
+  pEraseInit.Sector = FLASH_SECTOR_8;
+  status = HAL_FLASHEx_Erase (&pEraseInit, &SectorError);
+  if ((status != HAL_OK) || (SectorError != 0xffffffff))
+    return false;
+  pEraseInit.Sector = FLASH_SECTOR_9;
+  status = HAL_FLASHEx_Erase (&pEraseInit, &SectorError);
+  if ((status != HAL_OK) || (SectorError != 0xffffffff))
+    return false;
+  pEraseInit.Sector = FLASH_SECTOR_10;
+  status = HAL_FLASHEx_Erase (&pEraseInit, &SectorError);
+  if ((status != HAL_OK) || (SectorError != 0xffffffff))
+    return false;
+
+  for(;;)
+    {
+      for( uint32_t * data_pointer = (uint32_t *)mem_buffer; data_pointer < (uint32_t *)( mem_buffer + bytes_read); ++data_pointer)
+      {
+	      status = HAL_FLASH_Program( TYPEPROGRAM_WORD, flash_address, (uint64_t) *data_pointer);
+	      if(status != HAL_OK)
+		  break;
+	      flash_address += sizeof(uint32_t);
+      }
+
+      if( last_block_read)
+	{
+	  HAL_FLASH_Lock();
+	  return true;
+	}
+
+      fresult = f_read(&the_file, mem_buffer, MEM_BUFSIZE, &bytes_read);
+      if( fresult != FR_OK)
+	{
+	  f_close(&the_file);
+	  break;
+	}
+
+      if( bytes_read < MEM_BUFSIZE)
+	{
+	  f_close(&the_file);
+	  last_block_read = true;
+	}
+    }
+  HAL_FLASH_Lock();
+  return false;
+}
+
 //!< this executable takes care of all uSD reading and writing
 void uSD_handler_runnable (void*)
 {
@@ -341,7 +443,9 @@ restart:
   if(! BSP_PlatformIsDetected())
     {
       setup_file_handling_completed.signal(); // give up waiting for configuration
-      while(true) // wait until uSD plugged in and restart the uSD handler afterwards
+      watchdog_activator.signal(); // now start the watchdog
+
+  while(true) // wait until uSD plugged in and restart the uSD handler afterwards
 	{
 	  delay(1000);
 	  if( BSP_PlatformIsDetected())
@@ -359,6 +463,8 @@ restart:
   if (fresult != FR_OK)
     {
       setup_file_handling_completed.signal();
+      watchdog_activator.signal(); // now start the watchdog
+
       while(true) // wait until uSD UN-plugged
 	{
 	  delay(1000);
@@ -375,6 +481,17 @@ restart:
 
   // LED on to signal "uSD active"
   HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
+
+#if 0 // todo patch
+  if( read_software_update())
+      {
+      typedef void(*pFunction)(void);
+      pFunction copy_function_address = *(pFunction *)0x08001c;
+      copy_function_address();
+      }
+#endif
+
+  watchdog_activator.signal(); // now start the watchdog
 
   read_configuration_file(); // read configuration file if it is present on the SD card
   setup_file_handling_completed.signal();
