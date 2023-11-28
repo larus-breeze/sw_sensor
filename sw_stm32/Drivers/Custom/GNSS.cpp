@@ -41,12 +41,12 @@ COMMON int64_t FAT_time; //!< DOS FAT time for file usage
 #define ANGLE_SCALE (double)1e-7
 
 GNSS_type::GNSS_type( coordinates_t & coo) :
+		coordinates( coo),
 		fix_type(FIX_none),
+		num_SV(0),
 		latitude_reference(0),
 		longitude_reference(0),
-		latitude_scale(	0.0f),
-		coordinates( coo),
-		num_SV(0)
+		latitude_scale(	0.0f)
 	{}
 
 #if MEASURE_GNSS_REFRESH_TIME
@@ -102,10 +102,7 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 		latitude_scale = COS((float) (pvt.latitude) * ANGLE_SCALE) * DEG_2_METER;
 	}
 
-	unsigned lat_raw=pvt.latitude;
-	double lat_double=lat_raw;
-	coordinates.latitude = lat_double;
-	coordinates.latitude *= ANGLE_SCALE;
+	coordinates.latitude = (double) (pvt.latitude) * ANGLE_SCALE;
 	coordinates.position[NORTH] = (double) (pvt.latitude - latitude_reference)
 			* DEG_2_METER;
 

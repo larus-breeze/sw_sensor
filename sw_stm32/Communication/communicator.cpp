@@ -44,7 +44,7 @@
 
 extern "C" void sync_logger (void);
 
-COMMON Semaphore setup_file_handling_completed(1,0,"SETUP");
+COMMON Semaphore setup_file_handling_completed(1,0,(char *)"SETUP");
 
 COMMON output_data_t __ALIGNED(1024) output_data = { 0 };
 COMMON GNSS_type GNSS (output_data.c);
@@ -83,7 +83,7 @@ void communicator_runnable (void*)
 
   uint8_t count_10Hz = 1; // de-synchronize CAN output by 1 cycle
 
-  GNSS.coordinates.sat_fix_type = SAT_FIX_NONE; // just to be sure
+  GNSS.clear_sat_fix_type();
 
   switch (GNSS_configuration)
     {
