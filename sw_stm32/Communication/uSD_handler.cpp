@@ -482,14 +482,15 @@ restart:
   // LED on to signal "uSD active"
   HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
 
-#if 0 // todo patch
   if( read_software_update())
       {
+      *( ( volatile uint32_t * ) 0xe000ed94 ) = 0; // MPU off
+      __asm volatile ( "dsb" ::: "memory" );
+      __asm volatile ( "isb" );
       typedef void(*pFunction)(void);
       pFunction copy_function_address = *(pFunction *)0x08001c;
       copy_function_address();
       }
-#endif
 
   watchdog_activator.signal(); // now start the watchdog
 
@@ -623,9 +624,11 @@ static TaskParameters_t p =
   STACKSIZE, 0,
   LOGGER_PRIORITY + portPRIVILEGE_BIT, stack_buffer,
     {
-      { COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
-      { (void *)0x80f8000, 0x8000, portMPU_REGION_READ_WRITE },
-      { 0, 0, 0 } } };
+      { COMMON_BLOCK, COMMON_SIZE,  portMPU_REGION_READ_WRITE }, // common
+      { (void *)0x80f8000, 0x8000,  portMPU_REGION_READ_WRITE }, // EEPROM
+      { (void *)0x0800000, 0x80000, portMPU_REGION_READ_WRITE }  // PROG. FLASH
+    }
+  };
 
 COMMON RestrictedTask uSD_handler_task (p);
 
