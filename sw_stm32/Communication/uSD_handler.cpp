@@ -624,11 +624,11 @@ static TaskParameters_t p =
   STACKSIZE, 0,
   LOGGER_PRIORITY + portPRIVILEGE_BIT, stack_buffer,
     {
-      { COMMON_BLOCK, COMMON_SIZE,  portMPU_REGION_READ_WRITE }, // common
-      { (void *)0x80f8000, 0x8000,  portMPU_REGION_READ_WRITE }, // EEPROM
-      { (void *)0x0800000, 0x80000, portMPU_REGION_READ_WRITE }  // PROG. FLASH
-    }
-  };
+      { COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
+      { (void *)0x80f8000, 0x8000, portMPU_REGION_READ_WRITE },
+      { 0, 0, 0 } 
+      } 
+    };
 
 COMMON RestrictedTask uSD_handler_task (p);
 
