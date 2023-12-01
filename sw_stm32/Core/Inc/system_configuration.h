@@ -36,6 +36,7 @@
 #define MEASURE_GNSS_REFRESH_TIME	0
 #define HORIZON_DATA_SECRET		0
 #define ACTIVATE_USB_NMEA		1
+#define CAN_FORMAT_2021			1
 
 #define WITH_LOWCOST_SENSORS	0 // 1 for Larus MK1 with L3GD20 gyro and FXOS8700 acc + mag chips
 
