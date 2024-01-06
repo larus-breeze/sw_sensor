@@ -1,3 +1,3 @@
 [submodule "sw_stm32/lib"]
 	path = sw_stm32/lib
-	url = git@github.com:larus-breeze/sw_sensor_algorithms.git
+	url = ../sw_sensor_algorithms.git
