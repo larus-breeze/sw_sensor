@@ -55,8 +55,26 @@ A 30 minutes flight with some right and left turns should be sufficient to calib
 There should be a few of these events during the calibration process. 
 If you observe frequent additional events you probabely have moving ferromagnetic parts in the vicinity of the magnetometer.
 
-### Additional developer options:
+### Additional developer options
 - Put an empty file with the name: "sensor.readings" in order to switch the serial output format from Larus NMEA syntax to pure sensor raw data values.
 - Additionally put an empty file with the name "magnetic.calibration" onto the root-directory of the sd-card in order to start a magnetic ground calibration. 
 This is a development feature and is usually not required nor advised for a standard installation. 
+
+# Led signal indications
+There are LEDs on the PCBs edge which indicate the following
+- SD-CARD (blue)
+    - Off: No uSD-Card detected
+    - On: uSD-Card detected
+    - Flashing: Actively logging (writing) to card
+- SYSTEM (blue) 
+    - Off: System not working at all
+    - Flashing: Indicates that FreeRTOS and the tasks are running.
+- GNSS (blue) 
+    - Off: No GNSS fix
+    - Flashing: GNSS fix
+- ERROR (red) 
+    - Flashing: at least one of the sensors IMU, static pressure, dynamic pressure or GNSS is not working.
+    - Sporadic flashing: DGNSS heading fix is briefly missing. 
+- ESP (blue)
+    - Not used currently
 
