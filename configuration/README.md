@@ -2,7 +2,7 @@
 Files here are used to configure the GNSS module and the stm32 firmware
       
 ## GNSS configuration
-Use the configuration file(s) to configure the GNSS modules with the ublox u-center software
+Use the configuration file(s) to configure the GNSS modules with the ublox u-center software. Save the configuration to the modules internal ROM to ensure it is not lost after a power cycle.
 - use the uBlox_M9N_75ms.txt for the single GNSS M9N module soldered to the PCB
 - use Ardusimple_.*.txt for a F9P differential GNSS base and heading module
     - Ensure to use the F9P Firmware which supports heading at 10Hz: https://www.u-blox.com/en/ubx-viewer/view/UBX_F9_100_HPG_113_ZED_F9P.7e6e899c5597acddf2f5f2f70fdf5fbe.bin?url=https%3A%2F%2Fwww.u-blox.com%2Fsites%2Fdefault%2Ffiles%2FUBX_F9_100_HPG_113_ZED_F9P
