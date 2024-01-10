@@ -12,8 +12,8 @@
 
 // start config: ////////////////////////////////////////////////////////////
 //
-bool WiFiMode = false;              // set WiFiMode = true and BTMode = false if OpenSoar, XCSoar should connect to the Larus via WiFi or set WiFiMode = false
-bool BTMode = true;               // and BTMode = true if OpenSoar, XCSoar should connect to the Larus via Bluetooth
+bool WiFiMode = false;             // set WiFiMode = true and BTMode = false if OpenSoar, XCSoar should connect to the Larus via WiFi or set WiFiMode = false
+bool BTMode = true;                // and BTMode = true if OpenSoar, XCSoar should connect to the Larus via Bluetooth
 //
 // For AP mode:
 const char *ssid = "Larus";        // You will connect your OpenSoar, XCSoar to this WiFi or BT Access Point
@@ -79,14 +79,19 @@ uint16_t i2[NUM_COM] = {0, 0, 0};
 uint8_t BTbuf[bufferSize];
 uint16_t iBT = 0;
 
+const int BTorWiFi = 14;
+
 void setup() {
 
   delay(500);
+
+  pinMode(BTorWiFi, INPUT_PULLUP);
 
   COM[0]->begin(UART_BAUD0, SERIAL_PARAM0, SERIAL0_RXPIN, SERIAL0_TXPIN);
   COM[1]->begin(UART_BAUD1, SERIAL_PARAM1, SERIAL1_RXPIN, SERIAL1_TXPIN);
   COM[2]->begin(UART_BAUD2, SERIAL_PARAM2, SERIAL2_RXPIN, SERIAL2_TXPIN);
 
+  //if (digitalRead(Varioschalter) == 0)
   if ((BTMode == false) && (WiFiMode == true))
   {
     SerialBT.end();
@@ -96,12 +101,14 @@ void setup() {
     WiFi.softAPConfig(ip, ip, netmask); // configure ip address for softAP
   }
 
+  //if (digitalRead(Varioschalter) == 1)
   if ((BTMode == true) && (WiFiMode == false))
   {
     WiFi.mode(WIFI_OFF);
     SerialBT.begin(ssid); //Bluetooth device name
   }
 
+  //if (digitalRead(Varioschalter) == 0)
   if ((BTMode == false) && (WiFiMode == true))
   {
     COM[0]->println("Starting TCP Server 1");
@@ -120,7 +127,7 @@ void setup() {
 
 void loop()
 {
-
+  //if (digitalRead(Varioschalter) == 1)
   if ((BTMode == true) && (WiFiMode == false))
   {
     // receive from Bluetooth:
@@ -136,6 +143,7 @@ void loop()
       iBT = 0;
     }
   }
+  //if (digitalRead(Varioschalter) == 0)
   if ((BTMode == false) && (WiFiMode == true))
   {
     for (int num = 0; num < NUM_COM ; num++)
@@ -162,6 +170,7 @@ void loop()
     if (COM[num] != NULL)
     {
 
+      //if (digitalRead(Varioschalter) == 0)
       if ((BTMode == false) && (WiFiMode == true))
       {
         for (byte cln = 0; cln < MAX_NMEA_CLIENTS; cln++)
@@ -188,6 +197,7 @@ void loop()
           if (i2[num] < bufferSize - 1) i2[num]++;
         }
 
+        //if (digitalRead(Varioschalter) == 0)
         if ((BTMode == false) && (WiFiMode == true))
         {
           // now send to WiFi:
@@ -198,6 +208,7 @@ void loop()
           }
         }
 
+        //if (digitalRead(Varioschalter) == 1)
         if ((BTMode == true) && (WiFiMode == false))
         {
           // now send to Bluetooth:
