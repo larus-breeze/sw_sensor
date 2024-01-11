@@ -132,7 +132,7 @@ class Binary():
             bin_file.write(binary)
 
 print("Larus App Image Packer")
-with open("pack.toml", "r") as f:
+with open("Image_Loader/pack.toml", "r") as f:
     spec = toml.load(f)
     image = Binary(spec["image"])
     image.read_new_app(spec["app"])

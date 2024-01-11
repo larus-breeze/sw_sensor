@@ -331,7 +331,7 @@ bool read_software_update(void)
   bool last_block_read = false;
 
   // try to open new software image file
-  fresult = f_open (&the_file, (char *)"image.bin", FA_READ);
+  fresult = f_open (&the_file, (char *)"larus_sensor_V2_image.bin", FA_READ);
   if( fresult != FR_OK)
     return false;
 
