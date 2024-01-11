@@ -57,6 +57,7 @@ static ROM bool FALSE=false;
 
 void communicator_runnable (void*)
 {
+  bool have_first_GNSS_fix = false;
   // wait until configuration file read if one is given
   setup_file_handling_completed.wait();
 
@@ -176,6 +177,13 @@ void communicator_runnable (void*)
 	  update_system_state_set( GNSS_AVAILABLE);
 	  if( GNSS_configuration > GNSS_M9N)
 	    update_system_state_set( D_GNSS_AVAILABLE);
+
+	  if( (have_first_GNSS_fix == false) && ((output_data.c.sat_fix_type & SAT_FIX) != 0))
+	    {
+	      have_first_GNSS_fix = true;
+	      organizer.update_magnetic_induction_data(output_data); // set declination and inclination
+	    }
+
 	  GNSS_watchdog=0;
 	}
       else
