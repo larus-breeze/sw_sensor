@@ -419,6 +419,8 @@ bool read_software_update(void)
 	}
     }
   HAL_FLASH_Lock();
+  f_rename( (char *)"larus_sensor_V2_image.bin", (char *)"larus_sensor_V2_image.bin.USED");
+
   return false;
 }
 
@@ -519,7 +521,8 @@ restart:
       write_EEPROM_dump( (char *)"before_calibration");
       magnetic_calibration_done.wait();
       write_EEPROM_dump( (char *)"after_calibration");
-      f_unlink((char *)"magnetic.calibration");
+      f_rename((char *)"magnetic.calibration",(char *)"magnetic.calibration.done");
+
       while( 1)
 	{
 	notify_take (true); // wait for synchronization by crash detection
