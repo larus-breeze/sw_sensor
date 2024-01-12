@@ -420,7 +420,7 @@ bool read_software_update(void)
     }
   HAL_FLASH_Lock();
   f_rename( (char *)"larus_sensor_V2_image.bin", (char *)"larus_sensor_V2_image.bin.USED");
-
+  delay(1000); // wait until uSD operations are finished
   return false;
 }
 
