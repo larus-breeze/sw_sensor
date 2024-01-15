@@ -71,9 +71,11 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
 {
   char *s = NMEA_buf.string;
 
-  s=append_string( s, "Sensor ID = ");
+  s=append_string( s, "Sensor ID: ");
   s=utox( s, UNIQUE_ID[0]);
-  s=append_string( s, "\r\n");
+  s=append_string( s, (char*)"Firmware: ");
+  s=append_string( s, GIT_TAG_INFO);
+  newline( s);
 
   float squaresum;
 
@@ -95,7 +97,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
       s = to_ascii_2_decimals( RAD_2_DEGREES_100 * output_data.m.gyro[i] , s);
       *s++ = ' ';
     }
-  s=append_string( s, "\r\n");
+  newline( s);
 
   s=append_string( s, "mag   ");
   squaresum=0.0f;
@@ -106,11 +108,11 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
       *s++ = ' ';
     }
   s = to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
-  s=append_string( s, "\r\n");
+  newline( s);
 
   s=append_string( s, "pitot / Pa ");
   s = to_ascii_2_decimals( 100.0f * output_data.m.pitot_pressure , s);
-  s=append_string( s, "\r\n");
+  newline( s);
 
   statistics present_stat = get_sensor_data();
   if( present_stat.samples >= 100)
@@ -119,45 +121,48 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
       reset_sensor_data();
     }
 
-  s=append_string( s, "pabs / hPa ");
+  s=append_string( s, "Pabs / hPa ");
   s = to_ascii_2_decimals( stat.mean , s);
-  s=append_string( s, "\r\n");
+  newline( s);
 
-  s=append_string( s, "pabs RMS / Pa ");
+  s=append_string( s, "Pabs noise RMS / Pa ");
   s = to_ascii_2_decimals( stat.rms * 100.0f , s);
-  s=append_string( s, "\r\n");
+  newline( s);
 
-  s=append_string( s, "temp  ");
+  s=append_string( s, "Sensor Temp  ");
   s = to_ascii_2_decimals( 100.0f * output_data.m.static_sensor_temperature , s);
-  s=append_string( s, "\r\n");
+  newline( s);
 
   s=append_string( s, "Ubatt  ");
   s = to_ascii_2_decimals( 100.0f * output_data.m.supply_voltage , s);
-  s=append_string( s, "\r\n");
+  newline( s);
 
-  s=append_string( s, "GNSS time ");
+  s=append_string( s, "Sats: ");
+  s = format_2_digits( s, (float32_t)(output_data.c.SATS_number));
+
+  s=append_string( s, " GNSS time: ");
   s = format_2_digits( s, output_data.c.hour);
   *s ++ = ':';
   s = format_2_digits( s, output_data.c.minute);
   *s ++ = ':';
   s = format_2_digits( s, output_data.c.second);
-  s=append_string( s, "\r\n");
+  newline( s);
 
-  s=append_string( s, "NAV Induction: ");
+  s=append_string( s, "Induction NED: ");
   for( unsigned i=0; i<3; ++i)
     {
       s = to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss[i], s);
       *s++=' ';
     }
 
-  s=append_string( s, "-> ");
+  s=append_string( s, " Strength: ");
   s = to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss.abs(), s);
-  s=append_string( s, "\r\n");
+  newline( s);
 
   float heading = heading_decimator.get_output();
   if( heading < 0.0f)
     heading += 2.0f * M_PI_F;
-  s=append_string( s, "True Heading= ");
+  s=append_string( s, "AHRS-Heading= ");
   s = to_ascii_2_decimals( RAD_2_DEGREES_100 * heading, s);
 
   s=append_string( s, " Inclination= ");
@@ -165,19 +170,22 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
 
   s=append_string( s, " MagAnomaly= ");
   s = to_ascii_2_decimals( output_data.magnetic_disturbance * 10000.0f, s);
-  s=append_string( s, " %\r\n");
+  newline( s);
 
   if( output_data.c.sat_fix_type == (SAT_FIX | SAT_HEADING))
     {
       float baselength = output_data.c.relPosNED.abs();
-      s=append_string( s, "BaseLength/m= ");
+      s=append_string( s, "D-GNSS: BaseLength/m= ");
       s = to_ascii_2_decimals( baselength * 100.0f, s);
       s=append_string( s, " SlaveDown = ");
       s = to_ascii_2_decimals( output_data.c.relPosNED[DOWN] * 100.0f, s);
-      s=append_string( s, " DGNSS-Hdg= ");
+      s=append_string( s, " D-GNSS-Heading= ");
       s = to_ascii_1_decimal( 572.96f * output_data.c.relPosHeading, s);
-      s=append_string( s, "\r\n");
     }
+  else
+    s=append_string( s, " No D-GNSS");
+
+  s=append_string( s, "\r\n");
 
   // here we report a fake vario value indicating the maximum magnetic field strength
   if( magnetic_gound_calibration)
