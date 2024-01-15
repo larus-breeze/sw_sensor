@@ -31,8 +31,9 @@
 COMMON uint64_t pabs_sum, samples, noise_energy;
 COMMON pt2 <float, float> heading_decimator( 0.01);
 COMMON pt2 <float, float> inclination_decimator( 0.01);
+COMMON pt2 <float, float> voltage_decimator( 0.01);
 
-#define RAD_2_DEGREES_100 5729.6f
+#define RAD_2_DEGREES_10 572.96f
 
 struct statistics
 {
@@ -49,6 +50,7 @@ void decimate_sensor_observations( const output_data_t &output_data)
   ++samples;
   noise_energy += SQR( (uint64_t)(output_data.m.static_pressure + 0.5f) - pabs_sum / samples);
   heading_decimator.respond( output_data.euler.y);
+  voltage_decimator.respond( output_data.m.supply_voltage);
   inclination_decimator.respond( ATAN2( output_data.nav_induction_gnss[DOWN], output_data.nav_induction_gnss[NORTH]));
 }
 
@@ -90,16 +92,16 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
   s=append_string( s, "\r\n");
 
-  s=append_string( s, "Gyro °/s  ");
+  s=append_string( s, "Gyro deg/s  ");
   squaresum=0.0f;
   for( unsigned i=0; i<3; ++i)
     {
-      s = to_ascii_2_decimals( RAD_2_DEGREES_100 * output_data.m.gyro[i] , s);
+      s = to_ascii_1_decimal( RAD_2_DEGREES_10 * output_data.m.gyro[i] , s);
       *s++ = ' ';
     }
   newline( s);
 
-  s=append_string( s, "Magn.Ind: ");
+  s=append_string( s, "Magn.Ind.Sens ");
   squaresum=0.0f;
   for( unsigned i=0; i<3; ++i)
     {
@@ -134,7 +136,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   newline( s);
 
   s=append_string( s, "U_batt / V ");
-  s = to_ascii_2_decimals( 100.0f * output_data.m.supply_voltage , s);
+  s = to_ascii_2_decimals( 100.0f * voltage_decimator.get_output() , s);
   newline( s);
 
   s=append_string( s, "Sats: ");
@@ -163,10 +165,10 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   if( heading < 0.0f)
     heading += 2.0f * M_PI_F;
   s=append_string( s, "AHRS-Heading= ");
-  s = to_ascii_2_decimals( RAD_2_DEGREES_100 * heading, s);
+  s = to_ascii_1_decimal( RAD_2_DEGREES_10 * heading, s);
 
   s=append_string( s, " Inclination= ");
-  s = to_ascii_2_decimals( RAD_2_DEGREES_100 * inclination_decimator.get_output(), s);
+  s = to_ascii_2_decimals( RAD_2_DEGREES_10 * inclination_decimator.get_output(), s);
 
   s=append_string( s, " MagAnomaly / % = ");
   s = to_ascii_2_decimals( output_data.magnetic_disturbance * 10000.0f, s);
@@ -180,7 +182,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
       s=append_string( s, "m  SlaveDown = ");
       s = to_ascii_2_decimals( output_data.c.relPosNED[DOWN] * 100.0f, s);
       s=append_string( s, "m D-GNSS-Heading= ");
-      s = to_ascii_1_decimal( 572.96f * output_data.c.relPosHeading, s);
+      s = to_ascii_1_decimal( RAD_2_DEGREES_10 * output_data.c.relPosHeading, s);
     }
   else
     s=append_string( s, "No D-GNSS");
