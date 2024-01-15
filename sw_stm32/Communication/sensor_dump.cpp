@@ -73,13 +73,13 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
 
   s=append_string( s, "Sensor ID: ");
   s=utox( s, UNIQUE_ID[0]);
-  s=append_string( s, (char*)"Firmware: ");
+  s=append_string( s, (char*)" Firmware: ");
   s=append_string( s, GIT_TAG_INFO);
   newline( s);
 
   float squaresum;
 
-  s=append_string( s, "acc   ");
+  s=append_string( s, "Acc m/s^2 ");
   squaresum=0.0f;
   for( unsigned i=0; i<3; ++i)
     {
@@ -90,7 +90,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
   s=append_string( s, "\r\n");
 
-  s=append_string( s, "gyro  ");
+  s=append_string( s, "Gyro °/s  ");
   squaresum=0.0f;
   for( unsigned i=0; i<3; ++i)
     {
@@ -99,7 +99,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
     }
   newline( s);
 
-  s=append_string( s, "mag   ");
+  s=append_string( s, "Magn.Ind: ");
   squaresum=0.0f;
   for( unsigned i=0; i<3; ++i)
     {
@@ -110,7 +110,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = to_ascii_2_decimals( 100.0f * SQRT( squaresum) , s);
   newline( s);
 
-  s=append_string( s, "pitot / Pa ");
+  s=append_string( s, "P_pitot / Pa ");
   s = to_ascii_2_decimals( 100.0f * output_data.m.pitot_pressure , s);
   newline( s);
 
@@ -129,11 +129,11 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = to_ascii_2_decimals( stat.rms * 100.0f , s);
   newline( s);
 
-  s=append_string( s, "Sensor Temp  ");
+  s=append_string( s, "Sensor Temp / °C ");
   s = to_ascii_2_decimals( 100.0f * output_data.m.static_sensor_temperature , s);
   newline( s);
 
-  s=append_string( s, "Ubatt  ");
+  s=append_string( s, "U_batt / V ");
   s = to_ascii_2_decimals( 100.0f * output_data.m.supply_voltage , s);
   newline( s);
 
@@ -168,24 +168,24 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s=append_string( s, " Inclination= ");
   s = to_ascii_2_decimals( RAD_2_DEGREES_100 * inclination_decimator.get_output(), s);
 
-  s=append_string( s, " MagAnomaly= ");
+  s=append_string( s, " MagAnomaly / % = ");
   s = to_ascii_2_decimals( output_data.magnetic_disturbance * 10000.0f, s);
   newline( s);
 
   if( output_data.c.sat_fix_type == (SAT_FIX | SAT_HEADING))
     {
       float baselength = output_data.c.relPosNED.abs();
-      s=append_string( s, "D-GNSS: BaseLength/m= ");
+      s=append_string( s, "D-GNSS: BaseLength: ");
       s = to_ascii_2_decimals( baselength * 100.0f, s);
-      s=append_string( s, " SlaveDown = ");
+      s=append_string( s, "m  SlaveDown = ");
       s = to_ascii_2_decimals( output_data.c.relPosNED[DOWN] * 100.0f, s);
-      s=append_string( s, " D-GNSS-Heading= ");
+      s=append_string( s, "m D-GNSS-Heading= ");
       s = to_ascii_1_decimal( 572.96f * output_data.c.relPosHeading, s);
     }
   else
-    s=append_string( s, " No D-GNSS");
+    s=append_string( s, "No D-GNSS");
 
-  s=append_string( s, "\r\n");
+  newline( s);
 
   // here we report a fake vario value indicating the maximum magnetic field strength
   if( magnetic_gound_calibration)
@@ -210,8 +210,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
       format_PLARV ( vario, 0.0f, 0.0f, 0.0f, s);
       s = NMEA_append_tail( s);
     }
-  s=append_string( s, "\r\n");
-
+  newline( s);
   *s = 0;
   NMEA_buf.length = s - NMEA_buf.string;
 }
