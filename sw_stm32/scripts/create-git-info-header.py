@@ -62,3 +62,22 @@ with open(filename, "w+") as file:
     file.write(tagdec+'\n')
     
 
+# Put the Git Tag information into the pack.toml file for software update generation
+filenametoml = "Image_Loader/pack.toml"
+filelines = None
+with open(filenametoml, "r") as file:
+    # Read current file lines into a lis
+    filelines = file.readlines()
+
+# Update sw_version information in line
+for index in range(len(filelines)):
+    if 'sw_version' in filelines[index]:
+        filelines[index] = 'sw_version = \"{}.{}.{}.{}\"'.format(first,second,third,build)
+
+# Write updated file content
+with open(filenametoml, "w") as file:
+    file.writelines(filelines)
+
+    
+
+
