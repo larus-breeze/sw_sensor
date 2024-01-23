@@ -33,11 +33,10 @@
 #define WRITE_EEPROM_DEFAULTS		0
 #define USE_HARDWARE_EEPROM		1
 #define WITH_DENSITY_DATA		0
-#define GNSS_VERTICAL_SPEED_INVERTED	0 // for simulation with old data
 #define MEASURE_GNSS_REFRESH_TIME	0
-#define USE_LARUS_NMEA_EXTENSIONS	1
-
-#define ACTIVATE_USB_NMEA	1
+#define HORIZON_DATA_SECRET		0
+#define ACTIVATE_USB_NMEA		1
+#define CAN_FORMAT_2021			1
 
 #define WITH_LOWCOST_SENSORS	0 // 1 for Larus MK1 with L3GD20 gyro and FXOS8700 acc + mag chips
 

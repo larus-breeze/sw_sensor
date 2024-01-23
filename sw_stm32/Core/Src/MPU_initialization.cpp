@@ -74,7 +74,7 @@ static void MX_USART6_UART_Init(void);
 static void MX_ADC1_Init(void);
 
 //! Initialization of MPU, clock system, interfaces etc
-extern "C" int MPU_initialization(void)
+extern "C" void MPU_initialization(void)
 {
   SystemClock_Config();
   SystemCoreClockUpdate();

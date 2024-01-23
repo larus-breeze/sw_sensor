@@ -30,7 +30,9 @@
 
 COMMON UART_HandleTypeDef huart1;
 COMMON DMA_HandleTypeDef hdma_USART_1_TX;
+#if RUN_USART_1_TEST
 COMMON static TaskHandle_t USART_1_task_ID = NULL;
+#endif
 
 /**
  * @brief USART1 Initialization Function
