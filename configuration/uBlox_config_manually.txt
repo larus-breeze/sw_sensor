@@ -1,0 +1,26 @@
+uBlox Configuration:
+
+D-GNSS version using 2 * ZED-F9P
+
+Common:
+NAV datum WGS84
+DGNSS mode 3 ("RTK fixed")
+GNSS config
+GPS SBAS Galileo BeiDou QZSS Glonass
+High NAV rate 0
+NAV mode Airborne 4g, auto 2d+3d
+Rate 100ms Time Source GPS time
+SBAS disabled
+Power mode continuous
+
+Piggyback Receiver:
+UART1 Protocol 0 1 5 with 460.8 kBaud
+Messages on UART 1: 4072.1 4072.0 1230 1097 1087 1077
+UART2 protocol in 5 RTCM 115.2 kBaud
+USB Protocol 0 1 5
+
+Bottom Receiver:
+UART1: UBX only with 115.2 kBaud
+Messages on UART1: 01-07 NAV-PVT and 01-3C NAV-RELPOSNED
+UART2: in RTCM3, out none with 460.8 kBaud
+USB 0 1 5

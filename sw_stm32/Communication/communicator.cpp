@@ -26,7 +26,7 @@
 
 #include <FreeRTOS_wrapper.h>
 #include "navigator.h"
-#include "flight_observer.h"
+#include "variometer.h"
 #include "serial_io.h"
 #include "NMEA_format.h"
 #include "common.h"
@@ -44,7 +44,7 @@
 
 extern "C" void sync_logger (void);
 
-COMMON Semaphore setup_file_handling_completed(1,0,"SETUP");
+COMMON Semaphore setup_file_handling_completed(1,0,(char *)"SETUP");
 
 COMMON output_data_t __ALIGNED(1024) output_data = { 0 };
 COMMON GNSS_type GNSS (output_data.c);
@@ -57,6 +57,7 @@ static ROM bool FALSE=false;
 
 void communicator_runnable (void*)
 {
+  bool have_first_GNSS_fix = false;
   // wait until configuration file read if one is given
   setup_file_handling_completed.wait();
 
@@ -83,7 +84,7 @@ void communicator_runnable (void*)
 
   uint8_t count_10Hz = 1; // de-synchronize CAN output by 1 cycle
 
-  GNSS.coordinates.sat_fix_type = SAT_FIX_NONE; // just to be sure
+  GNSS.clear_sat_fix_type();
 
   switch (GNSS_configuration)
     {
@@ -176,6 +177,13 @@ void communicator_runnable (void*)
 	  update_system_state_set( GNSS_AVAILABLE);
 	  if( GNSS_configuration > GNSS_M9N)
 	    update_system_state_set( D_GNSS_AVAILABLE);
+
+	  if( (have_first_GNSS_fix == false) && ((output_data.c.sat_fix_type & SAT_FIX) != 0))
+	    {
+	      have_first_GNSS_fix = true;
+	      organizer.update_after_first_position_fix( output_data);
+	    }
+
 	  GNSS_watchdog=0;
 	}
       else

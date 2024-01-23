@@ -71,6 +71,7 @@ extern uint64_t getTime_usec_privileged(void);
 #define configRECORD_STACK_HIGH_ADDRESS		1
 
 #define configENFORCE_SYSTEM_CALLS_FROM_KERNEL_ONLY 0
+#define configALLOW_UNPRIVILEGED_CRITICAL_SECTIONS 0
 
 #define configUSE_PREEMPTION                     1
 #define configSUPPORT_STATIC_ALLOCATION          0
