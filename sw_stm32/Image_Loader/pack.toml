@@ -11,5 +11,5 @@ addr_max = 0x0808_1fff
 [image]
 name = "larus_sensor_V2_image.bin"
 addr_storage = 0x0808_0000
-hw_version = "1.0.0"
+hw_version = "1.1.1.0"
 sw_version = "0.2.3.62"
