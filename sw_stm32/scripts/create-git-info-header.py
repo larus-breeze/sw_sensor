@@ -63,9 +63,10 @@ with open(filename, "w+") as file:
     
 
 # Put the Git Tag information into the pack.toml file for software update generation
-filenametoml = "Image_Loader/pack.toml"
+tomltemplate = "scripts/template_pack.toml"
+tomldestination = "Image_Loader/pack.toml"
 filelines = None
-with open(filenametoml, "r") as file:
+with open(tomltemplate, "r") as file:
     # Read current file lines into a lis
     filelines = file.readlines()
 
@@ -75,7 +76,7 @@ for index in range(len(filelines)):
         filelines[index] = 'sw_version = \"{}.{}.{}.{}\"'.format(first,second,third,build)
 
 # Write updated file content
-with open(filenametoml, "w") as file:
+with open(tomldestination, "w") as file:
     file.writelines(filelines)
 
     
