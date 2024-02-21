@@ -29,10 +29,11 @@
 void CAN_task_runnable( void *)
 {
   delay(5000); // allow data acquisition setup
+  bool horizon_available = configuration( HORIZON);
   while( true)
     {
       notify_take();
-      CAN_output( output_data);
+      CAN_output( output_data, horizon_available);
     }
 }
 

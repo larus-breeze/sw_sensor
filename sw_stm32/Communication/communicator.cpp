@@ -181,7 +181,7 @@ void communicator_runnable (void*)
 	  if( (have_first_GNSS_fix == false) && ((output_data.c.sat_fix_type & SAT_FIX) != 0))
 	    {
 	      have_first_GNSS_fix = true;
-	      organizer.update_after_first_position_fix( output_data);
+	      organizer.update_magnetic_induction_data( output_data.c.latitude, output_data.c.longitude);
 	    }
 
 	  GNSS_watchdog=0;

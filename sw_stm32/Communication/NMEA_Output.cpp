@@ -43,6 +43,8 @@ static void runnable (void* data)
 {
   delay( NMEA_START_DELAY);
 
+  bool horizon_available = configuration( HORIZON);
+
   #if ACTIVATE_USB_NMEA
   MX_USB_DEVICE_Init();
   update_system_state_set( USB_OUTPUT_ACTIVE);
@@ -92,7 +94,7 @@ static void runnable (void* data)
   for (synchronous_timer t (NMEA_REPORTING_PERIOD); true; t.sync ())
     {
 
-      format_NMEA_string( output_data, NMEA_buf);
+      format_NMEA_string( output_data, NMEA_buf, horizon_available);
 
 #if ACTIVATE_USB_NMEA
       USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);
