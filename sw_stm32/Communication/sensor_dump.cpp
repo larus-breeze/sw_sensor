@@ -203,14 +203,12 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
 
       float vario = (fabs(output_data.m.mag[max_acc_value_axis]) - 0.5f) * 5.0f;
       format_PLARV ( vario, 0.0f, 0.0f, 0.0f, s);
-      s = NMEA_append_tail( s);
     }
   // here we report a fake vario value indicating the magnetic error
   else
     {
       float vario = output_data.magnetic_disturbance * -5.0f;
       format_PLARV ( vario, 0.0f, 0.0f, 0.0f, s);
-      s = NMEA_append_tail( s);
     }
   newline( s);
   *s = 0;
