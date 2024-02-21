@@ -131,11 +131,11 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = to_ascii_2_decimals( stat.rms * 100.0f , s);
   newline( s);
 
-  s=append_string( s, "Sensor Temp / °C ");
+  s=append_string( s, "Sensor Temp = ");
   s = to_ascii_2_decimals( 100.0f * output_data.m.static_sensor_temperature , s);
   newline( s);
 
-  s=append_string( s, "U_batt / V ");
+  s=append_string( s, "U_batt = ");
   s = to_ascii_2_decimals( 100.0f * voltage_decimator.get_output() , s);
   newline( s);
 
@@ -164,10 +164,10 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   float heading = heading_decimator.get_output();
   if( heading < 0.0f)
     heading += 2.0f * M_PI_F;
-  s=append_string( s, "AHRS-Heading= ");
+  s=append_string( s, "AHRS-Heading = ");
   s = to_ascii_1_decimal( RAD_2_DEGREES_10 * heading, s);
 
-  s=append_string( s, " Inclination= ");
+  s=append_string( s, " Inclination = ");
   s = to_ascii_2_decimals( RAD_2_DEGREES_10 * inclination_decimator.get_output(), s);
 
   s=append_string( s, " MagAnomaly / % = ");
