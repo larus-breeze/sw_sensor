@@ -50,7 +50,7 @@ COMMON char *crashfile;
 COMMON unsigned crashline;
 COMMON bool magnetic_gound_calibration;
 COMMON bool dump_sensor_readings;
-
+COMMON bool landing_detected;
 COMMON Semaphore magnetic_calibration_done;
 COMMON magnetic_induction_report_t magnetic_induction_report;
 
@@ -688,8 +688,17 @@ restart:
 	{
 	  sync_counter = 0;
 	  f_sync (&the_file);
+
 	  if( magnetic_calibration_done.wait( 0))
 	    write_magnetic_calibration_file ();
+
+	  if( landing_detected)
+	    {
+	      landing_detected = false;
+	      char buffer[30];
+	      format_date_time( buffer);
+	      write_EEPROM_dump( buffer); // write into FS root
+	    }
 	}
     }
 }

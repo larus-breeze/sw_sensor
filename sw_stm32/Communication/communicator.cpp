@@ -51,6 +51,7 @@ COMMON GNSS_type GNSS (output_data.c);
 
 extern RestrictedTask NMEA_task;
 extern RestrictedTask communicator_task;
+extern bool landing_detected;
 
 static ROM bool TRUE=true;
 static ROM bool FALSE=false;
@@ -203,7 +204,7 @@ void communicator_runnable (void*)
       --synchronizer_10Hz;
       if( synchronizer_10Hz == 0)
 	{
-	  organizer.update_every_100ms (output_data);
+	  landing_detected = organizer.update_every_100ms (output_data);
 	  synchronizer_10Hz = 10;
 	}
 
