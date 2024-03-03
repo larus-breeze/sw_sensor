@@ -15,8 +15,9 @@
 bool WiFiMode = false;             // set WiFiMode = true and BTMode = false if OpenSoar, XCSoar should connect to the Larus via WiFi or set WiFiMode = false
 bool BTMode = true;                // and BTMode = true if OpenSoar, XCSoar should connect to the Larus via Bluetooth
 //
-// For AP mode:
-const char *ssid = "Larus";        // You will connect your OpenSoar, XCSoar to this WiFi or BT Access Point
+
+#define SSID_BUF_LENGTH 20
+char finalSsid[SSID_BUF_LENGTH];               
 const char *pw = "LarusSensor";    // and this is the WiFi password
 //
 IPAddress ip(192, 168, 4, 1);
@@ -91,12 +92,17 @@ void setup() {
   COM[1]->begin(UART_BAUD1, SERIAL_PARAM1, SERIAL1_RXPIN, SERIAL1_TXPIN);
   COM[2]->begin(UART_BAUD2, SERIAL_PARAM2, SERIAL2_RXPIN, SERIAL2_TXPIN);
 
+  // Create custom bluetooth / wifi ssid
+  uint64_t macid = ESP.getEfuseMac();
+  uint16_t uid = macid & 0xFFFF;
+  sprintf(finalSsid, "Larus_%X", uid);
+
   //if (digitalRead(Varioschalter) == 0)
   if ((BTMode == false) && (WiFiMode == true))
   {
     SerialBT.end();
     WiFi.mode(WIFI_AP);
-    WiFi.softAP(ssid, pw); // configure ssid and password for softAP
+    WiFi.softAP(finalSsid, pw); // configure ssid and password for softAP
     delay(2000); // VERY IMPORTANT
     WiFi.softAPConfig(ip, ip, netmask); // configure ip address for softAP
   }
@@ -105,7 +111,7 @@ void setup() {
   if ((BTMode == true) && (WiFiMode == false))
   {
     WiFi.mode(WIFI_OFF);
-    SerialBT.begin(ssid); //Bluetooth device name
+    SerialBT.begin(finalSsid); //Bluetooth device name
   }
 
   //if (digitalRead(Varioschalter) == 0)
