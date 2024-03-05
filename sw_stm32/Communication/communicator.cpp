@@ -51,6 +51,7 @@ COMMON GNSS_type GNSS (output_data.c);
 
 extern RestrictedTask NMEA_task;
 extern RestrictedTask communicator_task;
+extern bool landing_detected;
 
 static ROM bool TRUE=true;
 static ROM bool FALSE=false;
@@ -181,7 +182,7 @@ void communicator_runnable (void*)
 	  if( (have_first_GNSS_fix == false) && ((output_data.c.sat_fix_type & SAT_FIX) != 0))
 	    {
 	      have_first_GNSS_fix = true;
-	      organizer.update_after_first_position_fix( output_data);
+	      organizer.update_magnetic_induction_data( output_data.c.latitude, output_data.c.longitude);
 	    }
 
 	  GNSS_watchdog=0;
@@ -203,7 +204,7 @@ void communicator_runnable (void*)
       --synchronizer_10Hz;
       if( synchronizer_10Hz == 0)
 	{
-	  organizer.update_every_100ms (output_data);
+	  landing_detected = organizer.update_every_100ms (output_data);
 	  synchronizer_10Hz = 10;
 	}
 

@@ -38,6 +38,9 @@
 #include "watchdog_handler.h"
 #include "EEPROM_defaults.h"
 #include "magnetic_induction_report.h"
+#include "SHA256.h"
+
+ROM uint8_t SHA_INITIALIZATION[] = "presently a well-known string";
 
 extern Semaphore setup_file_handling_completed;
 extern uint32_t UNIQUE_ID[4];
@@ -47,7 +50,7 @@ COMMON char *crashfile;
 COMMON unsigned crashline;
 COMMON bool magnetic_gound_calibration;
 COMMON bool dump_sensor_readings;
-
+COMMON bool landing_detected;
 COMMON Semaphore magnetic_calibration_done;
 COMMON magnetic_induction_report_t magnetic_induction_report;
 
@@ -218,8 +221,9 @@ bool write_EEPROM_dump( const char * filename)
 {
   FRESULT fresult;
   FIL fp;
-  char buffer[50];
+  char buffer[128];
   char *next = buffer;
+  SHA256 sha;
   int32_t writtenBytes = 0;
 
   next = append_string (next, filename);
@@ -230,12 +234,56 @@ bool write_EEPROM_dump( const char * filename)
   if (fresult != FR_OK)
     return fresult;
 
-  f_write (&fp, GIT_TAG_INFO, strlen(GIT_TAG_INFO), (UINT*) &writtenBytes);
-  f_write (&fp, "\r\n", 2, (UINT*) &writtenBytes);
-  utox( buffer, UNIQUE_ID[0], 8);
-  buffer[8]='\r';
-  buffer[9]='\n';
-  f_write (&fp, buffer, 10, (UINT*) &writtenBytes);
+  sha.update( SHA_INITIALIZATION, sizeof( SHA_INITIALIZATION));
+
+  extern uint8_t * __fini_array_end;
+  unsigned block_size = 1024;
+  for( uint8_t * block_start = (uint8_t *)0x08000000;  block_start < __fini_array_end; block_start += block_size)
+    {
+      uint8_t * block_end = block_start + block_size;
+      if( block_end > __fini_array_end)
+	block_end = __fini_array_end;
+      sha.update( block_start, block_end - block_start);
+      delay(1); // beware of our watchdog !
+    }
+  uint8_t digest[32];
+  sha.make_digest(digest);
+
+  delay(1); // watchdog ...
+
+  sha.reset();
+  sha.update( SHA_INITIALIZATION, sizeof( SHA_INITIALIZATION));
+
+  newline(next); // first line = my filename (incl. time)
+  next = append_string( next, "SHA256(Flash Program) = \r\n");
+
+  for( unsigned i=0; i<16; ++i)
+      next = utox( next, (uint32_t)(digest[i]), 2);
+  newline(next);
+  for( unsigned i=0; i<16; ++i)
+      next = utox( next, (uint32_t)(digest[i+16]), 2);
+  newline(next);
+
+  (void)f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+  sha.update( (uint8_t *)buffer, next-buffer);
+
+  next = append_string( buffer, "Fw = ");
+  next = append_string( next, GIT_TAG_INFO);
+  newline(next);
+  next = append_string( next, "Hw = ");
+  next = utox( next, UNIQUE_ID[0], 8);
+  next = utox( next, UNIQUE_ID[1], 8);
+  next = utox( next, UNIQUE_ID[2], 8);
+  next = utox( next, UNIQUE_ID[3], 8);
+  newline(next);
+
+  fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+  if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
+    {
+      f_close(&fp);
+      return fresult; // give up ...
+    }
+  sha.update( (uint8_t *)buffer, next-buffer);
 
   for( unsigned index = 1; index < PERSISTENT_DATA_ENTRIES; ++index)
     {
@@ -252,11 +300,11 @@ bool write_EEPROM_dump( const char * filename)
 	  next = append_string( next, PERSISTENT_DATA[index].mnemonic);
 	  next = append_string (next," = ");
 	  next = my_ftoa (next, value);
-	  *next++='\r';
-	  *next++='\n';
+	  newline(next);
 	  *next=0;
 
 	  fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+	  sha.update( (uint8_t *)buffer, next-buffer);
 	  if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
 	    {
 	      f_close(&fp);
@@ -264,6 +312,31 @@ bool write_EEPROM_dump( const char * filename)
 	    }
 	}
       }
+
+  uint16_t option = *(uint16_t *) 0x1fffc000;
+  next = append_string( buffer, "Option bytes = ");
+  next = utox( next, option >> 8, 2);
+  newline(next);
+  sha.update( (uint8_t *)buffer, next-buffer);
+  fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+  if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
+    {
+      f_close(&fp);
+      return fresult; // give up ...
+    }
+
+  sha.make_digest(digest);
+  next = append_string( buffer, "SHA256(text above) = \r\n");
+
+  for( unsigned i=0; i<16; ++i)
+      next = utox( next, (uint32_t)(digest[i]), 2);
+  newline(next);
+  for( unsigned i=0; i<16; ++i)
+      next = utox( next, (uint32_t)(digest[i+16]), 2);
+  newline(next);
+
+  newline(next);
+  (void)f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 
   f_close(&fp);
   return FR_OK;
@@ -615,8 +688,17 @@ restart:
 	{
 	  sync_counter = 0;
 	  f_sync (&the_file);
+
 	  if( magnetic_calibration_done.wait( 0))
 	    write_magnetic_calibration_file ();
+
+	  if( landing_detected)
+	    {
+	      landing_detected = false;
+	      char buffer[30];
+	      format_date_time( buffer);
+	      write_EEPROM_dump( buffer); // write into FS root
+	    }
 	}
     }
 }

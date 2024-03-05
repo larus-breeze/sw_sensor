@@ -43,6 +43,8 @@ static void runnable (void* data)
 {
   delay( NMEA_START_DELAY);
 
+  bool horizon_available = configuration( HORIZON);
+
   #if ACTIVATE_USB_NMEA
   MX_USB_DEVICE_Init();
   update_system_state_set( USB_OUTPUT_ACTIVE);
@@ -85,14 +87,16 @@ static void runnable (void* data)
       }
   }
 
-  while( output_data.c.sat_fix_type == 0) // wait for position fix
-    delay( 1000);
-  delay( 1000);
-
+  unsigned decimating_counter = NMEA_DECIMATION_RATIO;
   for (synchronous_timer t (NMEA_REPORTING_PERIOD); true; t.sync ())
     {
-
-      format_NMEA_string( output_data, NMEA_buf);
+      NMEA_buf.length = 0; // start at the beginning of the buffer
+      format_NMEA_string_fast( output_data, NMEA_buf, horizon_available);
+      if( --decimating_counter == 0)
+	{
+	  decimating_counter = NMEA_DECIMATION_RATIO;
+	  format_NMEA_string_slow( output_data, NMEA_buf);
+	}
 
 #if ACTIVATE_USB_NMEA
       USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);
