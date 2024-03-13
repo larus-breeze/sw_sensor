@@ -123,6 +123,10 @@ void read_configuration_file(void)
 	continue; // we did not find this one
 
       unsigned name_len = strlen( this_persistent_parameter->mnemonic);
+
+      if( identifier == SENS_TILT_PITCH) // patch to avoid
+	name_len = 10; // problems with the parameter name correction nick -> pitch
+
       if( 0 != strncmp( this_persistent_parameter->mnemonic, linebuffer+3, name_len))
 	continue; // parameter name does not match
 
