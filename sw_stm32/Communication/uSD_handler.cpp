@@ -690,7 +690,7 @@ restart:
 
 	  if( magnetic_calibration_done.wait( 0))
 	    write_magnetic_calibration_file ();
-
+#if 0 // will be used for the competition version
 	  if( landing_detected)
 	    {
 	      landing_detected = false;
@@ -698,6 +698,7 @@ restart:
 	      format_date_time( buffer);
 	      write_EEPROM_dump( buffer); // write into FS root
 	    }
+#endif
 	}
     }
 }
