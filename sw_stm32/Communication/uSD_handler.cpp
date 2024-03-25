@@ -36,7 +36,6 @@
 #include "emergency.h"
 #include "uSD_handler.h"
 #include "watchdog_handler.h"
-#include "EEPROM_defaults.h"
 #include "magnetic_induction_report.h"
 #include "SHA256.h"
 
@@ -285,7 +284,7 @@ bool write_EEPROM_dump( const char * filename)
     }
   sha.update( (uint8_t *)buffer, next-buffer);
 
-  for( unsigned index = 1; index < PERSISTENT_DATA_ENTRIES; ++index)
+  for( unsigned index = 0; index < PERSISTENT_DATA_ENTRIES; ++index)
     {
       float value;
       bool result = read_EEPROM_value( PERSISTENT_DATA[index].id, value);
@@ -502,12 +501,9 @@ bool read_software_update(void)
 //!< this executable takes care of all uSD reading and writing
 void uSD_handler_runnable (void*)
 {
-  // if no EEPROM data exist: write default values
-  // later we will take care of the individual configuration
-  if( ! all_EEPROM_parameters_existing())
-      write_EEPROM_defaults();
-
 restart:
+  bool status = EEPROM_initialize();
+  ASSERT( ! status);
 
   HAL_SD_DeInit (&hsd);
   delay (1000);
@@ -519,6 +515,7 @@ restart:
 
   if(! BSP_PlatformIsDetected())
     {
+      ensure_EEPROM_parameter_integrity();
       setup_file_handling_completed.signal(); // give up waiting for configuration
       watchdog_activator.signal(); // now start the watchdog
 
@@ -539,6 +536,7 @@ restart:
 
   if (fresult != FR_OK)
     {
+      ensure_EEPROM_parameter_integrity();
       setup_file_handling_completed.signal();
       watchdog_activator.signal(); // now start the watchdog
 
@@ -572,6 +570,7 @@ restart:
   watchdog_activator.signal(); // now start the watchdog
 
   read_configuration_file(); // read configuration file if it is present on the SD card
+  ensure_EEPROM_parameter_integrity();
   setup_file_handling_completed.signal();
 
   delay( 100); // give communicator a moment to initialize
@@ -691,7 +690,7 @@ restart:
 
 	  if( magnetic_calibration_done.wait( 0))
 	    write_magnetic_calibration_file ();
-
+#if 0 // will be used for the competition version
 	  if( landing_detected)
 	    {
 	      landing_detected = false;
@@ -699,6 +698,7 @@ restart:
 	      format_date_time( buffer);
 	      write_EEPROM_dump( buffer); // write into FS root
 	    }
+#endif
 	}
     }
 }

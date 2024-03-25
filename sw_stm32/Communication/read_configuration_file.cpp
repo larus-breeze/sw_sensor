@@ -106,8 +106,7 @@ void read_configuration_file(void)
   unsigned status;
 
 #if ! TEST_MODULE
-  status = EEPROM_initialize();
-  ASSERT( ! status);
+  lock_EEPROM( false);
 #endif
 
   // get all readable configuration lines and program data into EEPROM
@@ -123,6 +122,7 @@ void read_configuration_file(void)
 	continue; // we did not find this one
 
       unsigned name_len = strlen( this_persistent_parameter->mnemonic);
+
       if( 0 != strncmp( this_persistent_parameter->mnemonic, linebuffer+3, name_len))
 	continue; // parameter name does not match
 

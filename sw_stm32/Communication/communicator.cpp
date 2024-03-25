@@ -39,7 +39,6 @@
 #include "uSD_handler.h"
 #include "compass_ground_calibration.h"
 #include "persistent_data.h"
-#include "EEPROM_defaults.h"
 #include "system_state.h"
 
 extern "C" void sync_logger (void);
