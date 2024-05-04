@@ -34,6 +34,8 @@ PRIVILEGED_DATA RecorderDataType myTraceBuffer;
 
 extern uint32_t _s_system_ram[]; // provided by linker description file
 extern uint32_t __user_data_end__[];
+extern uint32_t __common_data_start__[];
+extern uint32_t __common_data_end__[];
 
 extern "C" void vPortInitMemory ();
 volatile uint64_t SystemTicks;
@@ -42,6 +44,10 @@ extern "C" void initialize_RTOS_memory(void)
 {
 	/* zero out global data inside FreeRTOS system memory and inside user global memory */
 	for(volatile uint32_t *ptr = _s_system_ram; ptr < __user_data_end__; ++ptr)
+		*ptr = 0;
+
+	/* zero out COMMON data */
+	for(volatile uint32_t *ptr = __common_data_start__; ptr < __common_data_end__; ++ptr)
 		*ptr = 0;
 
 	vPortInitMemory ();

@@ -32,7 +32,7 @@ IPAddress netmask(255, 255, 255, 0);
 
 #define NUM_COM   3                 // total number of COM Ports
 /*************************  COM Port 0 (Programmer)*******************/
-#define UART_BAUD0 19200            // Baudrate UART0
+#define UART_BAUD0 38400            // Baudrate UART0
 #define SERIAL_PARAM0 SERIAL_8N1    // Data/Parity/Stop UART0
 #define SERIAL0_RXPIN 21            // receive Pin UART0
 #define SERIAL0_TXPIN 1             // transmit Pin UART0
@@ -224,6 +224,7 @@ void loop()
           }
         }
 
+        COM[0]->write(buf2[num], i2[num]); // echo to RS232 output
         COM[1]->write(buf2[num], i2[num]); // echo to RS232 output
         i2[num] = 0;
       }
