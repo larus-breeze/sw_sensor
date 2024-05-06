@@ -46,7 +46,11 @@ typedef float ftype;
 #define ASIN(x) my_asinf(x)
 inline float ATAN2( float y, float x)
 {
-	float result;
+  // trap division by zero
+  if(FP_ZERO == fpclassify( x))
+    return ZERO;
+
+  float result;
 	(void)arm_atan2_f32( y, x, &result);
 	return result;
 }
