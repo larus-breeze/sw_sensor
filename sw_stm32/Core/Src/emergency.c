@@ -58,7 +58,7 @@ void analyze_fault_stack(volatile unsigned int * hardfault_args)
 
   register_dump.Hard_Fault_Status = *(uint32_t *) 0xe000ed2c;
   register_dump.IPSR = __get_IPSR();
-  register_dump.FPU_StatusControlRegister = __get_FPSCR();
+//  register_dump.FPU_StatusControlRegister = __get_FPSCR(); has been saved before
   register_dump.Bad_Memory_Address = *(int*) 0xe000ed34;
   register_dump.Memory_Fault_status    = *(uint8_t*) 0xe000ed28;
   register_dump.Bus_Fault_Address=*(uint32_t *)0xe000ed38;
