@@ -207,20 +207,37 @@ void communicator_runnable (void*)
 	  synchronizer_10Hz = 10;
 	}
 
-      if(
-	  (((GNSS_configuration == GNSS_F9P_F9H) || (GNSS_configuration == GNSS_F9P_F9P))
-	      && (output_data.c.sat_fix_type == (SAT_HEADING | SAT_FIX)))
-	  ||
-	  ((GNSS_configuration == GNSS_M9N)
-	      && (output_data.c.sat_fix_type == SAT_FIX))
-	)
-	{
-	  ++GNSS_count;
-	  HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin,
-	      (GNSS_count & 0xff) > 127 ? GPIO_PIN_RESET : GPIO_PIN_SET);
-	}
-      else
-	HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
+      // service the GNSS LED
+      ++GNSS_count;
+      GNSS_count &= 0xff;
+
+      switch( GNSS_configuration)
+      {
+	case GNSS_F9P_F9H:
+	case GNSS_F9P_F9P:
+	  switch(output_data.c.sat_fix_type)
+	  {
+	    case SAT_FIX:
+		  HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin,
+			((GNSS_count & 0xe0) == 0xe0) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	    break;
+	    case SAT_HEADING | SAT_FIX:
+		  HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin,
+		      ((GNSS_count & 0x80) && (GNSS_count & 0x20)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	    break;
+	    default:
+		HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
+	      break;
+	  }
+	  break;
+	case GNSS_M9N:
+	  if(output_data.c.sat_fix_type == SAT_FIX)
+	    HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin,
+	        ((GNSS_count & 0xe0) == 0xe0) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+	  else
+	    HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_RESET);
+	  break;
+      }
 
       // service the red error LED
       HAL_GPIO_WritePin ( LED_ERROR_GPIO_Port, LED_ERROR_Pin,
