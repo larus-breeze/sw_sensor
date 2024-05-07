@@ -52,5 +52,6 @@ typedef struct
 } register_dump_t;
 
 extern register_dump_t register_dump;
+extern uint32_t FPU_register_dump[32];
 
 #endif /* INC_EMERGENCY_H_ */

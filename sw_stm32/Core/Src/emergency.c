@@ -31,6 +31,7 @@
 void sync_logger(void );
 
 COMMON register_dump_t register_dump;
+COMMON uint32_t FPU_register_dump[32];
 
 /**
  * @brief  This function handles exceptions triggered by bad parameters to lib functions
@@ -84,9 +85,12 @@ void FPU_IRQHandler( void)
       " mrseq r0, msp                                                  \n"
       " mrsne r0, psp                                                  \n"
       " ldr r1, [r0, #24]                                              \n"
+      " ldr r2, FPU_register_const	                               \n"
+      "	vstmia r2, {s0-s31}		 			       \n"
       " ldr r2, handler1_address_const                                 \n"
       " bx r2                                                          \n"
       " handler1_address_const: .word analyze_fault_stack   	       \n"
+      " FPU_register_const: .word FPU_register_dump       	       \n"
   );
 }
 

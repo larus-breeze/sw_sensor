@@ -170,7 +170,17 @@ void write_crash_dump( void)
   next = utox( next, register_dump.Hard_Fault_Status);
   newline( next);
 
+  next=append_string( buffer, (char*)"FPU dump:");
+  newline( next);
+
   f_write (&fp, buffer, next-buffer, &writtenBytes);
+
+  for( unsigned i=0; i<32; ++i)
+    {
+      next = utox( buffer, FPU_register_dump[i]);
+      newline( next);
+      f_write (&fp, buffer, next-buffer, &writtenBytes);
+    }
 
   f_close(&fp);
 
