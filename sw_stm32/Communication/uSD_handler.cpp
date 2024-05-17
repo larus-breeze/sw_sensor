@@ -386,6 +386,7 @@ void write_magnetic_calibration_file ( void)
         return;
     }
 
+#if USE_EARTH_INDUCTION_DATA_COLLECTOR
   next = buffer;
   float3vector induction = magnetic_induction_report.nav_induction;
   for( unsigned i=0; i<3; ++i)
@@ -399,6 +400,8 @@ void write_magnetic_calibration_file ( void)
   *next++='\n';
 
   f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+#endif
+
   f_close(&fp);
 }
 
