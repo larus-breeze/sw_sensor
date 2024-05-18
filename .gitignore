@@ -8,3 +8,4 @@ sw_stm32/release/
 sw_stm32/*.launch
 sw_stm32/FLASH/
 sw_stm32/Image_Loader/pack.toml
+sw_stm32/larus_sensor_V2_image.bin
