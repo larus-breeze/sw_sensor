@@ -32,7 +32,7 @@ class ReadApp():
     """Read elf file and store all binaries and symbols"""
     def __init__(self, file_name):
         in_stream =  open(file_name, "rb")
-        self.elf_file = ELFFile(in_stream, sys.stdout)
+        self.elf_file = ELFFile(in_stream)
         self.file_name = file_name
     def get_binary(self, flash_start, flash_end):
         """Return the binary data that lies within the defined range"""
