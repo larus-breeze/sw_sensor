@@ -39,6 +39,9 @@
 #include "magnetic_induction_report.h"
 #include "SHA256.h"
 
+extern "C" int test_ecc(void);
+
+
 ROM uint8_t SHA_INITIALIZATION[] = "presently a well-known string";
 
 extern Semaphore setup_file_handling_completed;
@@ -514,6 +517,9 @@ bool read_software_update(void)
 //!< this executable takes care of all uSD reading and writing
 void uSD_handler_runnable (void*)
 {
+  volatile unsigned retval;
+  retval = test_ecc();
+
 restart:
   bool status = EEPROM_initialize();
   ASSERT( ! status);

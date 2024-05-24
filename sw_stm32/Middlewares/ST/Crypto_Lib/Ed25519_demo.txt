@@ -1,0 +1,20 @@
+schaefer@lbox:~/o/SSL_testbench$ openssl genpkey -algorithm Ed25519 -out secret.pem
+schaefer@lbox:~/o/SSL_testbench$ openssl pkey -inform pem -in secret.pem -noout -text
+ED25519 Private-Key:
+priv:
+    41:d1:64:0f:58:ee:82:fa:75:d5:64:91:e8:73:e9:
+    2a:37:c3:5a:fd:0e:44:98:03:68:8b:4c:e3:30:5b:
+    17:2f
+pub:
+    d0:0c:ef:fe:ca:c9:1e:5f:6b:dc:de:a5:59:13:a3:
+    7d:ec:ab:6c:b0:3f:a3:b1:64:2e:4d:0e:69:c4:c8:
+    f4:3a
+schaefer@lbox:~/o/SSL_testbench$ echo "hello larus world" >message.txt
+schaefer@lbox:~/o/SSL_testbench$ openssl pkeyutl -sign -inkey secret.pem -out signature.bin -rawin -in message.txt
+schaefer@lbox:~/o/SSL_testbench$ od -x  signature.bin 
+0000000 4092 1eb5 abd0 2389 a61b 7acb 4ffb 4aac
+0000020 c8ac 74ff ecf3 2308 a1cd 179e 1747 f4b4
+0000040 badc 16d9 4fed 402c 0e0e 10a1 08bc baaf
+schaefer@lbox:~/o/SSL_testbench$ openssl pkey -in secret.pem -pubout -out public.pem
+schaefer@lbox:~/o/SSL_testbench$ openssl pkeyutl -verify -pubin -inkey public.pem -rawin -in message.txt -sigfile signature.bin
+Signature Verified Successfully
