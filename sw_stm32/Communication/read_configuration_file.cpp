@@ -38,6 +38,11 @@
 
 #define LINELEN 50
 
+bool is_number_start( char c)
+{
+  return (( c >= '0') && ( c <='9')) || ( c =='-') || ( c =='+');
+}
+
 class ASCII_file_reader
 {
   enum { BUFLEN = 512 *2};
@@ -98,11 +103,11 @@ unsigned write_EEPROM_value_dummy( EEPROM_PARAMETER_ID identifier, float value)
 
 void read_configuration_file(void)
 {
-  ASCII_file_reader file_reader((char *)"sensor_config.txt");
+  ASCII_file_reader file_reader((char *)"larus_sensor_config.ini");
   if( file_reader.is_eof())
     return;
 
-  char *linebuffer;
+  char *position;
   unsigned status;
 
 #if ! TEST_MODULE
@@ -110,28 +115,25 @@ void read_configuration_file(void)
 #endif
 
   // get all readable configuration lines and program data into EEPROM
-  while( file_reader.read_line( linebuffer))
+  while( file_reader.read_line( position))
     {
-      if( linebuffer[2] != ' ')
-        continue; // bad format
+      const persistent_data_t *persistent_parameter = find_parameter_from_name( position);
 
-      EEPROM_PARAMETER_ID identifier = (EEPROM_PARAMETER_ID)atoi( linebuffer);
-      const persistent_data_t *this_persistent_parameter = find_parameter_from_ID( identifier);
+      if( persistent_parameter == 0) // unable to find parameter name
+	continue;
 
-      if( this_persistent_parameter == 0)
-	continue; // we did not find this one
+      position += strlen( persistent_parameter->mnemonic);
 
-      unsigned name_len = strlen( this_persistent_parameter->mnemonic);
+      // skip whitespace
+      while( ( *position != 0) && ( *position != '\r') && (! is_number_start( *position)))
+	  ++position;
 
-      if( 0 != strncmp( this_persistent_parameter->mnemonic, linebuffer+3, name_len))
-	continue; // parameter name does not match
+      if( ! is_number_start( *position))
+	continue; // found garbage
 
-      if( linebuffer[name_len+4] != '=')
-	continue; // bad format again
+      float value = atof( position);
 
-      float value = atof( linebuffer + name_len + 6);
-
-      if( this_persistent_parameter->is_an_angle)
+      if( persistent_parameter->is_an_angle)
 	{
 	  value *= M_PI_F / 180.0;
 	  // map angle range
@@ -142,9 +144,9 @@ void read_configuration_file(void)
 	}
 
 #if TEST_MODULE
-      status = write_EEPROM_value_dummy( identifier, value);
+      status = write_EEPROM_value_dummy( identifier->id, value);
 #else
-      status = write_EEPROM_value( identifier, value);
+      status = write_EEPROM_value( persistent_parameter->id, value);
 #endif
       ASSERT( ! status);
     }
