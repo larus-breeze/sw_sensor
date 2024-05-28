@@ -310,7 +310,6 @@ bool write_EEPROM_dump( const char * filename)
 	  next = append_string (next," = ");
 	  next = my_ftoa (next, value);
 	  newline(next);
-	  *next=0;
 
 	  fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 	  sha.update( (uint8_t *)buffer, next-buffer);
