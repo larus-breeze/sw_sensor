@@ -106,11 +106,11 @@ unsigned write_EEPROM_value_dummy( EEPROM_PARAMETER_ID identifier, float value)
 }
 #endif
 
-void read_configuration_file(void)
+bool read_init_file(void)
 {
   ASCII_file_reader file_reader((char *)"larus_sensor_config.ini");
   if( file_reader.is_eof())
-    return;
+    false;
 
   char *position;
   unsigned status;
@@ -164,4 +164,66 @@ void read_configuration_file(void)
 #if ! TEST_MODULE
   lock_EEPROM( true);
 #endif
+
+  return true;
 }
+
+// old version of sensor configuration mechanism
+void read_configuration_file(void)
+{
+  ASCII_file_reader file_reader((char *)"sensor_config.txt");
+  if( file_reader.is_eof())
+    return;
+
+  char *linebuffer;
+  unsigned status;
+
+#if ! TEST_MODULE
+  lock_EEPROM( false);
+#endif
+
+  // get all readable configuration lines and program data into EEPROM
+  while( file_reader.read_line( linebuffer))
+    {
+      if( linebuffer[2] != ' ')
+        continue; // bad format
+
+      EEPROM_PARAMETER_ID identifier = (EEPROM_PARAMETER_ID)atoi( linebuffer);
+      const persistent_data_t *this_persistent_parameter = find_parameter_from_ID( identifier);
+
+      if( this_persistent_parameter == 0)
+	continue; // we did not find this one
+
+      unsigned name_len = strlen( this_persistent_parameter->mnemonic);
+
+      if( 0 != strncmp( this_persistent_parameter->mnemonic, linebuffer+3, name_len))
+	continue; // parameter name does not match
+
+      if( linebuffer[name_len+4] != '=')
+	continue; // bad format again
+
+      float value = atof( linebuffer + name_len + 6);
+
+      if( this_persistent_parameter->is_an_angle)
+	{
+	  value *= M_PI_F / 180.0;
+	  // map angle range
+	  while( value > M_PI_F)
+	    value -= M_PI_F * 2.0f;
+	  while( value < -M_PI_F)
+	    value += M_PI_F * 2.0f;
+	}
+
+#if TEST_MODULE
+      status = write_EEPROM_value_dummy( identifier, value);
+#else
+      status = write_EEPROM_value( identifier, value);
+#endif
+      ASSERT( ! status);
+    }
+
+#if ! TEST_MODULE
+  lock_EEPROM( true);
+#endif
+}
+
