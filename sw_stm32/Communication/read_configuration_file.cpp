@@ -38,6 +38,11 @@
 
 #define LINELEN 50
 
+bool is_white( char c)
+{
+  return( (c == ' ') || ( c == '\t'));
+}
+
 bool is_number_start( char c)
 {
   return (( c >= '0') && ( c <='9')) || ( c =='-') || ( c =='+');
@@ -117,6 +122,11 @@ void read_configuration_file(void)
   // get all readable configuration lines and program data into EEPROM
   while( file_reader.read_line( position))
     {
+      // skip max 3 white ASCII characters
+      for( unsigned i=0; i<3; ++i)
+	if( ( ! ( *position < ' ')) && is_white( *position))
+	  ++position;
+
       const persistent_data_t *persistent_parameter = find_parameter_from_name( position);
 
       if( persistent_parameter == 0) // unable to find parameter name
@@ -124,8 +134,8 @@ void read_configuration_file(void)
 
       position += strlen( persistent_parameter->mnemonic);
 
-      // skip whitespace
-      while( ( *position != 0) && ( *position != '\r') && (! is_number_start( *position)))
+      // skip whitespace, '=' etc
+      while( ! ( *position < ' ') && (! is_number_start( *position)))
 	  ++position;
 
       if( ! is_number_start( *position))
