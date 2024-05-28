@@ -486,7 +486,6 @@ bool read_software_update(void)
       if( last_block_read)
 	{
 	  HAL_FLASH_Lock();
-	  f_rename( (char *)"larus_sensor_V2_image.bin", (char *)"larus_sensor_V2_image.bin.USED");
 	  delay(100); // wait until uSD operations are finished
 	  fresult = f_mount ( 0, "", 0); // unmount file system
 	  delay(100); // wait until uSD operations are finished
