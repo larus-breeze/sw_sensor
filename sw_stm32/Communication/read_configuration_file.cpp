@@ -110,7 +110,7 @@ bool read_init_file(void)
 {
   ASCII_file_reader file_reader((char *)"larus_sensor_config.ini");
   if( file_reader.is_eof())
-    false;
+    return false;
 
   char *position;
   unsigned status;
