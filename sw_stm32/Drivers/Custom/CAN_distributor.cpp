@@ -49,7 +49,7 @@ static inline void distribute_CAN_packet(const CANpacket &p)
     {
       if( CAN_distributor_list[i].queue ==0) // end of list
 	return;
-      if( (p.id & CAN_distributor_list[i].ID_mask) == CAN_distributor_list[i].ID_value)
+      if( (p.id & CAN_distributor_list[i].ID_mask) & CAN_distributor_list[i].ID_value)
 	{
 	bool ok = CAN_distributor_list[i].queue->send( p, NO_WAIT);
 	ASSERT( ok);
@@ -69,10 +69,11 @@ void CAN_RX_task_code (void*)
 
 Task CAN_RX_task (CAN_RX_task_code, "CAN_RX");
 
+
 #if RUN_CAN_DISTRIBUTION_TEST
 
 unsigned CAN_packet_counter;
-Queue < CAN_packet> packet_q(3,"DIST_TST_Q");
+Queue < CANpacket> packet_q(3,"DIST_TST_Q");
 
 void CAN_distribution_test( void *)
 {
@@ -83,7 +84,7 @@ void CAN_distribution_test( void *)
 
   while( true)
     {
-      CAN_packet p;
+      CANpacket p;
       packet_q.receive(p);
       ++CAN_packet_counter;
     }
