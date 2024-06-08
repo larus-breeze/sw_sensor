@@ -27,6 +27,7 @@
 #include "communicator.h"
 #include "NMEA_format.h"
 #include "usart_1_driver.h"
+#include "ascii_support.h"
 
 #define MAX_LEN 40
 COMMON char rxNMEASentence[MAX_LEN];
@@ -38,6 +39,8 @@ void NMEA_listener_task_runnable( void *)
   char rxByte;
   int i = 0;
   int len = 0;
+  float value = 0.0f;
+  char *ptr = NULL;
 
   while( true)
     {
@@ -64,23 +67,33 @@ void NMEA_listener_task_runnable( void *)
 
 		  if(true == NMEA_checksum(rxNMEASentence))
 		    {
+		      rxNMEASentence[len-2] = 0; // Cut the checksum from the sentence for ascii parsing
+
 		      if (strncmp(rxNMEASentence,"$PLARS,H,MC,",12) == 0)
 			{
+			  ptr = &rxNMEASentence[12];
+			  value = my_atof(ptr);
 			  PLARScnt++;
 			  //$PLARS,H,MC,2.1*1B
 			}
 		      else if (strncmp(rxNMEASentence,"$PLARS,H,BAL,",13) == 0)
 			{
+			  ptr = &rxNMEASentence[13];
+			  value = my_atof(ptr);
 			  PLARScnt++;
 			  //$PLARS,H,BAL,1.000*68
 			}
 		      else if (strncmp(rxNMEASentence,"$PLARS,H,BUGS,",14) == 0)
 			{
+			  ptr = &rxNMEASentence[14];
+			  value = my_atof(ptr);
 			  PLARScnt++;
 			  //$PLARS,H,BUGS,0*0B
 			}
 		      else if (strncmp(rxNMEASentence,"$PLARS,H,QNH,",13) == 0)
 			{
+			  ptr = &rxNMEASentence[13];
+			  value = my_atof(ptr);
 			  PLARScnt++;
 			  //$PLARS,H,QNH,1031.4*76
 			}
