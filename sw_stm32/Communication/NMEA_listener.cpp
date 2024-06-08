@@ -28,8 +28,7 @@
 #include "NMEA_format.h"
 #include "usart_1_driver.h"
 
-
-#define MAX_LEN 100
+#define MAX_LEN 40
 COMMON char rxNMEASentence[MAX_LEN];
 COMMON int PLARScnt = 0;
 
@@ -55,11 +54,12 @@ void NMEA_listener_task_runnable( void *)
 
 	      if ('*' == rxByte)
 		{
-		  len = i + 2;
+		  len = i + 2;  // Two checksum bytes after *
 		}
 
 	      if (i == len)
 		{
+		  // NMEA sentence is complete add string termination.
 		  rxNMEASentence[i] = 0;
 
 		  if(true == NMEA_checksum(rxNMEASentence))
@@ -102,9 +102,8 @@ void NMEA_listener_task_runnable( void *)
 	  vTaskDelay(100);
 	}
     }
-
 }
-Task NMEA_LISTENER_H_ (NMEA_listener_task_runnable, "NMEAIN");
+Task NMEA_listener_task (NMEA_listener_task_runnable, "NMEAIN");
 
 
 

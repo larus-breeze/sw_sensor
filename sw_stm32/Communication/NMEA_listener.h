@@ -28,5 +28,4 @@
 
 extern Task NMEA_listener_task;
 
-
 #endif /* NMEA_LISTENER_H_ */
