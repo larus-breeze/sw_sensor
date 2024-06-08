@@ -1,5 +1,5 @@
 /***********************************************************************//**
- * @file		CAN_listener.cpp
+ * @file		CAN_listener.h
  * @brief		CAN listener for processing incoming CAN Frames
  * @author		Maximilian Betz
  * @copyright 		Copyright 2024. All rights reserved.
@@ -21,8 +21,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  **************************************************************************/
-#ifndef CAN_OUTPUT_TASK_H_
-#define CAN_OUTPUT_TASK_H_
+#ifndef CAN_LISTENER_H_
+#define CAN_LISTENER_H_
 
 #include "FreeRTOS_wrapper.h"
 
@@ -33,4 +33,4 @@ bool get_bal_updates(float32_t &value);
 bool get_bugs_updates(float32_t &value);
 bool get_qnh_updates(float32_t &value);
 
-#endif /* CAN_OUTPUT_TASK_H_ */
+#endif /* CAN_LISTENER_H_ */

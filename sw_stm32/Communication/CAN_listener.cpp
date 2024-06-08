@@ -79,7 +79,7 @@ bool get_qnh_updates(float32_t &value)
 
 void CAN_listener_task_runnable( void *)
 {
-  CAN_distributor_entry my_entry{ 0x000F, 0x0002, &can_settings_packet_q};   // Listen for "Set System Wide Config Item" on CAN
+  CAN_distributor_entry my_entry{ 0x040F, 0x0402, &can_settings_packet_q};   // Listen for "Set System Wide Config Item" on CAN
   subscribe_CAN_messages(my_entry);
 
   CANpacket p;

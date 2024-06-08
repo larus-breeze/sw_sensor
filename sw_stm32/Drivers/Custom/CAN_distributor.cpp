@@ -49,7 +49,7 @@ static inline void distribute_CAN_packet(const CANpacket &p)
     {
       if( CAN_distributor_list[i].queue ==0) // end of list
 	return;
-      if( (p.id & CAN_distributor_list[i].ID_mask) & CAN_distributor_list[i].ID_value)
+      if( (p.id & CAN_distributor_list[i].ID_mask) == CAN_distributor_list[i].ID_value)
 	{
 	bool ok = CAN_distributor_list[i].queue->send( p, NO_WAIT);
 	ASSERT( ok);
