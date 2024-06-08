@@ -28,6 +28,8 @@
 #include "NMEA_format.h"
 #include "usart_1_driver.h"
 #include "ascii_support.h"
+#include "generic_CAN_driver.h"
+#include "CAN_output.h"
 
 #define MAX_LEN 40
 COMMON char rxNMEASentence[MAX_LEN];
@@ -41,6 +43,10 @@ void NMEA_listener_task_runnable( void *)
   int len = 0;
   float value = 0.0f;
   char *ptr = NULL;
+  CANpacket can_packet;
+
+  can_packet.id = 0x522;  // static id as the sensor does not use dynamic addressing.
+  can_packet.dlc = 8;
 
   while( true)
     {
@@ -67,35 +73,43 @@ void NMEA_listener_task_runnable( void *)
 
 		  if(true == NMEA_checksum(rxNMEASentence))
 		    {
-		      rxNMEASentence[len-2] = 0; // Cut the checksum from the sentence for ascii parsing
+		      rxNMEASentence[len-2] = 0; // Cut the checksum from the sentence for ASCII parsing
 
 		      if (strncmp(rxNMEASentence,"$PLARS,H,MC,",12) == 0)
 			{
 			  ptr = &rxNMEASentence[12];
 			  value = my_atof(ptr);
-			  PLARScnt++;
-			  //$PLARS,H,MC,2.1*1B
+			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_MC;
+			  can_packet.data_h[1] = 0;
+			  can_packet.data_f[1] = value;
+			  CAN_send(can_packet, portMAX_DELAY); //TODO: I wan't an asyn function "Fire and Forget!
 			}
 		      else if (strncmp(rxNMEASentence,"$PLARS,H,BAL,",13) == 0)
 			{
 			  ptr = &rxNMEASentence[13];
 			  value = my_atof(ptr);
-			  PLARScnt++;
-			  //$PLARS,H,BAL,1.000*68
+			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_BALLAST;
+			  can_packet.data_h[1] = 0;
+			  can_packet.data_f[1] = value;
+			  CAN_send(can_packet, portMAX_DELAY);
 			}
 		      else if (strncmp(rxNMEASentence,"$PLARS,H,BUGS,",14) == 0)
 			{
 			  ptr = &rxNMEASentence[14];
 			  value = my_atof(ptr);
-			  PLARScnt++;
-			  //$PLARS,H,BUGS,0*0B
+			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_BUGS;
+			  can_packet.data_h[1] = 0;
+			  can_packet.data_f[1] = value;
+			  CAN_send(can_packet, portMAX_DELAY);
 			}
 		      else if (strncmp(rxNMEASentence,"$PLARS,H,QNH,",13) == 0)
 			{
 			  ptr = &rxNMEASentence[13];
 			  value = my_atof(ptr);
-			  PLARScnt++;
-			  //$PLARS,H,QNH,1031.4*76
+			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_QNH;
+			  can_packet.data_h[1] = 0;
+			  can_packet.data_f[1] = value;
+			  CAN_send(can_packet, portMAX_DELAY);
 			}
 		    }
 		  i = 0;
@@ -116,7 +130,7 @@ void NMEA_listener_task_runnable( void *)
 	}
     }
 }
-Task NMEA_listener_task (NMEA_listener_task_runnable, "NMEAIN");
+Task NMEA_listener_task (NMEA_listener_task_runnable, "NMEA_IN");
 
 
 

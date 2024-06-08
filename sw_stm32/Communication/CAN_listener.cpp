@@ -88,22 +88,22 @@ void CAN_listener_task_runnable( void *)
       can_settings_packet_q.receive(p);
        switch (p.data_h[0])
        {
-	 case 1:  //mac_cready
+	 case SYSWIDECONFIG_ITEM_ID_MC:
 	   latest_mc = p.data_f[1];
 	   new_mc = true;
 	   break;
 
-	 case 2:  //water_ballast
+	 case SYSWIDECONFIG_ITEM_ID_BALLAST:
 	   latest_bal = p.data_f[1];
 	   new_bal = true;
            break;
 
-	 case 3:  //bugs
+	 case SYSWIDECONFIG_ITEM_ID_BUGS:
 	   latest_bugs = p.data_f[1];
 	   new_bugs = true;
 	   break;
 
-	case 4:  //qnh
+	case SYSWIDECONFIG_ITEM_ID_QNH:
 	  latest_qnh = p.data_f[1];
 	  new_qnh = true;
 	   break;
@@ -115,7 +115,7 @@ void CAN_listener_task_runnable( void *)
 
     }
 }
-Task CAN_listener_task (CAN_listener_task_runnable, "CANIN");
+Task CAN_listener_task (CAN_listener_task_runnable, "CAN_IN");
 
 
 
