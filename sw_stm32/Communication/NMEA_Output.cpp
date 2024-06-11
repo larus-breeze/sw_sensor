@@ -26,6 +26,7 @@
 #include "FreeRTOS_wrapper.h"
 #include "common.h"
 #include "NMEA_format.h"
+#include "CAN_listener.h"
 #include "usb_device.h"
 #include "usbd_cdc.h"
 #include "usart_1_driver.h"
@@ -97,6 +98,29 @@ static void runnable (void* data)
 	  decimating_counter = NMEA_DECIMATION_RATIO;
 	  format_NMEA_string_slow( output_data, NMEA_buf);
 	}
+
+      //Check if there is a CAN Message received which needs to be replayed via a Larus NMEA PLARS Sentence.
+      float32_t value;
+      char *next = NMEA_buf.string + NMEA_buf.length;
+      if (get_mc_updates(value))
+      {
+	  format_PLARS(value, MC, next);
+      }
+      if (get_bal_updates(value))
+      {
+	  format_PLARS(value, BAL, next);
+      }
+      if (get_bugs_updates(value))
+      {
+	  format_PLARS(value, BUGS, next);
+      }
+      if (get_qnh_updates(value))
+      {
+	  format_PLARS(value, QNH, next);
+      }
+      NMEA_buf.length = next - NMEA_buf.string;
+
+
 
 #if ACTIVATE_USB_NMEA
       USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);
