@@ -25,7 +25,8 @@
 #define NMEA_LISTENER_H_
 
 #include "FreeRTOS_wrapper.h"
+#include "candriver.h"
 
-extern Task NMEA_listener_task;
+extern Queue <CANpacket> MC_et_al_queue;
 
 #endif /* NMEA_LISTENER_H_ */
