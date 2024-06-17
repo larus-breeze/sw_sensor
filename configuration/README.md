@@ -13,7 +13,7 @@ Use the configuration file(s) to configure the GNSS modules with the ublox u-cen
 Use the sensor_config.txt file as a template.
 - describe the mounting orientation by adjusting the following parameters in [deg]. Verify the orientation by checking the AHRS output e.g. via OpenSoar. All angles set to 0 (default) means an orientation so that the pilot can see the LEDs and USB connectors and Rj45 connectors and tubes are in flight direction.
     - SensTilt_Roll
-    - SensTilt_Nick
+    - SensTilt_Pitch
     - SensTilt_Yaw
 - Configure the chosen GNSS module by setting GNSS_CONFIG parameter to:
     - 1.0 for the single GNSS M9N module 
