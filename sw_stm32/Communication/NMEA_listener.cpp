@@ -35,6 +35,11 @@
 COMMON char rxNMEASentence[MAX_LEN];
 COMMON int PLARScnt = 0;
 
+bool CAN_gateway_poll( CANpacket &p, unsigned max_wait)
+   {
+      return MC_et_al_queue.receive( p, max_wait);
+   }
+
 void NMEA_listener_task_runnable( void *)
 {
   delay(5000); // allow data acquisition setup
