@@ -10,6 +10,19 @@
 #include "stm32f4xx_hal_cortex.h"
 #include "stm32f4xx_hal_spi.h"
 #include "spi.h"
+#include "embedded_math.h"
+
+ROM int8_t bit_count_table[] =
+{
+    0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8
+};
 
 extern SPI_HandleTypeDef hspi2;
 extern DMA_HandleTypeDef hdma_spi2_rx;
@@ -48,7 +61,8 @@ void configure_SPI_interface (void)
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+  // bit samplerate will be 168Mhz / 4 / 16 => 2.625 Mhz
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -79,11 +93,29 @@ void configure_SPI_interface (void)
 }
 
 #define MIC_DMA_BUFSIZE_HALFWORDS 256
+#define FLOAT_BUFSIZE 512
 
-static uint16_t __ALIGNED( MIC_DMA_BUFSIZE_HALFWORDS * 2) mic_DMA_buffer[ MIC_DMA_BUFSIZE_HALFWORDS];
+uint16_t __ALIGNED( MIC_DMA_BUFSIZE_HALFWORDS * 2) mic_DMA_buffer[ MIC_DMA_BUFSIZE_HALFWORDS];
+float __ALIGNED( FLOAT_BUFSIZE * sizeof(float)) samples_at_20_kHz[FLOAT_BUFSIZE];
 
-COMMON unsigned isr_counter;
-COMMON unsigned bits_seen;
+COMMON unsigned count32;
+
+// our byte samples have 328kHz sampling-rate
+// resampling by 16 gives 20.5 kHz
+void resample_by_16( uint8_t * bytes, float * samples, unsigned bytecount)
+{
+  while( true)
+    {
+      int accumulator = -1 * 4 /* bits */ * 16 /* samples */; // remove DC bias
+      for( unsigned i=0; i<16; ++i)
+          accumulator += bit_count_table[*bytes++];
+      *samples++ = (float)accumulator;
+
+      bytecount -= 16;
+      if( bytecount == 0)
+	  return;
+    }
+}
 
 static void runnable (void*)
 {
@@ -93,11 +125,22 @@ static void runnable (void*)
   volatile HAL_StatusTypeDef status;
   status = HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
 
-  uint32_t NotificationValue=0;
+  uint32_t BufferIndex; // 0 -> first half, 1 second half
   while (true)
     {
-    xTaskNotifyWait( 0, 0, &NotificationValue, INFINITE_WAIT);
-    bits_seen |= NotificationValue == 1 ? 1 : 2;
+      xTaskNotifyWait( 0, 0, &BufferIndex, INFINITE_WAIT);
+      if( BufferIndex != 0)
+	continue; // synchronize
+      // now we have 256 byte samples @ the beginning of our buffer
+      resample_by_16( (uint8_t *)mic_DMA_buffer, samples_at_20_kHz, 256);
+
+      xTaskNotifyWait( 0, 0, &BufferIndex, INFINITE_WAIT);
+      if( BufferIndex != 1)
+	continue; // synchronize
+      // now we have another 256 byte samples @ the middle of our buffer
+      resample_by_16( (uint8_t *)(mic_DMA_buffer + (MIC_DMA_BUFSIZE_HALFWORDS / 2)), samples_at_20_kHz + 16, 256);
+
+      ++count32;
     }
 }
 
@@ -111,8 +154,8 @@ static TaskParameters_t p =
     0,
       {
 	{ COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
-	{ mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS * 2, 0 },
-	{ 0, 0, 0 }
+	{ mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS * 2, portMPU_REGION_READ_ONLY },
+	{ samples_at_20_kHz,  FLOAT_BUFSIZE * sizeof(float), portMPU_REGION_READ_WRITE }
       }
   };
 
