@@ -111,7 +111,7 @@ extern "C" void MPU_initialization(void)
   MX_I2C2_Init();
   MX_SDIO_SD_Init();
   MX_SPI1_Init();
-  MX_SPI2_Init();
+//  MX_SPI2_Init();
 //  MX_USART2_UART_Init();
   MX_USART6_UART_Init();
   MX_FATFS_Init();
