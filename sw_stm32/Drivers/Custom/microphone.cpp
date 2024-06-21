@@ -121,7 +121,6 @@ void resample_by_64( uint8_t * bytes, int8_t * samples, unsigned bytecount)
 uint64_t getTime_usec(void);
 
 COMMON float ac_power;
-COMMON float dc_content;
 
 static void runnable (void*)
 {
@@ -194,7 +193,6 @@ static void runnable (void*)
 	{
 	  // this scaling delivers ac_power = 13.0 @ 94dB
 	  ac_power   = (qsum * SAMPLE_BUFSIZE - sum * sum) / ((float)SAMPLE_BUFSIZE * SAMPLE_BUFSIZE);
-	  dc_content = sum / (float)SAMPLE_BUFSIZE;
 
 	  samples_pointer  = samples_at_5_kHz;
 	  sum = 0;
