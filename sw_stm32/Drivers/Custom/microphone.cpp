@@ -12,6 +12,8 @@
 #include "spi.h"
 #include "embedded_math.h"
 
+#if RUN_MICROPHONE
+
 ROM int8_t bit_count_table[] =
 {
     0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
@@ -98,9 +100,6 @@ void configure_SPI_interface (void)
 uint16_t __ALIGNED( MIC_DMA_BUFSIZE_HALFWORDS * sizeof( uint16_t)) mic_DMA_buffer[ MIC_DMA_BUFSIZE_HALFWORDS];
 int8_t __ALIGNED( SAMPLE_BUFSIZE) samples_at_5_kHz[SAMPLE_BUFSIZE];
 
-COMMON uint32_t out_of_range_count;
-COMMON uint32_t zero_seen;
-
 // our byte samples have 328kHz sampling-rate
 // resampling by 64 gives 5.125 kHz sampling-rate
 void resample_by_64( uint8_t * bytes, int8_t * samples, unsigned bytecount)
@@ -110,14 +109,8 @@ void resample_by_64( uint8_t * bytes, int8_t * samples, unsigned bytecount)
       int accumulator = 0;
 
       for( unsigned i=0; i<64; ++i)
-	{
-	  if( *bytes ==0)
-	    ++zero_seen;
-          accumulator += bit_count_table[*bytes++];
-	}
+	accumulator += bit_count_table[*bytes++];
 
-      if( (accumulator > 256 + 127) || ( accumulator < 128))
-	    ++out_of_range_count;
       *samples++ = (int8_t)(accumulator - 256);
 
       bytecount -= 64;
@@ -129,23 +122,15 @@ uint64_t getTime_usec(void);
 
 COMMON float ac_power;
 COMMON float dc_content;
-COMMON volatile uint64_t time_delta;
-COMMON volatile uint64_t time_delta_max;
-COMMON volatile uint64_t time_delta_min;
-COMMON uint32_t overrun_count;
 
 static void runnable (void*)
 {
   configure_SPI_interface ();
   register_SPI_usertask( &hspi2);
 
-  volatile HAL_StatusTypeDef status;
-  status = HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
+  HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
 
   uint32_t BufferIndex; // 0 -> first half, 1 second half
-
-  time_delta_max=0;
-  time_delta_min=0xffffffffffffffff;
 
   int8_t * samples_pointer  = samples_at_5_kHz;
   int32_t sum = 0;
@@ -157,17 +142,10 @@ static void runnable (void*)
       uint64_t timestamp = getTime_usec();
       xTaskNotifyWait( 0, 0, &BufferIndex, 2);
 
-      time_delta = getTime_usec() - timestamp;
-      if( time_delta < time_delta_min)
-	time_delta_min = time_delta;
-      if( time_delta > time_delta_max)
-	time_delta_max = time_delta;
-
       if( BufferIndex != 0) // be sure to be behind the half transfer interrupt
 	{
-	  ++overrun_count;
 	  HAL_SPI_DMAStop( &hspi2);
-	  status = HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
+	  HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
 
 	  samples_pointer  = samples_at_5_kHz;
 	  sum = 0;
@@ -187,20 +165,12 @@ static void runnable (void*)
       }
 
       BufferIndex = 0xffffffff;
-      timestamp = getTime_usec();
       xTaskNotifyWait( 0, 0, &BufferIndex, 2);
-
-      time_delta = getTime_usec() - timestamp;
-      if( time_delta < time_delta_min)
-	time_delta_min = time_delta;
-      if( time_delta > time_delta_max)
-	time_delta_max = time_delta;
 
       if( BufferIndex != 1) // be sure to be behind the transfer complete interrupt
 	{
-	  ++overrun_count;
 	  HAL_SPI_DMAStop( &hspi2);
-	  status = HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
+	  HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
 
 	  samples_pointer  = samples_at_5_kHz;
 	  sum = 0;
@@ -208,7 +178,7 @@ static void runnable (void*)
 
 	  continue; // re-synchronize
 	}
-      // now we have another 256 byte samples @ the middle of our buffer
+      // now we have another 256 byte samples starting @ the middle of our buffer
       resample_by_64( (uint8_t *)(&mic_DMA_buffer[MIC_DMA_BUFSIZE_HALFWORDS / 2]), samples_pointer, MIC_DMA_BUFSIZE_HALFWORDS);
 
       // do statistics and advance pointer
@@ -222,7 +192,8 @@ static void runnable (void*)
       // summa summarum ...
       if( samples_pointer >= samples_at_5_kHz + SAMPLE_BUFSIZE)
 	{
-	  ac_power   = (qsum * SAMPLE_BUFSIZE - sum * sum) / (float)SAMPLE_BUFSIZE;
+	  // this scaling delivers ac_power = 13.0 @ 94dB
+	  ac_power   = (qsum * SAMPLE_BUFSIZE - sum * sum) / ((float)SAMPLE_BUFSIZE * SAMPLE_BUFSIZE);
 	  dc_content = sum / (float)SAMPLE_BUFSIZE;
 
 	  samples_pointer  = samples_at_5_kHz;
@@ -248,3 +219,5 @@ static TaskParameters_t p =
   };
 
 static RestrictedTask mic_task ( p);
+
+#endif
