@@ -93,29 +93,47 @@ void configure_SPI_interface (void)
 }
 
 #define MIC_DMA_BUFSIZE_HALFWORDS 256
-#define FLOAT_BUFSIZE 512
+#define SAMPLE_BUFSIZE 512
 
-uint16_t __ALIGNED( MIC_DMA_BUFSIZE_HALFWORDS * 2) mic_DMA_buffer[ MIC_DMA_BUFSIZE_HALFWORDS];
-float __ALIGNED( FLOAT_BUFSIZE * sizeof(float)) samples_at_20_kHz[FLOAT_BUFSIZE];
+uint16_t __ALIGNED( MIC_DMA_BUFSIZE_HALFWORDS * sizeof( uint16_t)) mic_DMA_buffer[ MIC_DMA_BUFSIZE_HALFWORDS];
+int8_t __ALIGNED( SAMPLE_BUFSIZE) samples_at_5_kHz[SAMPLE_BUFSIZE];
 
-COMMON unsigned count32;
+COMMON uint32_t out_of_range_count;
+COMMON uint32_t zero_seen;
 
 // our byte samples have 328kHz sampling-rate
-// resampling by 16 gives 20.5 kHz
-void resample_by_16( uint8_t * bytes, float * samples, unsigned bytecount)
+// resampling by 64 gives 5.125 kHz sampling-rate
+void resample_by_64( uint8_t * bytes, int8_t * samples, unsigned bytecount)
 {
   while( true)
     {
-      int accumulator = -1 * 4 /* bits */ * 16 /* samples */; // remove DC bias
-      for( unsigned i=0; i<16; ++i)
-          accumulator += bit_count_table[*bytes++];
-      *samples++ = (float)accumulator;
+      int accumulator = 0;
 
-      bytecount -= 16;
+      for( unsigned i=0; i<64; ++i)
+	{
+	  if( *bytes ==0)
+	    ++zero_seen;
+          accumulator += bit_count_table[*bytes++];
+	}
+
+      if( (accumulator > 256 + 127) || ( accumulator < 128))
+	    ++out_of_range_count;
+      *samples++ = (int8_t)(accumulator - 256);
+
+      bytecount -= 64;
       if( bytecount == 0)
 	  return;
     }
 }
+
+uint64_t getTime_usec(void);
+
+COMMON int32_t ac_power;
+COMMON int32_t dc_content;
+COMMON volatile uint64_t time_delta;
+COMMON volatile uint64_t time_delta_max;
+COMMON volatile uint64_t time_delta_min;
+COMMON uint32_t overrun_count;
 
 static void runnable (void*)
 {
@@ -126,21 +144,89 @@ static void runnable (void*)
   status = HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
 
   uint32_t BufferIndex; // 0 -> first half, 1 second half
+
+  time_delta_max=0;
+  time_delta_min=0xffffffffffffffff;
+
+  int8_t * target = samples_at_5_kHz;
+  int32_t sum = 0;
+  int32_t qsum = 0;
+
   while (true)
     {
-      xTaskNotifyWait( 0, 0, &BufferIndex, INFINITE_WAIT);
-      if( BufferIndex != 0)
-	continue; // synchronize
+      BufferIndex = 0xffffffff;
+
+      uint64_t timestamp = getTime_usec();
+      xTaskNotifyWait( 0, 0, &BufferIndex, 2);
+
+      time_delta = getTime_usec() - timestamp;
+      if( time_delta < time_delta_min)
+	time_delta_min = time_delta;
+      if( time_delta > time_delta_max)
+	time_delta_max = time_delta;
+
+      if( BufferIndex != 0) // be sure to be behind the half transfer interrupt
+	{
+	  target = samples_at_5_kHz;
+	  sum = 0;
+	  qsum = 0;
+	  ++overrun_count;
+	  HAL_SPI_DMAStop( &hspi2);
+	  status = HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
+	  continue; // re-synchronize
+	}
       // now we have 256 byte samples @ the beginning of our buffer
-      resample_by_16( (uint8_t *)mic_DMA_buffer, samples_at_20_kHz, 256);
+      resample_by_64( (uint8_t *)mic_DMA_buffer, target, MIC_DMA_BUFSIZE_HALFWORDS);
 
-      xTaskNotifyWait( 0, 0, &BufferIndex, INFINITE_WAIT);
-      if( BufferIndex != 1)
-	continue; // synchronize
+      // do statistics and advance pointer
+      for( unsigned i=0; i<8; ++i)
+      {
+	sum += (int32_t)*target;
+	qsum += (int32_t)*target * *target;
+	++target;
+      }
+
+      BufferIndex = 0xffffffff;
+      timestamp = getTime_usec();
+      xTaskNotifyWait( 0, 0, &BufferIndex, 2);
+
+      time_delta = getTime_usec() - timestamp;
+      if( time_delta < time_delta_min)
+	time_delta_min = time_delta;
+      if( time_delta > time_delta_max)
+	time_delta_max = time_delta;
+
+      if( BufferIndex != 1) // be sure to be behind the transfer complete interrupt
+	{
+	  target = samples_at_5_kHz;
+	  sum = 0;
+	  qsum = 0;
+	  ++overrun_count;
+	  HAL_SPI_DMAStop( &hspi2);
+	  status = HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
+	  continue; // re-synchronize
+	}
       // now we have another 256 byte samples @ the middle of our buffer
-      resample_by_16( (uint8_t *)(mic_DMA_buffer + (MIC_DMA_BUFSIZE_HALFWORDS / 2)), samples_at_20_kHz + 16, 256);
+      resample_by_64( (uint8_t *)(&mic_DMA_buffer[MIC_DMA_BUFSIZE_HALFWORDS / 2]), target, MIC_DMA_BUFSIZE_HALFWORDS);
 
-      ++count32;
+      // do statistics and advance pointer
+      for( unsigned i=0; i<8; ++i)
+      {
+	sum += (int32_t)*target;
+	qsum += (int32_t)*target * *target;
+	++target;
+      }
+
+      // summa summarum ...
+      if( target >= samples_at_5_kHz + SAMPLE_BUFSIZE)
+	{
+	  //	  ac_energy = qsum - sum * sum;
+	  ac_power = qsum / 16;
+	  dc_content= sum / 16;
+	  target = samples_at_5_kHz;
+	  sum = 0;
+	  qsum = 0;
+	}
     }
 }
 
@@ -155,7 +241,7 @@ static TaskParameters_t p =
       {
 	{ COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
 	{ mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS * 2, portMPU_REGION_READ_ONLY },
-	{ samples_at_20_kHz,  FLOAT_BUFSIZE * sizeof(float), portMPU_REGION_READ_WRITE }
+	{ samples_at_5_kHz,  SAMPLE_BUFSIZE, portMPU_REGION_READ_WRITE }
       }
   };
 
