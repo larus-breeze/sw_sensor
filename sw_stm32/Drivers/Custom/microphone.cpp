@@ -105,7 +105,7 @@ COMMON uint32_t zero_seen;
 // resampling by 64 gives 5.125 kHz sampling-rate
 void resample_by_64( uint8_t * bytes, int8_t * samples, unsigned bytecount)
 {
-  while( true)
+  do
     {
       int accumulator = 0;
 
@@ -121,15 +121,14 @@ void resample_by_64( uint8_t * bytes, int8_t * samples, unsigned bytecount)
       *samples++ = (int8_t)(accumulator - 256);
 
       bytecount -= 64;
-      if( bytecount == 0)
-	  return;
     }
+  while( bytecount > 0);
 }
 
 uint64_t getTime_usec(void);
 
-COMMON int32_t ac_power;
-COMMON int32_t dc_content;
+COMMON float ac_power;
+COMMON float dc_content;
 COMMON volatile uint64_t time_delta;
 COMMON volatile uint64_t time_delta_max;
 COMMON volatile uint64_t time_delta_min;
@@ -148,14 +147,13 @@ static void runnable (void*)
   time_delta_max=0;
   time_delta_min=0xffffffffffffffff;
 
-  int8_t * target = samples_at_5_kHz;
+  int8_t * samples_pointer  = samples_at_5_kHz;
   int32_t sum = 0;
   int32_t qsum = 0;
 
   while (true)
     {
       BufferIndex = 0xffffffff;
-
       uint64_t timestamp = getTime_usec();
       xTaskNotifyWait( 0, 0, &BufferIndex, 2);
 
@@ -167,23 +165,25 @@ static void runnable (void*)
 
       if( BufferIndex != 0) // be sure to be behind the half transfer interrupt
 	{
-	  target = samples_at_5_kHz;
-	  sum = 0;
-	  qsum = 0;
 	  ++overrun_count;
 	  HAL_SPI_DMAStop( &hspi2);
 	  status = HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
+
+	  samples_pointer  = samples_at_5_kHz;
+	  sum = 0;
+	  qsum = 0;
+
 	  continue; // re-synchronize
 	}
       // now we have 256 byte samples @ the beginning of our buffer
-      resample_by_64( (uint8_t *)mic_DMA_buffer, target, MIC_DMA_BUFSIZE_HALFWORDS);
+      resample_by_64( (uint8_t *)mic_DMA_buffer, samples_pointer, MIC_DMA_BUFSIZE_HALFWORDS);
 
       // do statistics and advance pointer
-      for( unsigned i=0; i<8; ++i)
+      for( unsigned i=0; i<4; ++i)
       {
-	sum += (int32_t)*target;
-	qsum += (int32_t)*target * *target;
-	++target;
+	sum += (int32_t)*samples_pointer;
+	qsum += (int32_t)*samples_pointer * *samples_pointer;
+	++samples_pointer;
       }
 
       BufferIndex = 0xffffffff;
@@ -198,32 +198,34 @@ static void runnable (void*)
 
       if( BufferIndex != 1) // be sure to be behind the transfer complete interrupt
 	{
-	  target = samples_at_5_kHz;
-	  sum = 0;
-	  qsum = 0;
 	  ++overrun_count;
 	  HAL_SPI_DMAStop( &hspi2);
 	  status = HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
+
+	  samples_pointer  = samples_at_5_kHz;
+	  sum = 0;
+	  qsum = 0;
+
 	  continue; // re-synchronize
 	}
       // now we have another 256 byte samples @ the middle of our buffer
-      resample_by_64( (uint8_t *)(&mic_DMA_buffer[MIC_DMA_BUFSIZE_HALFWORDS / 2]), target, MIC_DMA_BUFSIZE_HALFWORDS);
+      resample_by_64( (uint8_t *)(&mic_DMA_buffer[MIC_DMA_BUFSIZE_HALFWORDS / 2]), samples_pointer, MIC_DMA_BUFSIZE_HALFWORDS);
 
       // do statistics and advance pointer
-      for( unsigned i=0; i<8; ++i)
+      for( unsigned i=0; i<4; ++i)
       {
-	sum += (int32_t)*target;
-	qsum += (int32_t)*target * *target;
-	++target;
+	sum += (int32_t)*samples_pointer;
+	qsum += (int32_t)*samples_pointer * *samples_pointer;
+	++samples_pointer;
       }
 
       // summa summarum ...
-      if( target >= samples_at_5_kHz + SAMPLE_BUFSIZE)
+      if( samples_pointer >= samples_at_5_kHz + SAMPLE_BUFSIZE)
 	{
-	  //	  ac_energy = qsum - sum * sum;
-	  ac_power = qsum / 16;
-	  dc_content= sum / 16;
-	  target = samples_at_5_kHz;
+	  ac_power   = (qsum * SAMPLE_BUFSIZE - sum * sum) / (float)SAMPLE_BUFSIZE;
+	  dc_content = sum / (float)SAMPLE_BUFSIZE;
+
+	  samples_pointer  = samples_at_5_kHz;
 	  sum = 0;
 	  qsum = 0;
 	}
