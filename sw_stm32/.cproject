@@ -312,7 +312,7 @@
 						<entry excluding="Custom/usart1_driver.cpp|Custom/usart1_driver_RX_DMA.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="FATFS"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Math_functions"/>
-						<entry excluding="DSP/Source/SupportFunctions|DSP/Source/FastMathFunctions/arm_sin_q15.c|DSP/Source/ComplexMathFunctions|DSP/Source/FastMathFunctions/arm_cos_q15.c|DSP/Source/FastMathFunctions/arm_sqrt_q15.c|DSP/Source/FastMathFunctions/arm_sin_q31.c|DSP/Source/FilteringFunctions|DSP/Source/BasicMathFunctions|Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2|DSP/Source/MatrixFunctions/MatrixFunctions.c|DSP/Source/CommonTables/CommonTables.c|DSP/Source/TransformFunctions|DSP/Source/FastMathFunctions/arm_cos_q31.c|DSP/Source/StatisticsFunctions|DSP/Source/ControllerFunctions|DSP/Source/FastMathFunctions/FastMathFunctions.c|DSP/Source/FastMathFunctions/arm_sqrt_q31.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
+						<entry excluding="ST/Crypto_Lib/ecc_test.c|ST/Crypto_Lib/ecc_test_2.c|DSP/Source/SupportFunctions|DSP/Source/FastMathFunctions/arm_sin_q15.c|DSP/Source/ComplexMathFunctions|DSP/Source/FastMathFunctions/arm_cos_q15.c|DSP/Source/FastMathFunctions/arm_sqrt_q15.c|DSP/Source/FastMathFunctions/arm_sin_q31.c|DSP/Source/FilteringFunctions|DSP/Source/BasicMathFunctions|Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2|DSP/Source/MatrixFunctions/MatrixFunctions.c|DSP/Source/CommonTables/CommonTables.c|DSP/Source/TransformFunctions|DSP/Source/FastMathFunctions/arm_cos_q31.c|DSP/Source/StatisticsFunctions|DSP/Source/ControllerFunctions|DSP/Source/FastMathFunctions/FastMathFunctions.c|DSP/Source/FastMathFunctions/arm_sqrt_q31.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Tracealyzer"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="USB_DEVICE"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="lib/Generic_Algorithms"/>
@@ -540,9 +540,6 @@
 							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.symbolsrec.912367717" name="MCU Output Converter Motorola S-rec with symbols" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.symbolsrec.664527292"/>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.29276544.1029160395.2017222313.1367177811" name="ecc_test.c" rcbsApplicability="disable" resourcePath="Middlewares/ST/Crypto_Lib/ecc_test.c" toolsToInvoke="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.2067255798.281058990">
-						<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.2067255798.281058990" name="MCU GCC Compiler" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.2067255798"/>
-					</fileInfo>
 					<folderInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.29276544.1029160395.2017222313.Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS" name="/" resourcePath="Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS">
 						<toolChain id="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug.715031722" name="MCU ARM GCC" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug" unusedChildren="">
 							<option id="com.st.stm32cube.ide.mcu.option.internal.toolchain.type.978257154.2071969860.1093760852.644180127" name="Internal Toolchain Type" superClass="com.st.stm32cube.ide.mcu.option.internal.toolchain.type.978257154"/>
@@ -712,12 +709,13 @@
 		</scannerConfigBuildInfo>
 	</storageModule>
 	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="debug"/>
 		<configuration configurationName="release"/>
 		<configuration configurationName="debug timing"/>
-		<configuration configurationName="Debug">
+		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/the_soar_instrument"/>
 		</configuration>
-		<configuration configurationName="Release">
+		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/the_soar_instrument"/>
 		</configuration>
 	</storageModule>
