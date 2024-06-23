@@ -47,6 +47,7 @@
 #define RUN_FXOS8700		0
 #define RUN_PITOT_MODULE 	1
 #define RUN_MICROPHONE		1
+#define RECORD_AUDIO_SAMPLES	1
 
 #define RUN_CAN_TESTER		0
 #define TEST_EEPROM		0
