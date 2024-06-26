@@ -15,7 +15,7 @@
 
 #if RUN_MICROPHONE
 
-COMMON Queue <uint8_t *> mic_data_pinter_Q(1);
+COMMON Queue <uint8_t *> mic_data_pointer_Q(1);
 
 ROM int8_t bit_count_table[] =
 {
@@ -98,8 +98,7 @@ void configure_SPI_interface (void)
 }
 
 uint16_t __ALIGNED( MIC_DMA_BUFSIZE_HALFWORDS * sizeof( uint16_t)) mic_DMA_buffer[ MIC_DMA_BUFSIZE_HALFWORDS];
-int8_t __ALIGNED( SAMPLE_BUFSIZE) samples_at_5_kHz[2][SAMPLE_BUFSIZE];
-
+int8_t __ALIGNED( SAMPLE_BUFSIZE) audio_samples[2][SAMPLE_BUFSIZE];
 
 // our byte samples have 328kHz sampling-rate
 // resampling by 64 gives 5.125 kHz sampling-rate
@@ -114,7 +113,7 @@ void resample( uint8_t * bytes, int8_t * samples, unsigned output_bytecount)
 
       *samples++ = (int8_t)(accumulator - RESAMPLING_RATIO * 4);
 
-      output_bytecount -= RESAMPLING_RATIO;
+      --output_bytecount;
     }
   while( output_bytecount > 0);
 }
@@ -133,35 +132,34 @@ static void runnable (void*)
 
   HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
 
-  uint32_t BufferIndex; // 0 -> first half, 1 second half
+  uint32_t BufferIndex=0; // 0 -> first half, 1 second half
 
-  int8_t * samples_pointer  = samples_at_5_kHz[double_buffer_index];
+  int8_t * samples_pointer  = audio_samples[double_buffer_index];
   int32_t sum = 0;
   int32_t qsum = 0;
 
   while (true)
     {
       BufferIndex = 0xffffffff;
-      uint64_t timestamp = getTime_usec();
-      xTaskNotifyWait( 0, 0, &BufferIndex, 2);
+      xTaskNotifyWait( 0, 0, &BufferIndex, 40); // trigger on half complete interrupt
 
       if( BufferIndex != 0) // be sure to be behind the half transfer interrupt
 	{
 	  HAL_SPI_DMAStop( &hspi2);
 	  HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
 
-	  double_buffer_index=0;
-	  samples_pointer  = samples_at_5_kHz[0];
+	  double_buffer_index = 0;
+	  samples_pointer  = audio_samples[double_buffer_index];
 	  sum = 0;
 	  qsum = 0;
 
 	  continue; // re-synchronize
 	}
-      // now we have 256 byte samples @ the beginning of our buffer
-      resample( (uint8_t *)mic_DMA_buffer, samples_pointer, SAMPLE_BUFSIZE);
+      // now we have 128 byte samples @ the beginning of our buffer
+      resample( (uint8_t *)mic_DMA_buffer, samples_pointer, SAMPLE_BUFSIZE_HALF);
 
       // do statistics and advance pointer
-      for( unsigned i=0; i < SAMPLE_BUFSIZE; ++i)
+      for( unsigned i=0; i < SAMPLE_BUFSIZE_HALF; ++i)
       {
 	sum += (int32_t)*samples_pointer;
 	qsum += (int32_t)*samples_pointer * *samples_pointer;
@@ -169,25 +167,25 @@ static void runnable (void*)
       }
 
       BufferIndex = 0xffffffff;
-      xTaskNotifyWait( 0, 0, &BufferIndex, 2);
+      xTaskNotifyWait( 0, 0, &BufferIndex, 40);
 
       if( BufferIndex != 1) // be sure to be behind the transfer complete interrupt
 	{
 	  HAL_SPI_DMAStop( &hspi2);
 	  HAL_SPI_Receive_DMA( &hspi2, (uint8_t *)mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS);
 
-	  double_buffer_index=0;
-	  samples_pointer  = samples_at_5_kHz[0];
+	  double_buffer_index = 0;
+	  samples_pointer  = audio_samples[double_buffer_index];
 	  sum = 0;
 	  qsum = 0;
 
 	  continue; // re-synchronize
 	}
-      // now we have another 256 byte samples starting @ the middle of our buffer
-      resample( (uint8_t *)(&mic_DMA_buffer[MIC_DMA_BUFSIZE_HALFWORDS / 2]), samples_pointer, SAMPLE_BUFSIZE);
+      // now we have 128 byte samples @ the middle of our buffer
+      resample( (uint8_t *)(&mic_DMA_buffer[MIC_DMA_BUFSIZE_HALFWORDS / 2]), samples_pointer, SAMPLE_BUFSIZE_HALF);
 
       // do statistics and advance pointer
-      for( unsigned i=0; i < SAMPLE_BUFSIZE; ++i)
+      for( unsigned i=0; i < SAMPLE_BUFSIZE_HALF; ++i)
       {
 	sum += (int32_t)*samples_pointer;
 	qsum += (int32_t)*samples_pointer * *samples_pointer;
@@ -195,19 +193,18 @@ static void runnable (void*)
       }
 
       // summa summarum ...
-      if( samples_pointer >= samples_at_5_kHz[double_buffer_index] + SAMPLE_BUFSIZE)
+      if( samples_pointer >= audio_samples[double_buffer_index] + SAMPLE_BUFSIZE)
 	{
-	  bool success = mic_data_pinter_Q.send((uint8_t *)&samples_at_5_kHz[double_buffer_index], 1);
-	  assert( success);
-
-	  double_buffer_index ^= 1; // switch our twin buffer
+	  bool success = mic_data_pointer_Q.send((uint8_t *)&audio_samples[double_buffer_index], 1);
+	  ASSERT( success);
 
 	  // this scaling delivers ac_power = 13.0 @ 94dB
 	  ac_power   = (qsum * SAMPLE_BUFSIZE - sum * sum) / ((float)SAMPLE_BUFSIZE * SAMPLE_BUFSIZE);
-
-	  samples_pointer  = samples_at_5_kHz[double_buffer_index];
 	  sum = 0;
 	  qsum = 0;
+
+	  double_buffer_index ^= 1; // switch our twin buffer
+	  samples_pointer  = audio_samples[double_buffer_index];
 	}
     }
 }
@@ -223,7 +220,7 @@ static TaskParameters_t p =
       {
 	{ COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
 	{ mic_DMA_buffer, MIC_DMA_BUFSIZE_HALFWORDS * 2, portMPU_REGION_READ_ONLY },
-	{ samples_at_5_kHz,  SAMPLE_BUFSIZE * 2, portMPU_REGION_READ_WRITE }
+	      { audio_samples, sizeof(audio_samples), portMPU_REGION_READ_WRITE}
       }
   };
 

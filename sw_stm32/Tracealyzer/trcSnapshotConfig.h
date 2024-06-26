@@ -106,9 +106,9 @@
  * check the actual usage by selecting View menu -> Trace Details ->
  * Resource Usage -> Object Table.
  ******************************************************************************/
-#define TRC_CFG_NTASK			15
-#define TRC_CFG_NISR			5
-#define TRC_CFG_NQUEUE			10
+#define TRC_CFG_NTASK			20
+#define TRC_CFG_NISR			20
+#define TRC_CFG_NQUEUE			20
 #define TRC_CFG_NSEMAPHORE		10
 #define TRC_CFG_NMUTEX			10
 #define TRC_CFG_NTIMER			5

@@ -632,7 +632,10 @@ restart:
 	  write_crash_dump();
 	}
 
+  char out_filename[30];
+
 #if RECORD_AUDIO_SAMPLES
+  append_string( out_filename, "audio.byte");
 #else
   // wait until a GNSS timestamp is available.
   while (output_data.c.sat_fix_type == 0)
@@ -641,18 +644,12 @@ restart:
 	write_crash_dump();
       delay (100);
     }
-#endif
-
   // generate filename based on timestamp
-  char out_filename[30];
   char * next = append_string( out_filename, "logger/");
   next = format_date_time( next);
 
   write_EEPROM_dump( out_filename); // now we have date+time, start logging
 
-#if RECORD_AUDIO_SAMPLES
-  append_string( out_filename, "audio.byte");
-#else
   *next++ = '.';
   *next++  = 'f';
   next = format_2_digits( next, (sizeof(coordinates_t) + sizeof(measurement_data_t)) / sizeof(float));
@@ -675,7 +672,7 @@ restart:
     {
 #if RECORD_AUDIO_SAMPLES
       uint8_t * audio_data_ptr;
-      mic_data_pinter_Q.receive( audio_data_ptr);
+      mic_data_pointer_Q.receive( audio_data_ptr);
       memcpy (buf_ptr, audio_data_ptr, SAMPLE_BUFSIZE);
       buf_ptr += SAMPLE_BUFSIZE;
 #else
@@ -745,7 +742,7 @@ static TaskParameters_t p =
       { COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
       { (void *)0x80f8000, 0x8000, portMPU_REGION_READ_WRITE },
 #if RECORD_AUDIO_SAMPLES
-      { samples_at_5_kHz, sizeof(samples_at_5_kHz), portMPU_REGION_READ_ONLY}
+      { audio_samples, sizeof(audio_samples), portMPU_REGION_READ_ONLY}
 #else
       { 0, 0, 0}
 #endif
