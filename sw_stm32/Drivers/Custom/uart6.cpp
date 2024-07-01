@@ -109,24 +109,20 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
   portEND_SWITCHING_ISR( xHigherPriorityTaskWokenByPost);
 }
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+void UART6_RxCpltCallback(void)
 {
   BaseType_t xHigherPriorityTaskWokenByPost = pdFALSE;
   BaseType_t queue_status;
 
-  if (huart->Instance == USART6)
-    {
-      /*Get Byte and enable interrupt again*/
-      queue_status = xQueueSendFromISR(UART6_Rx_Queue, &uart6_rx_byte, &xHigherPriorityTaskWokenByPost);
-      HAL_UART_Receive_IT(&huart6, &uart6_rx_byte, 1);
-      ASSERT(pdTRUE == queue_status);
-    }
-  else
-    {
-      //		ASSERT(0);
-    }
+  /*Get Byte and enable interrupt again*/
+  queue_status = xQueueSendFromISR(UART6_Rx_Queue, &uart6_rx_byte, &xHigherPriorityTaskWokenByPost);
+  HAL_UART_Receive_IT(&huart6, &uart6_rx_byte, 1);
+  ASSERT(pdTRUE == queue_status);
+
   portYIELD_FROM_ISR(xHigherPriorityTaskWokenByPost);
 }
+
+
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {

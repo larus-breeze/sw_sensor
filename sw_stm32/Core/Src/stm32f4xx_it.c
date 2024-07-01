@@ -23,6 +23,8 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "uart6.h"
+#include "usart_1_driver.h"
 extern void BSP_SD_WriteCpltCallback(void);
 extern void BSP_SD_ReadCpltCallback(void);
 /* USER CODE END Includes */
@@ -293,7 +295,19 @@ void USART6_IRQHandler(void)
   /* USER CODE END USART6_IRQn 1 */
 }
 
+
 /* USER CODE BEGIN 1 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if (huart->Instance == USART6)
+    {
+      UART6_RxCpltCallback();
+    }
+  else if (huart->Instance == USART1)
+    {
+      UART1_RxCpltCallback();
+    }
+}
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
