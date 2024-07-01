@@ -310,7 +310,6 @@ bool write_EEPROM_dump( const char * filename)
 	  next = append_string (next," = ");
 	  next = my_ftoa (next, value);
 	  newline(next);
-	  *next=0;
 
 	  fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
 	  sha.update( (uint8_t *)buffer, next-buffer);
@@ -487,7 +486,6 @@ bool read_software_update(void)
       if( last_block_read)
 	{
 	  HAL_FLASH_Lock();
-	  f_rename( (char *)"larus_sensor_V2_image.bin", (char *)"larus_sensor_V2_image.bin.USED");
 	  delay(100); // wait until uSD operations are finished
 	  fresult = f_mount ( 0, "", 0); // unmount file system
 	  delay(100); // wait until uSD operations are finished
@@ -582,7 +580,12 @@ restart:
 
   watchdog_activator.signal(); // now start the watchdog
 
-  read_configuration_file(); // read configuration file if it is present on the SD card
+  // read configuration file if it is present on the SD card
+  bool init_file_read = read_init_file();
+
+  if( ! init_file_read)
+    read_configuration_file(); // optionally: support old version
+
   ensure_EEPROM_parameter_integrity();
   setup_file_handling_completed.signal();
 

@@ -38,6 +38,16 @@
 
 #define LINELEN 50
 
+bool is_white( char c)
+{
+  return( (c == ' ') || ( c == '\t'));
+}
+
+bool is_number_start( char c)
+{
+  return (( c >= '0') && ( c <='9')) || ( c =='-') || ( c =='+');
+}
+
 class ASCII_file_reader
 {
   enum { BUFLEN = 512 *2};
@@ -96,6 +106,78 @@ unsigned write_EEPROM_value_dummy( EEPROM_PARAMETER_ID identifier, float value)
 }
 #endif
 
+bool read_init_file(void)
+{
+  ASCII_file_reader file_reader((char *)"larus_sensor_config.ini");
+  if( file_reader.is_eof())
+    return false;
+
+  char *position;
+  unsigned status;
+
+#if ! TEST_MODULE
+  lock_EEPROM( false);
+#endif
+
+  // get all readable configuration lines and program data into EEPROM
+  while( file_reader.read_line( position))
+    {
+      // skip blanks and tabs
+      while( is_white( *position))
+	++position;
+
+      const persistent_data_t *persistent_parameter = find_parameter_from_name( position);
+
+      if( persistent_parameter == 0) // unable to find parameter name
+	continue;
+
+      position += strlen( persistent_parameter->mnemonic);
+
+      // skip blanks and tabs
+      while( is_white( *position))
+	++position;
+
+      // be sure we have a '='
+      if( *position != '=')
+	continue; // try next line
+
+      ++position;
+
+      // skip blanks and tabs
+	while( is_white( *position))
+	  ++position;
+
+      if( ! is_number_start( *position))
+	continue; // found some form of garbage
+
+      float value = atof( position);
+
+      if( persistent_parameter->is_an_angle)
+	{
+	  value *= M_PI_F / 180.0;
+	  // map angle range
+	  while( value > M_PI_F)
+	    value -= M_PI_F * 2.0f;
+	  while( value < -M_PI_F)
+	    value += M_PI_F * 2.0f;
+	}
+
+#if TEST_MODULE
+      status = write_EEPROM_value_dummy( identifier->id, value);
+#else
+      status = write_EEPROM_value( persistent_parameter->id, value);
+#endif
+      ASSERT( ! status);
+    }
+
+#if ! TEST_MODULE
+  lock_EEPROM( true);
+#endif
+
+  return true;
+}
+
+// old version of sensor configuration mechanism
 void read_configuration_file(void)
 {
   ASCII_file_reader file_reader((char *)"sensor_config.txt");
@@ -153,3 +235,4 @@ void read_configuration_file(void)
   lock_EEPROM( true);
 #endif
 }
+
