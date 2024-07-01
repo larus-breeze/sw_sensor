@@ -30,6 +30,10 @@
 
 COMMON UART_HandleTypeDef huart1;
 COMMON DMA_HandleTypeDef hdma_USART_1_TX;
+
+static COMMON uint8_t uart1_rx_byte = 0;
+static COMMON QueueHandle_t UART1_Rx_Queue = NULL;
+#define UART1_RX_QUEUE_SIZE 128
 #if RUN_USART_1_TEST
 COMMON static TaskHandle_t USART_1_task_ID = NULL;
 #endif
@@ -41,6 +45,12 @@ COMMON static TaskHandle_t USART_1_task_ID = NULL;
  */
 void USART_1_Init (void)
 {
+  if (UART1_Rx_Queue == NULL)
+    {
+      UART1_Rx_Queue =  xQueueCreate(UART1_RX_QUEUE_SIZE, sizeof(uint8_t));
+    }
+  ASSERT(UART1_Rx_Queue);
+
   GPIO_InitTypeDef GPIO_InitStruct = { 0 };
   __HAL_RCC_USART1_CLK_ENABLE();
 
@@ -71,13 +81,13 @@ void USART_1_Init (void)
       ASSERT(0);
     }
 
-    HAL_NVIC_SetPriority (DMA2_Stream7_IRQn, STANDARD_ISR_PRIORITY, 0);
-    HAL_NVIC_EnableIRQ (DMA2_Stream7_IRQn);
+  HAL_NVIC_SetPriority (DMA2_Stream7_IRQn, STANDARD_ISR_PRIORITY, 0);
+  HAL_NVIC_EnableIRQ (DMA2_Stream7_IRQn);
 
   __HAL_LINKDMA(&huart1, hdmatx, hdma_USART_1_TX);
 
-    HAL_NVIC_SetPriority (USART1_IRQn, STANDARD_ISR_PRIORITY, 0);
-    HAL_NVIC_EnableIRQ (USART1_IRQn);
+  HAL_NVIC_SetPriority (USART1_IRQn, STANDARD_ISR_PRIORITY, 0);
+  HAL_NVIC_EnableIRQ (USART1_IRQn);
 
   huart1.Instance = USART1;
 
@@ -92,11 +102,32 @@ void USART_1_Init (void)
     {
       ASSERT(0);
     }
+
+  HAL_UART_Receive_IT(&huart1, &uart1_rx_byte, 1); // Activate interrupt for reception
 }
 
 void USART_1_transmit_DMA( uint8_t *pData, uint16_t Size)
 {
   HAL_UART_Transmit_DMA (&huart1, pData, Size);
+}
+
+bool UART1_Receive(uint8_t *pRxByte, uint32_t timeout)
+{
+  BaseType_t queue_status = pdFALSE;
+  if (NULL == UART1_Rx_Queue)
+    {
+      return false; // Return false if not initialized
+    }
+
+  queue_status = xQueueReceive(UART1_Rx_Queue, pRxByte, timeout);
+  if(pdTRUE == queue_status)
+    {
+      return true;
+    }
+  else
+    {
+      return false;
+    }
 }
 
 /**
@@ -106,6 +137,20 @@ extern "C" void USART1_IRQHandler (void)
 {
   HAL_UART_IRQHandler (&huart1);
 }
+
+void UART1_RxCpltCallback(void)
+{
+  BaseType_t xHigherPriorityTaskWokenByPost = pdFALSE;
+  BaseType_t queue_status;
+
+  /*Get Byte and enable interrupt again*/
+  queue_status = xQueueSendFromISR(UART1_Rx_Queue, &uart1_rx_byte, &xHigherPriorityTaskWokenByPost);
+  HAL_UART_Receive_IT(&huart1, &uart1_rx_byte, 1);
+  ASSERT(pdTRUE == queue_status);
+
+  portYIELD_FROM_ISR(xHigherPriorityTaskWokenByPost);
+}
+
 
 /**
  * @brief This function handles DMA1 stream6 channel 4 global interrupt.
@@ -136,8 +181,8 @@ void USART_1_runnable (void*)
       BaseType_t notify_result;
       volatile HAL_StatusTypeDef result;
 
-     result = HAL_UART_Transmit_DMA (&huart1, (uint8_t *)"Hello\r\n", 7);
-//   result = HAL_UART_Transmit_IT (&huart1, (uint8_t *)"Hello\r\n", 7);
+      result = HAL_UART_Transmit_DMA (&huart1, (uint8_t *)"Hello\r\n", 7);
+      //   result = HAL_UART_Transmit_IT (&huart1, (uint8_t *)"Hello\r\n", 7);
       ASSERT( result == HAL_OK);
 
       notify_result = xTaskNotifyWait( 0xffffffff, 0, &pulNotificationValue, INFINITE_WAIT);
