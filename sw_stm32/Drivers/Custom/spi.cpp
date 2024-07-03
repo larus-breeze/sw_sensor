@@ -34,7 +34,7 @@ extern DMA_HandleTypeDef hdma_spi2_tx;
 COMMON  static TaskHandle_t SPI1_task_Id = NULL;
 COMMON  static TaskHandle_t SPI2_task_Id = NULL;
 
-static inline void register_SPI_usertask(SPI_HandleTypeDef *hspi)
+void register_SPI_usertask(SPI_HandleTypeDef *hspi)
 {
 	if (hspi->Instance == SPI1)
 		SPI1_task_Id = xTaskGetCurrentTaskHandle();
@@ -88,8 +88,11 @@ void HAL_SPI_CpltCallback(SPI_HandleTypeDef *hspi)
 	}
 	else if (hspi->Instance == SPI2)
 	{
-		ASSERT( SPI2_task_Id);
-		vTaskNotifyGiveFromISR( SPI2_task_Id, &HigherPriorityTaskWoken);
+		ASSERT( SPI2_task_Id !=0);
+
+		BaseType_t xYieldRequired = pdFALSE;;
+		xTaskNotifyFromISR( SPI2_task_Id, 1, eSetValueWithOverwrite, &xYieldRequired);
+		portEND_SWITCHING_ISR(xYieldRequired);
 	}
 	else
 	{
@@ -108,6 +111,16 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 	HAL_SPI_CpltCallback( hspi);
 }
 
+void HAL_SPI_RxHalfCpltCallback(SPI_HandleTypeDef *hspi)
+{
+	if (hspi->Instance != SPI2)
+	  return;
+
+	BaseType_t xYieldRequired = pdFALSE;;
+	ASSERT( SPI2_task_Id !=0);
+	xTaskNotifyFromISR( SPI2_task_Id, 0, eSetValueWithOverwrite, &xYieldRequired);
+	portEND_SWITCHING_ISR(xYieldRequired);
+}
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {

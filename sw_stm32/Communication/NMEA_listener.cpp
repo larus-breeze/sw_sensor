@@ -34,6 +34,12 @@
 #define MAX_LEN 40
 COMMON char rxNMEASentence[MAX_LEN];
 COMMON int PLARScnt = 0;
+COMMON Queue <CANpacket> MC_et_al_queue(2);
+
+bool CAN_gateway_poll( CANpacket &p, unsigned max_wait)
+   {
+      return MC_et_al_queue.receive( p, max_wait);
+   }
 
 void NMEA_listener_task_runnable( void *)
 {
@@ -82,7 +88,7 @@ void NMEA_listener_task_runnable( void *)
 			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_MC;
 			  can_packet.data_h[1] = 0;
 			  can_packet.data_f[1] = value;
-			  CAN_send(can_packet, portMAX_DELAY); //TODO: I wan't an asyn function "Fire and Forget!
+			  MC_et_al_queue.send( can_packet, portMAX_DELAY);
 			}
 		      else if (strncmp(rxNMEASentence,"$PLARS,H,BAL,",13) == 0)
 			{
@@ -91,7 +97,7 @@ void NMEA_listener_task_runnable( void *)
 			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_BALLAST;
 			  can_packet.data_h[1] = 0;
 			  can_packet.data_f[1] = value;
-			  CAN_send(can_packet, portMAX_DELAY);
+			  MC_et_al_queue.send( can_packet, portMAX_DELAY);
 			}
 		      else if (strncmp(rxNMEASentence,"$PLARS,H,BUGS,",14) == 0)
 			{
@@ -100,7 +106,7 @@ void NMEA_listener_task_runnable( void *)
 			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_BUGS;
 			  can_packet.data_h[1] = 0;
 			  can_packet.data_f[1] = value;
-			  CAN_send(can_packet, portMAX_DELAY);
+			  MC_et_al_queue.send( can_packet, portMAX_DELAY);
 			}
 		      else if (strncmp(rxNMEASentence,"$PLARS,H,QNH,",13) == 0)
 			{
@@ -109,7 +115,7 @@ void NMEA_listener_task_runnable( void *)
 			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_QNH;
 			  can_packet.data_h[1] = 0;
 			  can_packet.data_f[1] = value;
-			  CAN_send(can_packet, portMAX_DELAY);
+			  MC_et_al_queue.send( can_packet, portMAX_DELAY);
 			}
 		    }
 		  i = 0;
