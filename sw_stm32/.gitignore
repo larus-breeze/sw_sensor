@@ -1,2 +1,4 @@
 ./larus_sensor_V2_image.bin
 ./.metadata/
+/.metadata/
+/debug/

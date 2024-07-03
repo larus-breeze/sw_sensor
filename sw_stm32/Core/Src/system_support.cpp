@@ -107,7 +107,21 @@ uint64_t getTime_usec_privileged(void)
   return time + present_systick;
 }
 
-extern "C" BaseType_t xPortRaisePrivilege( void );
+inline BaseType_t xPortRaisePrivilege( void ) /* FREERTOS_SYSTEM_CALL */
+{
+BaseType_t xRunningPrivileged;
+
+	/* Check whether the processor is already privileged. */
+	xRunningPrivileged = portIS_PRIVILEGED();
+
+	/* If the processor is not already privileged, raise privilege. */
+	if( xRunningPrivileged != pdTRUE )
+	{
+		portRAISE_PRIVILEGE();
+	}
+
+	return xRunningPrivileged;
+}
 
 typedef int ( *FPTR)( void *); // declare void* -> int function pointer
 int call_function_privileged( void * parameters, FPTR function)

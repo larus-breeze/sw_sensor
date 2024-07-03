@@ -65,7 +65,7 @@
 
 #define USBD_VID     1155
 #define USBD_LANGID_STRING     1033
-#define USBD_MANUFACTURER_STRING     "Albatros Electronics"
+#define USBD_MANUFACTURER_STRING     "Larus Project"
 #define USBD_PID_FS     22336
 #define USBD_PRODUCT_STRING_FS     "ACM Virtual ComPort"
 #define USBD_CONFIGURATION_STRING_FS     "CDC Config"
