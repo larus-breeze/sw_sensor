@@ -93,12 +93,15 @@ static void runnable (void* data)
     {
       NMEA_buf.length = 0; // start at the beginning of the buffer
       format_NMEA_string_fast( output_data, NMEA_buf, horizon_available);
+#if FAST_NMEA_POSITION_OUTPUT
+      format_NMEA_string_slow( output_data, NMEA_buf);
+#else
       if( --decimating_counter == 0)
 	{
 	  decimating_counter = NMEA_DECIMATION_RATIO;
 	  format_NMEA_string_slow( output_data, NMEA_buf);
 	}
-
+#endif
       //Check if there is a CAN Message received which needs to be replayed via a Larus NMEA PLARS Sentence.
       float32_t value;
       char *next = NMEA_buf.string + NMEA_buf.length;
