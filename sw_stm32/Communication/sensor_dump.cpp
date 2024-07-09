@@ -142,6 +142,9 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s=append_string( s, "Sats: ");
   s = format_2_digits( s, (float32_t)(output_data.c.SATS_number));
 
+  s=append_string( s, "Speed-Accuracy: ");
+  s = to_ascii_2_decimals( 100.0f * (float32_t)(output_data.c.speed_acc), s);
+
   s=append_string( s, " GNSS time: ");
   s = format_2_digits( s, output_data.c.hour);
   *s ++ = ':';
