@@ -171,7 +171,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = to_ascii_1_decimal( RAD_2_DEGREES_10 * heading, s);
 
   s=append_string( s, " Inclination = ");
-  s = to_ascii_2_decimals( RAD_2_DEGREES_10 * inclination_decimator.get_output(), s);
+  s = to_ascii_1_decimal( RAD_2_DEGREES_10 * inclination_decimator.get_output(), s);
 
   s=append_string( s, " MagAnomaly = ");
   s = to_ascii_2_decimals( output_data.magnetic_disturbance * 10000.0f, s);
@@ -189,7 +189,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
       s = to_ascii_1_decimal( RAD_2_DEGREES_10 * output_data.c.relPosHeading, s);
     }
   else
-    s=append_string( s, "No D-GNSS");
+    s=append_string( s, "No D-GNSS-fix");
 
   newline( s);
 
