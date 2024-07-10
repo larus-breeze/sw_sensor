@@ -24,6 +24,7 @@
   *
   ******************************************************************************
   */
+#include "git-commit-version.h"
     
   .syntax unified
   .cpu cortex-m4
@@ -229,7 +230,8 @@ g_pfnVectors:
   .word     0                                 /* CRYP crypto                  */                   
   .word     HASH_RNG_IRQHandler               /* Hash and Rng                 */
   .word     FPU_IRQHandler                    /* FPU                          */
-                         
+
+  .ascii	GIT_COMMIT_HASH
                          
 /*******************************************************************************
 *
