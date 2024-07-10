@@ -10,12 +10,11 @@
 #include "stm32f4xx_hal_cortex.h"
 #include "stm32f4xx_hal_spi.h"
 #include "spi.h"
+#include "communicator.h"
 #include "microphone.h"
 #include "embedded_math.h"
 
 #if RUN_MICROPHONE
-
-COMMON Queue <uint8_t *> mic_data_pointer_Q(1);
 
 ROM int8_t bit_count_table[] =
 {
@@ -120,8 +119,6 @@ void resample( uint8_t * bytes, int8_t * samples, unsigned output_bytecount)
 
 uint64_t getTime_usec(void);
 
-COMMON float ac_power;
-
 static void runnable (void*)
 {
   configure_SPI_interface ();
@@ -195,11 +192,8 @@ static void runnable (void*)
       // summa summarum ...
       if( samples_pointer >= audio_samples[double_buffer_index] + SAMPLE_BUFSIZE)
 	{
-	  bool success = mic_data_pointer_Q.send((uint8_t *)&audio_samples[double_buffer_index], 1);
-	  ASSERT( success);
-
 	  // this scaling delivers ac_power = 13.0 @ 94dB
-	  ac_power   = (qsum * SAMPLE_BUFSIZE - sum * sum) / ((float)SAMPLE_BUFSIZE * SAMPLE_BUFSIZE);
+	  output_data.sound_intensity  = (qsum * SAMPLE_BUFSIZE - sum * sum) / ((float)SAMPLE_BUFSIZE * SAMPLE_BUFSIZE);
 	  sum = 0;
 	  qsum = 0;
 

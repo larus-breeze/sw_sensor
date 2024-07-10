@@ -37,7 +37,6 @@
 #include "uSD_handler.h"
 #include "watchdog_handler.h"
 #include "magnetic_induction_report.h"
-#include "microphone.h"
 #include "SHA256.h"
 
 ROM uint8_t SHA_INITIALIZATION[] = "presently a well-known string";
@@ -634,9 +633,6 @@ restart:
 
   char out_filename[30];
 
-#if RECORD_AUDIO_SAMPLES
-  append_string( out_filename, "audio.byte");
-#else
   // wait until a GNSS timestamp is available.
   while (output_data.c.sat_fix_type == 0)
     {
@@ -652,8 +648,7 @@ restart:
 
   *next++ = '.';
   *next++  = 'f';
-  next = format_2_digits( next, (sizeof(coordinates_t) + sizeof(measurement_data_t)) / sizeof(float));
-#endif
+  next = format_2_digits( next, sizeof(observations_type) / sizeof(float));
 
   fresult = f_open (&the_file, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)
@@ -670,20 +665,13 @@ restart:
 
   while( true) // logger loop synchronized by communicator
     {
-#if RECORD_AUDIO_SAMPLES
-      uint8_t * audio_data_ptr;
-      mic_data_pointer_Q.receive( audio_data_ptr);
-      memcpy (buf_ptr, audio_data_ptr, SAMPLE_BUFSIZE);
-      buf_ptr += SAMPLE_BUFSIZE;
-#else
       notify_take (true); // wait for synchronization by from communicator OR crash detection
 
       if( crashfile)
 	write_crash_dump();
 
-      memcpy (buf_ptr, (uint8_t*) &output_data.m, sizeof(measurement_data_t)+sizeof(coordinates_t));
-      buf_ptr += sizeof(measurement_data_t)+sizeof(coordinates_t);
-#endif
+      memcpy (buf_ptr, (uint8_t*) &output_data.m, sizeof(observations_type));
+      buf_ptr += sizeof(observations_type);
 
       if (buf_ptr < mem_buffer + MEM_BUFSIZE)
 	continue; // buffer only filled partially
@@ -741,11 +729,7 @@ static TaskParameters_t p =
     {
       { COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
       { (void *)0x80f8000, 0x8000, portMPU_REGION_READ_WRITE },
-#if RECORD_AUDIO_SAMPLES
-      { audio_samples, sizeof(audio_samples), portMPU_REGION_READ_ONLY}
-#else
       { 0, 0, 0}
-#endif
       } 
     };
 
