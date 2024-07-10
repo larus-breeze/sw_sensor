@@ -37,10 +37,10 @@
 #include "sensor_dump.h"
 #include "uSD_handler.h"
 
-COMMON string_buffer_t NMEA_buf;
+COMMON string_buffer_t __ALIGNED( sizeof(string_buffer_t)) NMEA_buf;
 extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c
 
-static void runnable (void* data)
+static void NMEA_runnable (void* data)
 {
   delay( NMEA_START_DELAY);
 
@@ -141,5 +141,19 @@ static void runnable (void* data)
     }
 }
 
-COMMON RestrictedTask NMEA_task( runnable, "NMEA", 256, 0, (NMEA_USB_PRIORITY) | portPRIVILEGE_BIT);
+static TaskParameters_t p =
+  {
+      NMEA_runnable,
+      "NMEA",
+      256, 0,
+      NMEA_USB_PRIORITY | portPRIVILEGE_BIT,
+      0,
+      {
+	{ COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
+	{ (void *)&NMEA_buf, sizeof(NMEA_buf), portMPU_REGION_READ_WRITE },
+	{ 0, 0, 0 }
+      }
+   };
+
+COMMON RestrictedTask NMEA_task( p);
 
