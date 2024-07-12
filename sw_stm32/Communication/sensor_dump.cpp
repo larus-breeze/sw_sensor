@@ -142,7 +142,10 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s=append_string( s, "Sats: ");
   s = format_2_digits( s, (float32_t)(output_data.c.SATS_number));
 
-  s=append_string( s, " GNSS time: ");
+  s=append_string( s, " Speed-Accuracy = ");
+  s = to_ascii_2_decimals( 100.0f * (float32_t)(output_data.c.speed_acc), s);
+
+  s=append_string( s, "m/s, GNSS time: ");
   s = format_2_digits( s, output_data.c.hour);
   *s ++ = ':';
   s = format_2_digits( s, output_data.c.minute);
@@ -157,7 +160,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
       *s++=' ';
     }
 
-  s=append_string( s, " Strength: ");
+  s=append_string( s, " Strength = ");
   s = to_ascii_2_decimals( 100.0f * output_data.nav_induction_gnss.abs(), s);
   newline( s);
 
@@ -168,10 +171,11 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
   s = to_ascii_1_decimal( RAD_2_DEGREES_10 * heading, s);
 
   s=append_string( s, " Inclination = ");
-  s = to_ascii_2_decimals( RAD_2_DEGREES_10 * inclination_decimator.get_output(), s);
+  s = to_ascii_1_decimal( RAD_2_DEGREES_10 * inclination_decimator.get_output(), s);
 
-  s=append_string( s, " MagAnomaly / % = ");
+  s=append_string( s, " MagAnomaly = ");
   s = to_ascii_2_decimals( output_data.magnetic_disturbance * 10000.0f, s);
+  *s++ = '%';
   newline( s);
 
   if( output_data.c.sat_fix_type == (SAT_FIX | SAT_HEADING))
@@ -185,7 +189,7 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
       s = to_ascii_1_decimal( RAD_2_DEGREES_10 * output_data.c.relPosHeading, s);
     }
   else
-    s=append_string( s, "No D-GNSS");
+    s=append_string( s, "No D-GNSS-fix");
 
   newline( s);
 
@@ -211,7 +215,6 @@ void format_sensor_dump( const output_data_t &output_data, string_buffer_t &NMEA
       format_PLARV ( vario, 0.0f, 0.0f, 0.0f, s);
     }
   newline( s);
-  *s = 0;
   NMEA_buf.length = s - NMEA_buf.string;
 }
 

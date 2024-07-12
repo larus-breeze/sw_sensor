@@ -631,6 +631,8 @@ restart:
 	  write_crash_dump();
 	}
 
+  char out_filename[30];
+
   // wait until a GNSS timestamp is available.
   while (output_data.c.sat_fix_type == 0)
     {
@@ -638,9 +640,7 @@ restart:
 	write_crash_dump();
       delay (100);
     }
-
   // generate filename based on timestamp
-  char out_filename[30];
   char * next = append_string( out_filename, "logger/");
   next = format_date_time( next);
 
@@ -648,7 +648,7 @@ restart:
 
   *next++ = '.';
   *next++  = 'f';
-  next = format_2_digits( next, (sizeof(coordinates_t) + sizeof(measurement_data_t)) / sizeof(float));
+  next = format_2_digits( next, sizeof(observations_type) / sizeof(float));
 
   fresult = f_open (&the_file, out_filename, FA_CREATE_ALWAYS | FA_WRITE);
   if (fresult != FR_OK)
@@ -670,8 +670,8 @@ restart:
       if( crashfile)
 	write_crash_dump();
 
-      memcpy (buf_ptr, (uint8_t*) &output_data.m, sizeof(measurement_data_t)+sizeof(coordinates_t));
-      buf_ptr += sizeof(measurement_data_t)+sizeof(coordinates_t);
+      memcpy (buf_ptr, (uint8_t*) &output_data.m, sizeof(observations_type));
+      buf_ptr += sizeof(observations_type);
 
       if (buf_ptr < mem_buffer + MEM_BUFSIZE)
 	continue; // buffer only filled partially
@@ -729,7 +729,7 @@ static TaskParameters_t p =
     {
       { COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
       { (void *)0x80f8000, 0x8000, portMPU_REGION_READ_WRITE },
-      { 0, 0, 0 } 
+      { 0, 0, 0}
       } 
     };
 

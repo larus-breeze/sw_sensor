@@ -73,7 +73,7 @@ void heartbeat(void);
 #define L3GD20_INT1_GPIO_Port GPIOB
 #define L3GD20_INT2_Pin GPIO_PIN_1
 #define L3GD20_INT2_GPIO_Port GPIOB
-#define SPI2_NSS_Pin GPIO_PIN_12
+#define SPI2_NSS_Pin GPIO_PIN_4
 #define SPI2_NSS_GPIO_Port GPIOB
 #define MTi_1IMU_PSEL0_Pin GPIO_PIN_10
 #define MTi_1IMU_PSEL0_GPIO_Port GPIOD

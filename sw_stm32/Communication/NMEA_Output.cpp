@@ -37,10 +37,10 @@
 #include "sensor_dump.h"
 #include "uSD_handler.h"
 
-COMMON string_buffer_t NMEA_buf;
+COMMON string_buffer_t __ALIGNED( sizeof(string_buffer_t)) NMEA_buf;
 extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c
 
-static void runnable (void* data)
+static void NMEA_runnable (void* data)
 {
   delay( NMEA_START_DELAY);
 
@@ -93,12 +93,15 @@ static void runnable (void* data)
     {
       NMEA_buf.length = 0; // start at the beginning of the buffer
       format_NMEA_string_fast( output_data, NMEA_buf, horizon_available);
+#if FAST_NMEA_POSITION_OUTPUT
+      format_NMEA_string_slow( output_data, NMEA_buf);
+#else
       if( --decimating_counter == 0)
 	{
 	  decimating_counter = NMEA_DECIMATION_RATIO;
 	  format_NMEA_string_slow( output_data, NMEA_buf);
 	}
-
+#endif
       //Check if there is a CAN Message received which needs to be replayed via a Larus NMEA PLARS Sentence.
       float32_t value;
       char *next = NMEA_buf.string + NMEA_buf.length;
@@ -138,5 +141,19 @@ static void runnable (void* data)
     }
 }
 
-COMMON RestrictedTask NMEA_task( runnable, "NMEA", 256, 0, (NMEA_USB_PRIORITY) | portPRIVILEGE_BIT);
+static TaskParameters_t p =
+  {
+      NMEA_runnable,
+      "NMEA",
+      256, 0,
+      NMEA_USB_PRIORITY | portPRIVILEGE_BIT,
+      0,
+      {
+	{ COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
+	{ (void *)&NMEA_buf, sizeof(NMEA_buf), portMPU_REGION_READ_WRITE },
+	{ 0, 0, 0 }
+      }
+   };
+
+COMMON RestrictedTask NMEA_task( p);
 

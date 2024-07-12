@@ -46,6 +46,7 @@
 #define RUN_L3GD20 		0
 #define RUN_FXOS8700		0
 #define RUN_PITOT_MODULE 	1
+
 #define RUN_MICROPHONE		0
 
 #define RUN_CAN_TESTER		0
@@ -92,6 +93,7 @@
 
 #define NMEA_REPORTING_PERIOD	250 // period in clock ticks for NMEA output
 #define NMEA_DECIMATION_RATIO	6  // slow-down factor for the slow properties
+#define FAST_NMEA_POSITION_OUTPUT 0
 
 #define ACTIVATE_FPU_EXCEPTION_TRAP 1 // I want to be SET !
 #define SET_FPU_FLUSH_TO_ZERO	1
