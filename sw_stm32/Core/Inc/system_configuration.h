@@ -38,13 +38,9 @@
 #define ACTIVATE_USB_NMEA		1
 #define CAN_FORMAT_2021			1
 
-#define WITH_LOWCOST_SENSORS	0 // 1 for Larus MK1 with L3GD20 gyro and FXOS8700 acc + mag chips
-
 #define RUN_GNSS		1
 #define RUN_MTi_1_MODULE 	1
 #define RUN_MS5611_MODULE 	1
-#define RUN_L3GD20 		0
-#define RUN_FXOS8700		0
 #define RUN_PITOT_MODULE 	1
 
 #define RUN_MICROPHONE		0
