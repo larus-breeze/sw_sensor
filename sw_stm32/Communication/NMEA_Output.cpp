@@ -146,7 +146,7 @@ static TaskParameters_t p =
       NMEA_runnable,
       "NMEA",
       256, 0,
-      NMEA_USB_PRIORITY | portPRIVILEGE_BIT,
+      (NMEA_USB_PRIORITY) | portPRIVILEGE_BIT,
       0,
       {
 	{ COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
