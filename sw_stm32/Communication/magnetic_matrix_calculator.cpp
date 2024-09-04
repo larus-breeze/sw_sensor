@@ -23,7 +23,7 @@ static void magnetic_calculator_runnable ( void *)
       report_magnetic_calibration_has_changed( 0, '3');    }
 }
 
-#define STACKSIZE 512
+#define STACKSIZE 1024
 static uint32_t __ALIGNED(STACKSIZE*4) stack_buffer[STACKSIZE];
 
 static TaskParameters_t p =
