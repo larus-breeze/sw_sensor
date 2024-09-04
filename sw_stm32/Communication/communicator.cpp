@@ -59,8 +59,6 @@ void communicator_runnable (void*)
 {
   bool have_first_GNSS_fix = false;
 
-  unsigned down_counter_5_minutes = 5 * 600;
-
   // wait until configuration file read if one is given
   setup_file_handling_completed.wait();
 
@@ -206,11 +204,7 @@ void communicator_runnable (void*)
       --synchronizer_10Hz;
       if( synchronizer_10Hz == 0)
 	{
-	  landing_detected = organizer.update_every_100ms (output_data);
-
-	  --down_counter_5_minutes;
-	  landing_detected = ( down_counter_5_minutes == 0); // patch
-
+//	  landing_detected = organizer.update_every_100ms (output_data); patch
 	  synchronizer_10Hz = 10;
 	}
 
