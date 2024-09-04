@@ -21,7 +21,7 @@ static void magnetic_calculator_runnable ( void *)
       calculation_trigger.wait();
       compass_calibrator_3D.calculate();
       report_magnetic_calibration_has_changed( 0, '3');
-      delay(1000);
+      delay(1);
       assert(0);
     }
 }
