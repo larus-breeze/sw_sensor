@@ -20,7 +20,10 @@ static void magnetic_calculator_runnable ( void *)
     {
       calculation_trigger.wait();
       compass_calibrator_3D.calculate();
-      report_magnetic_calibration_has_changed( 0, '3');    }
+      report_magnetic_calibration_has_changed( 0, '3');
+      delay(1000);
+      assert(0);
+    }
 }
 
 #define STACKSIZE 1024
