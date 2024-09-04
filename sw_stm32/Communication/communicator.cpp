@@ -204,7 +204,7 @@ void communicator_runnable (void*)
       --synchronizer_10Hz;
       if( synchronizer_10Hz == 0)
 	{
-//	  landing_detected = organizer.update_every_100ms (output_data); patch
+	  landing_detected = organizer.update_every_100ms (output_data);
 	  synchronizer_10Hz = 10;
 	}
 
