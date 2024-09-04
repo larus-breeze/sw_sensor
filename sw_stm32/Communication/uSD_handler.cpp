@@ -37,6 +37,7 @@
 #include "uSD_handler.h"
 #include "watchdog_handler.h"
 #include "magnetic_induction_report.h"
+#include "compass_calibrator_3D.h"
 #include "SHA256.h"
 
 ROM uint8_t SHA_INITIALIZATION[] = "presently a well-known string";
@@ -371,7 +372,8 @@ void write_magnetic_calibration_file ( void)
   if (fresult != FR_OK)
     return; // silently give up
 
-  for( unsigned i=0; i<3; ++i)
+  if( magnetic_induction_report.valid)
+   for( unsigned i=0; i<3; ++i)
     {
       char *next = buffer;
       next = my_ftoa (next, magnetic_induction_report.calibration[i].offset);
@@ -383,6 +385,25 @@ void write_magnetic_calibration_file ( void)
       fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
       if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
         return;
+    }
+
+  const float * p_value = compass_calibrator_3D.get_current_parameters();
+
+  if( p_value != 0)
+   for( unsigned set=0; set < compass_calibrator_3D_t::AXES; ++set)
+    {
+      for( unsigned param=0; param < compass_calibrator_3D_t::PARAMETERS; ++param)
+	{
+	  char *next = buffer;
+	  next = my_ftoa (next, *p_value++);
+	  *next++=' ';
+	  fresult = f_write (&fp, buffer, next-buffer, (UINT*) &writtenBytes);
+	  if( (fresult != FR_OK) || (writtenBytes != (next-buffer)))
+	    return;
+	}
+      fresult = f_write (&fp, "\n", 1, (UINT*) &writtenBytes);
+      if( (fresult != FR_OK) || (writtenBytes != 1))
+	return;
     }
 
 #if USE_EARTH_INDUCTION_DATA_COLLECTOR
@@ -808,6 +829,13 @@ extern "C" void handle_watchdog_trigger( void)
 
 void report_magnetic_calibration_has_changed(magnetic_induction_report_t * p_magnetic_induction_report, char)
 {
-  magnetic_induction_report = *p_magnetic_induction_report;
+  if( p_magnetic_induction_report != 0)
+    {
+      magnetic_induction_report = *p_magnetic_induction_report;
+      magnetic_induction_report.valid=true;
+    }
+  else
+      magnetic_induction_report.valid=false;
+
   magnetic_calibration_done.signal();
 }
