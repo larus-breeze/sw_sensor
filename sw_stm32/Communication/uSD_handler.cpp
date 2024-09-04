@@ -80,6 +80,42 @@ char * format_date_time( char * target)
 
 extern RestrictedTask uSD_handler_task; // will come downwards ...
 
+void read_magnetic_3D_data( void)
+{
+  FIL the_file;
+  FRESULT fresult;
+  UINT bytes_read;
+
+  // try to open mag 3D calibration file
+  fresult = f_open (&the_file, (char *)"mag_3D_data.bin", FA_READ);
+  if( fresult != FR_OK)
+    return;
+
+  unsigned size = sizeof(float) * compass_calibrator_3D_t::AXES * compass_calibrator_3D_t::PARAMETERS;
+  fresult = f_read( &the_file, mem_buffer, size, &bytes_read);
+  if( (fresult != FR_OK) || (bytes_read  != size) )
+    compass_calibrator_3D.set_current_parameters( (const float *)mem_buffer);
+
+  f_close(&the_file);
+}
+
+void write_magnetic_3D_data( void)
+{
+  const void * data = compass_calibrator_3D.get_current_parameters();
+  if( data == 0)
+    return;
+
+  FRESULT fresult;
+  FIL fp;
+  UINT writtenBytes = 0;
+  fresult = f_open (&fp, "mag_3D_data.bin", FA_CREATE_ALWAYS | FA_WRITE);
+  if (fresult != FR_OK)
+    return;
+
+  fresult = f_write (&fp, data, sizeof(float) * compass_calibrator_3D_t::AXES * compass_calibrator_3D_t::PARAMETERS, &writtenBytes);
+  f_close(&fp);
+}
+
 //!< write crash dump file and force MPU reset via watchdog
 void write_crash_dump( void)
 {
@@ -642,6 +678,8 @@ restart:
 	}
     }
 
+  read_magnetic_3D_data(); // read 3D data if existent
+
   FILINFO filinfo;
   fresult = f_stat("logger", &filinfo);
   if( (fresult != FR_OK) || ((filinfo.fattrib & AM_DIR)==0))
@@ -727,15 +765,12 @@ restart:
 
 	  if( magnetic_calibration_done.wait( 0))
 	    write_magnetic_calibration_file ();
-#if 0 // will be used for the competition version
+
 	  if( landing_detected)
 	    {
 	      landing_detected = false;
-	      char buffer[30];
-	      format_date_time( buffer);
-	      write_EEPROM_dump( buffer); // write into FS root
+	      write_magnetic_3D_data();
 	    }
-#endif
 	}
     }
 }
