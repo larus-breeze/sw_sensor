@@ -37,7 +37,9 @@
 #include "uSD_handler.h"
 #include "watchdog_handler.h"
 #include "magnetic_induction_report.h"
+#if ACTIVATE_MAGNETIC_3D_MECHANIM
 #include "compass_calibrator_3D.h"
+#endif
 #include "SHA256.h"
 
 ROM uint8_t SHA_INITIALIZATION[] = "presently a well-known string";
@@ -80,6 +82,7 @@ char * format_date_time( char * target)
 
 extern RestrictedTask uSD_handler_task; // will come downwards ...
 
+#if ACTIVATE_MAGNETIC_3D_MECHANIM
 void read_magnetic_3D_data( void)
 {
   FIL the_file;
@@ -115,6 +118,7 @@ void write_magnetic_3D_data( void)
   fresult = f_write (&fp, data, sizeof(float) * compass_calibrator_3D_t::AXES * compass_calibrator_3D_t::PARAMETERS, &writtenBytes);
   f_close(&fp);
 }
+#endif
 
 //!< write crash dump file and force MPU reset via watchdog
 void write_crash_dump( void)
@@ -408,6 +412,7 @@ void write_magnetic_calibration_file ( void)
   if (fresult != FR_OK)
     return; // silently give up
 
+#if ACTIVATE_MAGNETIC_3D_MECHANIM
   if( magnetic_induction_report.valid)
    for( unsigned i=0; i<3; ++i)
     {
@@ -441,6 +446,7 @@ void write_magnetic_calibration_file ( void)
       if( (fresult != FR_OK) || (writtenBytes != 1))
 	return;
     }
+#endif
 
 #if USE_EARTH_INDUCTION_DATA_COLLECTOR
   next = buffer;
@@ -678,7 +684,9 @@ restart:
 	}
     }
 
+#if ACTIVATE_MAGNETIC_3D_MECHANIM
   read_magnetic_3D_data(); // read 3D data if existent
+#endif
 
   FILINFO filinfo;
   fresult = f_stat("logger", &filinfo);
@@ -769,7 +777,9 @@ restart:
 	  if( landing_detected)
 	    {
 	      landing_detected = false;
+#if ACTIVATE_MAGNETIC_3D_MECHANIM
 	      write_magnetic_3D_data();
+#endif
 	    }
 	}
     }
@@ -864,6 +874,8 @@ extern "C" void handle_watchdog_trigger( void)
 
 void report_magnetic_calibration_has_changed(magnetic_induction_report_t * p_magnetic_induction_report, char)
 {
+
+#if 0 // todo patch
   if( p_magnetic_induction_report != 0)
     {
       magnetic_induction_report = *p_magnetic_induction_report;
@@ -871,6 +883,7 @@ void report_magnetic_calibration_has_changed(magnetic_induction_report_t * p_mag
     }
   else
       magnetic_induction_report.valid=false;
+#endif
 
   magnetic_calibration_done.signal();
 }
