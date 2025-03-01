@@ -30,8 +30,8 @@
 #include "CAN_distributor.h"
 #include "NMEA_format.h"
 
-
 COMMON Queue<CANpacket> can_settings_packet_q(10,"CANDIS");
+COMMON Queue<CANpacket> can_x_imu_packet_q(10,"X_IMU");
 
 COMMON static float32_t latest_mc = 0.0, latest_bal = 0.0, latest_bugs = 0.0, latest_qnh = 0.0;
 COMMON static bool new_mc = false, new_bal = false, new_bugs = false, new_qnh = false;
@@ -77,45 +77,80 @@ bool get_qnh_updates(float32_t &value)
 }
 
 
-void CAN_listener_task_runnable( void *)
+void
+CAN_listener_task_runnable (void*)
 {
-  CAN_distributor_entry my_entry{ 0x040F, 0x0402, &can_settings_packet_q};   // Listen for "Set System Wide Config Item" on CAN
-  subscribe_CAN_messages(my_entry);
+  CAN_distributor_entry my_entry
+    { 0x040F, 0x0402, &can_settings_packet_q }; // Listen for "Set System Wide Config Item" on CAN
+  subscribe_CAN_messages (my_entry);
+
+  my_entry.ID_value = 0x118;
+  my_entry.ID_mask = 0x0fff & ~7;
+  my_entry.queue = &can_x_imu_packet_q;
+  subscribe_CAN_messages (my_entry);
 
   CANpacket p;
-  while( true)
+  while (true)
     {
-      can_settings_packet_q.receive(p);
-       switch (p.data_h[0])
-       {
-	 case SYSWIDECONFIG_ITEM_ID_MC:
-	   latest_mc = p.data_f[1];
-	   new_mc = true;
-	   break;
+      if (true == can_x_imu_packet_q.receive (p, 1000)) // => settings queue polled @1 Hz
+	switch (p.id)
+	  {
+	  case 0x118:
+	    output_data.extra.gyro[0] = p.data_f[0];
+	    output_data.extra.gyro[1] = p.data_f[1];
+	    break;
+	  case 0x119:
+	    output_data.extra.gyro[2] = p.data_f[0];
+	    break;
+	  case 0x11a:
+	    output_data.extra.acc[0] = p.data_f[0];
+	    output_data.extra.acc[1] = p.data_f[1];
+	    break;
+	  case 0x11b:
+	    output_data.extra.acc[2] = p.data_f[0];
+	    output_data.extra.temperature = p.data_f[1];
+	    break;
+	  case 0x11c:
+	    output_data.extra.mag[0] = p.data_f[0];
+	    output_data.extra.mag[1] = p.data_f[1];
+	    break;
+	  case 0x11d:
+	    output_data.extra.mag[2] = p.data_f[0];
+	    break;
+	  }
 
-	 case SYSWIDECONFIG_ITEM_ID_BALLAST:
-	   latest_bal = p.data_f[1];
-	   new_bal = true;
-           break;
+      if (true == can_settings_packet_q.receive (p, 0))
+	switch (p.data_h[0])
+	  {
+	  case SYSWIDECONFIG_ITEM_ID_MC:
+	    latest_mc = p.data_f[1];
+	    new_mc = true;
+	    break;
 
-	 case SYSWIDECONFIG_ITEM_ID_BUGS:
-	   latest_bugs = p.data_f[1];
-	   new_bugs = true;
-	   break;
+	  case SYSWIDECONFIG_ITEM_ID_BALLAST:
+	    latest_bal = p.data_f[1];
+	    new_bal = true;
+	    break;
 
-	case SYSWIDECONFIG_ITEM_ID_QNH:
-	  latest_qnh = p.data_f[1];
-	  new_qnh = true;
-	   break;
+	  case SYSWIDECONFIG_ITEM_ID_BUGS:
+	    latest_bugs = p.data_f[1];
+	    new_bugs = true;
+	    break;
 
-	default:
-	  //0: volume_vario, 5: pilot_weight, 6: vario_mode_control not supported by PLARS Sentence
-	  break;
-        }
+	  case SYSWIDECONFIG_ITEM_ID_QNH:
+	    latest_qnh = p.data_f[1];
+	    new_qnh = true;
+	    break;
+
+	  default:
+	    //0: volume_vario, 5: pilot_weight, 6: vario_mode_control not supported by PLARS Sentence
+	    break;
+	  }
 
     }
 }
-Task CAN_listener_task (CAN_listener_task_runnable, "CAN_IN");
+
+Task CAN_listener_task (CAN_listener_task_runnable, "CAN_RX");
 
 
 
