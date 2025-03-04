@@ -41,7 +41,7 @@
 #define ACTIVATE_MAGNETIC_3D_MECHANISM	0
 
 #define WITH_LOWCOST_SENSORS	0 // 1 for Larus MK1 with L3GD20 gyro and FXOS8700 acc + mag chips
-#define WITH_EXTERNAL_IMU	1
+#define WITH_EXTERNAL_IMU	0
 
 #define RUN_GNSS		1
 #define RUN_MTi_1_MODULE 	1
@@ -105,7 +105,6 @@
 
 #define NMEA_REPORTING_PERIOD	250 // period in clock ticks for NMEA output
 #define NMEA_DECIMATION_RATIO	6  // slow-down factor for the slow properties
-#define FAST_NMEA_POSITION_OUTPUT 0
 
 #define ACTIVATE_FPU_EXCEPTION_TRAP 1 // I want to be SET !
 #define SET_FPU_FLUSH_TO_ZERO	1

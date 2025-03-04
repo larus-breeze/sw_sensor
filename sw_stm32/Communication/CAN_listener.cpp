@@ -30,8 +30,7 @@
 #include "CAN_distributor.h"
 #include "NMEA_format.h"
 
-COMMON Queue<CANpacket> can_settings_packet_q(10,"CANDIS");
-COMMON Queue<CANpacket> can_x_imu_packet_q(10,"X_IMU");
+COMMON Queue<CANpacket> can_packet_q(10,"CAN_RX");
 
 COMMON static float32_t latest_mc = 0.0, latest_bal = 0.0, latest_bugs = 0.0, latest_qnh = 0.0;
 COMMON static bool new_mc = false, new_bal = false, new_bugs = false, new_qnh = false;
@@ -81,18 +80,20 @@ void
 CAN_listener_task_runnable (void*)
 {
   CAN_distributor_entry my_entry
-    { 0x040F, 0x0402, &can_settings_packet_q }; // Listen for "Set System Wide Config Item" on CAN
+    { 0x040F, 0x0402, &can_packet_q }; // Listen for "Set System Wide Config Item" on CAN
   subscribe_CAN_messages (my_entry);
 
   my_entry.ID_value = 0x118;
   my_entry.ID_mask = 0x0fff & ~7;
-  my_entry.queue = &can_x_imu_packet_q;
   subscribe_CAN_messages (my_entry);
 
   CANpacket p;
   while (true)
     {
-      if (true == can_x_imu_packet_q.receive (p, 1000)) // => settings queue polled @1 Hz
+      if (true == can_packet_q.receive(p))
+
+#if WITH_EXTERNAL_IMU
+
 	switch (p.id)
 	  {
 	  case 0x118:
@@ -119,8 +120,10 @@ CAN_listener_task_runnable (void*)
 	    break;
 	  }
 
-      if (true == can_settings_packet_q.receive (p, 0))
-	switch (p.data_h[0])
+#endif
+
+      if(( p.id & 0x40F) == 0x402)
+        switch (p.data_h[0])
 	  {
 	  case SYSWIDECONFIG_ITEM_ID_MC:
 	    latest_mc = p.data_f[1];
