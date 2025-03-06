@@ -104,7 +104,7 @@
 #define NMEA_START_DELAY	10000
 
 #define NMEA_REPORTING_PERIOD	250 // period in clock ticks for NMEA output
-#define NMEA_DECIMATION_RATIO	6  // slow-down factor for the slow properties
+#define NMEA_DECIMATION_RATIO	0  // slow-down factor for the slow properties
 
 #define ACTIVATE_FPU_EXCEPTION_TRAP 1 // I want to be SET !
 #define SET_FPU_FLUSH_TO_ZERO	1
