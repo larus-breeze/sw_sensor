@@ -278,7 +278,12 @@ void communicator_runnable (void*)
       ++GNSS_count;
       GNSS_count &= 0xff;
 
-      switch( GNSS_configuration)
+      if( vector_average_organizer.counter != 0)
+	{
+	  HAL_GPIO_WritePin ( LED_STATUS1_GPIO_Port, LED_STATUS1_Pin, GPIO_PIN_SET);
+	}
+      else
+       switch( GNSS_configuration)
       {
 	case GNSS_F9P_F9H:
 	case GNSS_F9P_F9P:
