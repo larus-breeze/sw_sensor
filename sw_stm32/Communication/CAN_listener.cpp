@@ -75,16 +75,23 @@ bool get_qnh_updates(float32_t &value)
   return false;
 }
 
+typedef struct
+{
+  float3vector acc_left;
+  float3vector acc_right;
+  float3vector acc_level;
+} sensor_rotation_data;;
 
 void
 CAN_listener_task_runnable (void*)
 {
+  sensor_rotation_data calibration_data={0};
   CAN_distributor_entry my_entry
     { 0x040F, 0x0402, &can_packet_q }; // Listen for "Set System Wide Config Item" on CAN
   subscribe_CAN_messages (my_entry);
 
-  my_entry.ID_value = 0x118;
-  my_entry.ID_mask = 0x0fff & ~7;
+  my_entry.ID_value = 0x320;
+  my_entry.ID_mask = 0x0fff;
   subscribe_CAN_messages (my_entry);
 
   CANpacket p;
@@ -143,6 +150,25 @@ CAN_listener_task_runnable (void*)
 	  case SYSWIDECONFIG_ITEM_ID_QNH:
 	    latest_qnh = p.data_f[1];
 	    new_qnh = true;
+	    break;
+	  }
+      if( p.id ==0x320)
+        switch (p.data_b[1] - 1) // audio volume minus 1 -> 1, 2, 3, 4 are relevant
+	  {
+	  case CMD_MEASURE_LEFT & 0x0f:
+	    communicator_command_queue.send( MEASURE_CALIB_LEFT, 1);
+	    break;
+
+	  case CMD_MEASURE_RIGHT & 0x0f:
+	    communicator_command_queue.send( MEASURE_CALIB_RIGHT, 1);
+	    break;
+
+	  case CMD_MEASURE_LEVEL & 0x0f:
+	    communicator_command_queue.send( MEASURE_CALIB_LEVEL, 1);
+	    break;
+
+	  case CMD_CALCULATE & 0x0f:
+	    communicator_command_queue.send( SET_SENSOR_ROTATION, 1);
 	    break;
 
 	  default:

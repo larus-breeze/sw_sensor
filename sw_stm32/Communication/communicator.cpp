@@ -39,6 +39,7 @@
 #include "uSD_handler.h"
 #include "compass_ground_calibration.h"
 #include "persistent_data.h"
+#include "communicator.h"
 #include "system_state.h"
 
 extern "C" void sync_logger (void);
@@ -48,6 +49,8 @@ COMMON Semaphore setup_file_handling_completed(1,0,(char *)"SETUP");
 COMMON output_data_t __ALIGNED(1024) output_data = { 0 };
 COMMON GNSS_type GNSS (output_data.c);
 
+COMMON Queue < communicator_command_t> communicator_command_queue(1);
+
 extern RestrictedTask NMEA_task;
 extern RestrictedTask communicator_task;
 extern bool landing_detected;
@@ -55,8 +58,19 @@ extern bool landing_detected;
 static ROM bool TRUE=true;
 static ROM bool FALSE=false;
 
+typedef struct
+{
+  float3vector * source;
+  float3vector * destination;
+  float3vector sum;
+  unsigned counter;
+} vector_average_organizer_t;
+
 void communicator_runnable (void*)
 {
+  vector_average_organizer_t vector_average_organizer={0};
+  vector_average_collection_t vector_average_collection={0};
+
   bool have_first_GNSS_fix = false;
 
   // wait until configuration file read if one is given
@@ -200,6 +214,58 @@ void communicator_runnable (void*)
 
       organizer.on_new_pressure_data(output_data);
       organizer.update_every_10ms(output_data);
+
+      // service external commands if any
+      communicator_command_t command;
+      if( communicator_command_queue.receive(command, 0))
+	{
+	  switch( command)
+	  {
+	    case MEASURE_CALIB_LEFT:
+	      vector_average_organizer.source=&(output_data.m.acc);
+	      vector_average_organizer.destination=&(vector_average_collection.acc_observed_left);
+	      vector_average_organizer.destination->zero();
+	      vector_average_organizer.counter=VECTOR_AVERAGE_COUNT;
+	      break;
+	    case MEASURE_CALIB_RIGHT:
+	      vector_average_organizer.source=&(output_data.m.acc);
+	      vector_average_organizer.destination=&(vector_average_collection.acc_observed_right);
+	      vector_average_organizer.destination->zero();
+	      vector_average_organizer.counter=VECTOR_AVERAGE_COUNT;
+	      break;
+	    case MEASURE_CALIB_LEVEL:
+	      vector_average_organizer.source=&(output_data.m.acc);
+	      vector_average_organizer.destination=&(vector_average_collection.acc_observed_level);
+	      vector_average_organizer.destination->zero();
+	      vector_average_organizer.counter=VECTOR_AVERAGE_COUNT;
+	      break;
+	    case SET_SENSOR_ROTATION:
+
+	      // make sure that we have all three measurements
+	      if( vector_average_collection.acc_observed_left.abs() < 0.001f)
+		break;
+	      if( vector_average_collection.acc_observed_right.abs() < 0.001f)
+		break;
+	      if( vector_average_collection.acc_observed_level.abs() < 0.001f)
+		break;
+
+	      organizer.update_sensor_orientation_data( vector_average_collection);
+	      break;
+	  }
+	}
+
+      if( vector_average_organizer.counter != 0)
+	{
+	  vector_average_organizer.sum += *(vector_average_organizer.source);
+	  -- vector_average_organizer.counter;
+
+	  // if measurement complete now
+	  if( vector_average_organizer.counter == 0)
+	    {
+	      float inverse_count = 1.0f / VECTOR_AVERAGE_COUNT;
+	      *(vector_average_organizer.destination) = vector_average_organizer.sum * inverse_count;
+	    }
+	}
 
       --synchronizer_10Hz;
       if( synchronizer_10Hz == 0)
