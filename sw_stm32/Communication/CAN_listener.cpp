@@ -98,13 +98,11 @@ CAN_listener_task_runnable (void*)
     { 0x040F, 0x0402, &can_packet_q }; // Listen for "Set System Wide Config Item" on CAN
   subscribe_CAN_messages (my_entry);
 
-  my_entry.ID_value = 0x118;
+#if WITH_EXTERNAL_IMU
+  my_entry.ID_value = 0x160;
   my_entry.ID_mask = 0x0ff0;
   subscribe_CAN_messages (my_entry);
-
-  my_entry.ID_value = 0x320;
-  my_entry.ID_mask = 0x0fff;
-  subscribe_CAN_messages (my_entry);
+#endif
 
   CANpacket p;
   while (true)
@@ -159,24 +157,25 @@ CAN_listener_task_runnable (void*)
 	    latest_qnh = p.data_f[1];
 	    new_qnh = true;
 	    break;
-	  }
-      if( p.id ==0x320)
-        switch (p.data_b[1] - 1) // audio volume minus 1 -> 1, 2, 3, 4 are relevant
-	  {
-	  case CMD_MEASURE_LEFT & 0x0f:
+
+	  case CMD_MEASURE_LEFT:
 	    communicator_command_queue.send( MEASURE_CALIB_LEFT, 1);
 	    break;
 
-	  case CMD_MEASURE_RIGHT & 0x0f:
+	  case CMD_MEASURE_RIGHT:
 	    communicator_command_queue.send( MEASURE_CALIB_RIGHT, 1);
 	    break;
 
-	  case CMD_MEASURE_LEVEL & 0x0f:
+	  case CMD_MEASURE_LEVEL:
 	    communicator_command_queue.send( MEASURE_CALIB_LEVEL, 1);
 	    break;
 
-	  case CMD_CALCULATE & 0x0f:
+	  case CMD_CALCULATE:
 	    communicator_command_queue.send( SET_SENSOR_ROTATION, 1);
+	    break;
+
+	  case CMD_TUNE:
+	    communicator_command_queue.send( FINE_TUNE_CALIB, 1);
 	    break;
 
 	  default:

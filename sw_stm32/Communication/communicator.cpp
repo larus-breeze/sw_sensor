@@ -251,6 +251,8 @@ void communicator_runnable (void*)
 
 	      organizer.update_sensor_orientation_data( vector_average_collection);
 	      break;
+
+	    case FINE_TUNE_CALIB: // todo implement me !
 	    case NO_COMMAND:
 	      break;
 	  }

@@ -32,7 +32,8 @@ typedef enum
   MEASURE_CALIB_LEFT,
   MEASURE_CALIB_RIGHT,
   MEASURE_CALIB_LEVEL,
-  SET_SENSOR_ROTATION
+  SET_SENSOR_ROTATION,
+  FINE_TUNE_CALIB
 } communicator_command_t;
 
 extern output_data_t output_data;
