@@ -251,6 +251,8 @@ void communicator_runnable (void*)
 
 	      organizer.update_sensor_orientation_data( vector_average_collection);
 	      break;
+	    case NO_COMMAND:
+	      break;
 	  }
 	}
 

@@ -30,9 +30,10 @@
 #include "CAN_distributor.h"
 #include "NMEA_format.h"
 
-#define ACC_SCALE 2.39215e-3f
-#define GYRO_SCALE 0.000076358f
-#define MAG_SCALE 1.22e-4f;
+#define XTRA_ACC_SCALE 2.39215e-3f
+#define XTRA_GYRO_SCALE 0.000076358f
+#define XTRA_MAG_SCALE 1.22e-4f;
+
 inline float TEMP_CONVERSION( int16_t x)
 {
   return ((float)x / 256.0f + 25.0f);
@@ -115,20 +116,20 @@ CAN_listener_task_runnable (void*)
 	switch (p.id)
 	  {
 	  case 0x118:
-	    output_data.extra.acc[0] = p.data_sh[0] * ACC_SCALE;
-	    output_data.extra.acc[1] = p.data_sh[1] * ACC_SCALE;
-	    output_data.extra.acc[2] = p.data_sh[2] * ACC_SCALE;
+	    output_data.extra.acc[0] = p.data_sh[0] * XTRA_ACC_SCALE;
+	    output_data.extra.acc[1] = p.data_sh[1] * XTRA_ACC_SCALE;
+	    output_data.extra.acc[2] = p.data_sh[2] * XTRA_ACC_SCALE;
 	    output_data.extra.temperature = TEMP_CONVERSION( p.data_sh[3]);
 	    break;
 	  case 0x119:
-	    output_data.extra.gyro[0] = p.data_sh[0] * GYRO_SCALE;
-	    output_data.extra.gyro[1] = p.data_sh[1] * GYRO_SCALE;
-	    output_data.extra.gyro[2] = p.data_sh[2] * GYRO_SCALE;
+	    output_data.extra.gyro[0] = p.data_sh[0] * XTRA_GYRO_SCALE;
+	    output_data.extra.gyro[1] = p.data_sh[1] * XTRA_GYRO_SCALE;
+	    output_data.extra.gyro[2] = p.data_sh[2] * XTRA_GYRO_SCALE;
 	    break;
 	  case 0x11a:
-	    output_data.extra.mag[0] = p.data_sh[0] * MAG_SCALE;
-	    output_data.extra.mag[1] = p.data_sh[1] * MAG_SCALE;
-	    output_data.extra.mag[2] = p.data_sh[2] * MAG_SCALE;
+	    output_data.extra.mag[0] = p.data_sh[0] * XTRA_MAG_SCALE;
+	    output_data.extra.mag[1] = p.data_sh[1] * XTRA_MAG_SCALE;
+	    output_data.extra.mag[2] = p.data_sh[2] * XTRA_MAG_SCALE;
 	    break;
 	  default:
 	    break;
