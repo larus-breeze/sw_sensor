@@ -30,6 +30,14 @@
 #include "CAN_distributor.h"
 #include "NMEA_format.h"
 
+#define ACC_SCALE 2.39215e-3f
+#define GYRO_SCALE 0.000076358f
+#define MAG_SCALE 1.22e-4f;
+inline float TEMP_CONVERSION( int16_t x)
+{
+  return ((float)x / 256.0f + 25.0f);
+}
+
 COMMON Queue<CANpacket> can_packet_q(10,"CAN_RX");
 
 COMMON static float32_t latest_mc = 0.0, latest_bal = 0.0, latest_bugs = 0.0, latest_qnh = 0.0;
@@ -85,9 +93,12 @@ typedef struct
 void
 CAN_listener_task_runnable (void*)
 {
-  sensor_rotation_data calibration_data={0};
   CAN_distributor_entry my_entry
     { 0x040F, 0x0402, &can_packet_q }; // Listen for "Set System Wide Config Item" on CAN
+  subscribe_CAN_messages (my_entry);
+
+  my_entry.ID_value = 0x118;
+  my_entry.ID_mask = 0x0ff0;
   subscribe_CAN_messages (my_entry);
 
   my_entry.ID_value = 0x320;
@@ -104,26 +115,22 @@ CAN_listener_task_runnable (void*)
 	switch (p.id)
 	  {
 	  case 0x118:
-	    output_data.extra.gyro[0] = p.data_f[0];
-	    output_data.extra.gyro[1] = p.data_f[1];
+	    output_data.extra.acc[0] = p.data_sh[0] * ACC_SCALE;
+	    output_data.extra.acc[1] = p.data_sh[1] * ACC_SCALE;
+	    output_data.extra.acc[2] = p.data_sh[2] * ACC_SCALE;
+	    output_data.extra.temperature = TEMP_CONVERSION( p.data_sh[3]);
 	    break;
 	  case 0x119:
-	    output_data.extra.gyro[2] = p.data_f[0];
+	    output_data.extra.gyro[0] = p.data_sh[0] * GYRO_SCALE;
+	    output_data.extra.gyro[1] = p.data_sh[1] * GYRO_SCALE;
+	    output_data.extra.gyro[2] = p.data_sh[2] * GYRO_SCALE;
 	    break;
 	  case 0x11a:
-	    output_data.extra.acc[0] = p.data_f[0];
-	    output_data.extra.acc[1] = p.data_f[1];
+	    output_data.extra.mag[0] = p.data_sh[0] * MAG_SCALE;
+	    output_data.extra.mag[1] = p.data_sh[1] * MAG_SCALE;
+	    output_data.extra.mag[2] = p.data_sh[2] * MAG_SCALE;
 	    break;
-	  case 0x11b:
-	    output_data.extra.acc[2] = p.data_f[0];
-	    output_data.extra.temperature = p.data_f[1];
-	    break;
-	  case 0x11c:
-	    output_data.extra.mag[0] = p.data_f[0];
-	    output_data.extra.mag[1] = p.data_f[1];
-	    break;
-	  case 0x11d:
-	    output_data.extra.mag[2] = p.data_f[0];
+	  default:
 	    break;
 	  }
 
@@ -179,7 +186,7 @@ CAN_listener_task_runnable (void*)
     }
 }
 
-Task CAN_listener_task (CAN_listener_task_runnable, "CAN_RX");
+RestrictedTask CAN_listener_task ( CAN_listener_task_runnable, "CAN_RX", 256, 0, CAN_PRIORITY);
 
 
 
