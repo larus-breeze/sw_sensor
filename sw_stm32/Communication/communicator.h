@@ -33,7 +33,8 @@ typedef enum
   MEASURE_CALIB_RIGHT,
   MEASURE_CALIB_LEVEL,
   SET_SENSOR_ROTATION,
-  FINE_TUNE_CALIB
+  FINE_TUNE_CALIB,
+  SOME_EEPROM_VALUE_HAS_CHANGED
 } communicator_command_t;
 
 extern output_data_t output_data;

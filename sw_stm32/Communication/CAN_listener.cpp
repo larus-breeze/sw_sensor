@@ -30,6 +30,62 @@
 #include "CAN_distributor.h"
 #include "NMEA_format.h"
 
+#define CAN_Id_Send_Config_Value 0x12f
+
+ROM EEPROM_PARAMETER_ID parameter_list[] =
+    {
+	SENS_TILT_ROLL,
+	SENS_TILT_PITCH,
+	SENS_TILT_YAW,
+	PITOT_OFFSET,
+	PITOT_SPAN,
+	QNH_OFFSET,
+	MAG_AUTO_CALIB,
+	VARIO_TC,
+	VARIO_INT_TC,
+	WIND_TC,
+	MEAN_WIND_TC,
+	GNSS_CONFIGURATION,
+	ANT_BASELENGTH,
+	ANT_SLAVE_DOWN,
+	ANT_SLAVE_RIGHT
+    };
+
+#define PARAMETER_LIST_LENGTH (sizeof( parameter_list) / sizeof(EEPROM_PARAMETER_ID))
+#define PARAMETER_OFFSET 0x2000
+
+//! read or write EEPROM value
+//! @return true if value read successfully
+bool EEPROM_config_read_write( uint64_t CAN_data, float & return_value)
+{
+  uint16_t command = (uint16_t)CAN_data; // keep lower 16 bits only
+
+  if(( command < PARAMETER_OFFSET) || (command > ( PARAMETER_OFFSET + PARAMETER_LIST_LENGTH)))
+    return false; // nothing for us ...
+
+  EEPROM_PARAMETER_ID id = parameter_list[ command - PARAMETER_OFFSET];
+
+  switch( CAN_data & 0xff0000)
+  {
+    case 0: // get value, return true on success
+      return ( read_EEPROM_value( id, return_value) == false);
+
+    case 1: // set value
+      {
+	float value = (float)(CAN_data >> 32);
+	  lock_EEPROM( false);
+	(void) write_EEPROM_value( id, value); // no way to report errors here ...
+	  lock_EEPROM( true);
+	  communicator_command_queue.send( SOME_EEPROM_VALUE_HAS_CHANGED, 100);
+	return false; // report "nothing read"
+      }
+      break;
+
+    default:
+      return false;// error, ignore request !
+  }
+}
+
 #define XTRA_ACC_SCALE 2.39215e-3f
 #define XTRA_GYRO_SCALE 0.000076358f
 #define XTRA_MAG_SCALE 1.22e-4f;
@@ -84,13 +140,6 @@ bool get_qnh_updates(float32_t &value)
   return false;
 }
 
-typedef struct
-{
-  float3vector acc_left;
-  float3vector acc_right;
-  float3vector acc_level;
-} sensor_rotation_data;;
-
 void
 CAN_listener_task_runnable (void*)
 {
@@ -107,7 +156,7 @@ CAN_listener_task_runnable (void*)
   CANpacket p;
   while (true)
     {
-      if (true == can_packet_q.receive(p))
+      can_packet_q.receive(p);
 
 #if WITH_EXTERNAL_IMU
 
@@ -135,7 +184,7 @@ CAN_listener_task_runnable (void*)
 
 #endif
 
-      if(( p.id & 0x40F) == 0x402)
+      if(( p.id & 0x40F) == 0x402) // = "set system wide config item"
         switch (p.data_h[0])
 	  {
 	  case SYSWIDECONFIG_ITEM_ID_MC:
@@ -178,15 +227,37 @@ CAN_listener_task_runnable (void*)
 	    communicator_command_queue.send( FINE_TUNE_CALIB, 1);
 	    break;
 
-	  default:
-	    //0: volume_vario, 5: pilot_weight, 6: vario_mode_control not supported by PLARS Sentence
+	  default: // try to interpret the command as "set" or "get" value
+	    float value;
+	    bool read_successful = EEPROM_config_read_write( p.data_l, value);
+	    if( read_successful)
+	      {
+		CANpacket txp( CAN_Id_Send_Config_Value, 8);
+		txp.data_w[0] = p.data_h[0]; // the ID we have received
+		txp.data_f[1] = value;
+		CAN_send( txp, 1);
+	      }
 	    break;
 	  }
-
     }
 }
 
-RestrictedTask CAN_listener_task ( CAN_listener_task_runnable, "CAN_RX", 256, 0, CAN_PRIORITY);
+static ROM TaskParameters_t p =
+  {
+      CAN_listener_task_runnable,
+      "CAN_RX",
+      256,
+      0,
+      CAN_PRIORITY,
+      0,
+    {
+      { COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
+      { (void *)0x80f8000, 0x8000, portMPU_REGION_READ_WRITE }, // EEPROM
+      { 0, 0, 0 }
+    }
+  };
+
+COMMON RestrictedTask CAN_listener_task (p);
 
 
 

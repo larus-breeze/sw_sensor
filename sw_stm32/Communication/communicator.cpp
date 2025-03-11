@@ -77,6 +77,9 @@ void communicator_runnable (void*)
   setup_file_handling_completed.wait();
 
   organizer_t organizer;
+
+restart_data_acquisition: // start from the beginning with new configuration
+
   organizer.initialize_before_measurement();
 
   uint16_t GNSS_count = 0;
@@ -250,6 +253,10 @@ void communicator_runnable (void*)
 		break;
 
 	      organizer.update_sensor_orientation_data( vector_average_collection);
+	      break;
+
+	    case SOME_EEPROM_VALUE_HAS_CHANGED:
+		goto restart_data_acquisition;
 	      break;
 
 	    case FINE_TUNE_CALIB: // todo implement me !
