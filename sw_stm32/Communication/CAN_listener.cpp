@@ -60,7 +60,7 @@ bool EEPROM_config_read_write( uint64_t CAN_data, float & return_value)
 {
   uint16_t command = (uint16_t)CAN_data; // keep lower 16 bits only
 
-  if(( command < PARAMETER_OFFSET) || (command > ( PARAMETER_OFFSET + PARAMETER_LIST_LENGTH)))
+  if(( command < PARAMETER_OFFSET) || (command >= ( PARAMETER_OFFSET + PARAMETER_LIST_LENGTH)))
     return false; // nothing for us ...
 
   EEPROM_PARAMETER_ID id = parameter_list[ command - PARAMETER_OFFSET];
