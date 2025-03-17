@@ -65,7 +65,7 @@ bool EEPROM_config_read_write( uint64_t CAN_data, float & return_value)
 
   EEPROM_PARAMETER_ID id = parameter_list[ command - PARAMETER_OFFSET];
 
-  switch( CAN_data & 0xff0000)
+  switch( (CAN_data >> 16) & 0xff)
   {
     case 0: // get value, return true on success
       return ( read_EEPROM_value( id, return_value) == false);
