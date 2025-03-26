@@ -68,11 +68,33 @@ bool EEPROM_config_read_write( uint64_t CAN_data, float & return_value)
   switch( (CAN_data >> 16) & 0xff)
   {
     case 0: // get value, return true on success
-      return ( read_EEPROM_value( id, return_value) == false);
+      {
+	if( read_EEPROM_value( id, return_value)) // if error
+	  return false;
+	switch( id)
+	{
+	  case SENS_TILT_ROLL: // angles need to be converted degrees->radiant
+	  case SENS_TILT_PITCH:
+	  case SENS_TILT_YAW:
+	    return_value *= M_PI / 180.0;
+	  default:
+	    break;
+	}
+	return true;
+      }
 
     case 1: // set value
       {
 	float value = (float)(CAN_data >> 32);
+	switch( id)
+	{
+	  case SENS_TILT_ROLL: // angles need to be converted radiant->degrees
+	  case SENS_TILT_PITCH:
+	  case SENS_TILT_YAW:
+	    value *= 180.0 / M_PI;
+	  default:
+	    break;
+	}
 	  lock_EEPROM( false);
 	(void) write_EEPROM_value( id, value); // no way to report errors here ...
 	  lock_EEPROM( true);
