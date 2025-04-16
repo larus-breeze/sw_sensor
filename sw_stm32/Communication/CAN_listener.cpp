@@ -56,16 +56,16 @@ ROM EEPROM_PARAMETER_ID parameter_list[] =
 
 //! read or write EEPROM value
 //! @return true if value read successfully
-bool EEPROM_config_read_write( uint64_t CAN_data, float & return_value)
+bool EEPROM_config_read_write( const CANpacket & p, float & return_value)
 {
-  uint16_t command = (uint16_t)CAN_data; // keep lower 16 bits only
+  uint16_t command = p.data_h[0];
 
   if(( command < PARAMETER_OFFSET) || (command >= ( PARAMETER_OFFSET + PARAMETER_LIST_LENGTH)))
     return false; // nothing for us ...
 
   EEPROM_PARAMETER_ID id = parameter_list[ command - PARAMETER_OFFSET];
 
-  switch( (CAN_data >> 16) & 0xff)
+  switch( p.data_b[2])
   {
     case 0: // get value, return true on success
       {
@@ -85,7 +85,7 @@ bool EEPROM_config_read_write( uint64_t CAN_data, float & return_value)
 
     case 1: // set value
       {
-	float value = (float)(CAN_data >> 32);
+	float value = p.data_f[1];
 	switch( id)
 	{
 	  case SENS_TILT_ROLL: // angles need to be converted radiant->degrees
@@ -251,7 +251,7 @@ CAN_listener_task_runnable (void*)
 
 	  default: // try to interpret the command as "set" or "get" value
 	    float value;
-	    bool read_successful = EEPROM_config_read_write( p.data_l, value);
+	    bool read_successful = EEPROM_config_read_write( p, value);
 	    if( read_successful)
 	      {
 		CANpacket txp( CAN_Id_Send_Config_Value, 8);
