@@ -408,11 +408,72 @@ void write_magnetic_calibration_file ( void)
 bool read_software_update(void)
 {
   FIL the_file;
+  FILINFO fno;
   FRESULT fresult;
   UINT bytes_read;
+  DIR dj;
+
+  uint32_t highest_sw_version_found = 0;
+  char highest_sw_version_fname[_MAX_LFN + 1];
+
+
+#define current_sw_version 0x00030000     //TODO:  this should be defined somewhere else but where?
+
   uint32_t flash_address = 0x80000;
   unsigned status;
   bool last_block_read = false;
+
+  // find all *.bin files which could be software update images
+  fresult = f_findfirst(&dj, &fno, "", "????*.bin");
+  if (fresult != FR_OK)
+    return false;
+
+  while(fresult == FR_OK){
+    // try to open the next image file
+    fresult = f_open (&the_file, (char *)&fno.fname[0], FA_READ);
+    if( fresult != FR_OK)
+      return false;
+
+    // read first block to check hardware and firmware version
+    fresult = f_read(&the_file, mem_buffer, MEM_BUFSIZE, &bytes_read);
+    if(fresult != FR_OK)
+      return false;
+    f_close(&the_file);
+
+    uint32_t file_hw_version = mem_buffer[23] | (mem_buffer[22] << 8) | (mem_buffer[21] << 16) | (mem_buffer[20] << 24);
+    uint64_t file_magic_number = 0;
+    for (int i =7; i>=0; i--){
+	file_magic_number <<=8;
+	file_magic_number |= (uint64_t) mem_buffer[i];
+    }
+
+    if ((file_hw_version == 0x01010100) && (file_magic_number == 0x1c8073ab20853579)){
+	// The files hw version is for the larus sensor and the larus magic number is correct.
+
+	uint32_t file_sw_version = mem_buffer[27] | (mem_buffer[26] << 8) | (mem_buffer[25] << 16) | (mem_buffer[24] << 24);
+	if (file_sw_version > highest_sw_version_found){
+
+	    // Search for the highest version and copy filename
+	    highest_sw_version_found = file_sw_version;
+	    for (int i = 0; i < _MAX_LFN; i++){
+		highest_sw_version_fname[i] = fno.fname[i];
+	    }
+	}
+    }
+
+    fresult = f_findnext(&dj, &fno);
+    if ((fresult != FR_OK) || (fno.fname[0] == 0)){
+       break; // now more files found, break loop-
+    }
+
+  }
+
+  if (highest_sw_version_found > current_sw_version){
+      fresult = f_open (&the_file, highest_sw_version_fname, FA_READ);
+      if( fresult != FR_OK)
+          return false;
+  }
+
 
   // try to open new software image file
   fresult = f_open (&the_file, (char *)"larus_sensor_V2_image.bin", FA_READ);
