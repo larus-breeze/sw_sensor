@@ -496,7 +496,7 @@ bool read_software_update(void)
       }
 
   if( image_is_equal)
-    return false;
+    return false;   //Seems to detect an equal image but why?
 
   status = HAL_FLASH_Unlock();
   if(status != HAL_OK)
