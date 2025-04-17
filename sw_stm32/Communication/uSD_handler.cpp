@@ -417,8 +417,6 @@ bool read_software_update(void)
   char highest_sw_version_fname[_MAX_LFN + 1];
 
 
-#define current_sw_version 0x00030000     //TODO:  this should be defined somewhere else but where?
-
   uint32_t flash_address = 0x80000;
   unsigned status;
   bool last_block_read = false;
@@ -468,17 +466,14 @@ bool read_software_update(void)
 
   }
 
-  if (highest_sw_version_found > current_sw_version){
-      fresult = f_open (&the_file, highest_sw_version_fname, FA_READ);
-      if( fresult != FR_OK)
-          return false;
+  if (highest_sw_version_found <= GIT_TAG_DEC){
+      return false; //The highest found image it nothing new, so finishing here
   }
 
-
   // try to open new software image file
-  fresult = f_open (&the_file, (char *)"larus_sensor_V2_image.bin", FA_READ);
-  if( fresult != FR_OK)
-    return false;
+  fresult = f_open (&the_file, highest_sw_version_fname, FA_READ);
+    if( fresult != FR_OK)
+          return false;
 
   // read first block
   fresult = f_read(&the_file, mem_buffer, MEM_BUFSIZE, &bytes_read);
