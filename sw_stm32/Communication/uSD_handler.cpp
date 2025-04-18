@@ -463,10 +463,9 @@ bool read_software_update(void)
     if ((fresult != FR_OK) || (fno.fname[0] == 0)){
        break; // now more files found, break loop-
     }
-
   }
 
-  if (highest_sw_version_found <= GIT_TAG_DEC){
+  if (highest_sw_version_found != GIT_TAG_DEC){
       return false; //The highest found image it nothing new, so finishing here
   }
 
@@ -496,7 +495,7 @@ bool read_software_update(void)
       }
 
   if( image_is_equal)
-    return false;   //Seems to detect an equal image but why?
+    return false;
 
   status = HAL_FLASH_Unlock();
   if(status != HAL_OK)
