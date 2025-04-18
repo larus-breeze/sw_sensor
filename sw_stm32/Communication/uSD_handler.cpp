@@ -644,7 +644,11 @@ restart:
   watchdog_activator.signal(); // now start the watchdog
 
   // read configuration file if it is present on the SD card
-  bool init_file_read = read_init_file();
+  bool init_file_read = read_init_file( "larus_sensor_config.ini");
+
+  // if it has been used: rename it to prevent overwriting something in the future
+  if( init_file_read)
+    f_rename ("larus_sensor_config.ini", "larus_sensor_config.ini.used");
 
   ensure_EEPROM_parameter_integrity();
   setup_file_handling_completed.signal();

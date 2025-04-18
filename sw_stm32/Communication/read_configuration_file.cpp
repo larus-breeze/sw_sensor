@@ -106,9 +106,9 @@ unsigned write_EEPROM_value_dummy( EEPROM_PARAMETER_ID identifier, float value)
 }
 #endif
 
-bool read_init_file(void)
+bool read_init_file( const char * filename)
 {
-  ASCII_file_reader file_reader((char *)"larus_sensor_config.ini");
+  ASCII_file_reader file_reader((char *)filename);
   if( file_reader.is_eof())
     return false;
 
