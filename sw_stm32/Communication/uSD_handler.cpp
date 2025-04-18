@@ -646,9 +646,6 @@ restart:
   // read configuration file if it is present on the SD card
   bool init_file_read = read_init_file();
 
-  if( ! init_file_read)
-    read_configuration_file(); // optionally: support old version
-
   ensure_EEPROM_parameter_integrity();
   setup_file_handling_completed.signal();
 
