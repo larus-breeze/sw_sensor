@@ -182,6 +182,7 @@
 
 #include "basic_math_functions.h"
 #include "fast_math_functions.h"
+#include "matrix_functions.h"
 
 #ifdef   __cplusplus
 extern "C"

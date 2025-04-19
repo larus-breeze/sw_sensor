@@ -71,7 +71,7 @@ static void NMEA_runnable (void* data)
       {
         decimate_sensor_observations( output_data);
         ++i;
-        if( i >=50)
+        if( i >=50) // => 2 Hz output rate
   	{
   	  i=0;
   	  format_sensor_dump( output_data, NMEA_buf);
@@ -93,7 +93,7 @@ static void NMEA_runnable (void* data)
     {
       NMEA_buf.length = 0; // start at the beginning of the buffer
       format_NMEA_string_fast( output_data, NMEA_buf, horizon_available);
-#if FAST_NMEA_POSITION_OUTPUT
+#if NMEA_DECIMATION_RATIO == 0
       format_NMEA_string_slow( output_data, NMEA_buf);
 #else
       if( --decimating_counter == 0)
@@ -146,7 +146,7 @@ static TaskParameters_t p =
       NMEA_runnable,
       "NMEA",
       256, 0,
-      NMEA_USB_PRIORITY | portPRIVILEGE_BIT,
+      (NMEA_USB_PRIORITY) | portPRIVILEGE_BIT,
       0,
       {
 	{ COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },

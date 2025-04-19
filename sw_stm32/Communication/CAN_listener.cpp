@@ -30,8 +30,94 @@
 #include "CAN_distributor.h"
 #include "NMEA_format.h"
 
+#define CAN_Id_Send_Config_Value 0x12f
 
-COMMON Queue<CANpacket> can_settings_packet_q(10,"CANDIS");
+ROM EEPROM_PARAMETER_ID parameter_list[] =
+    {
+	SENS_TILT_ROLL,
+	SENS_TILT_PITCH,
+	SENS_TILT_YAW,
+	PITOT_OFFSET,
+	PITOT_SPAN,
+	QNH_OFFSET,
+	MAG_AUTO_CALIB,
+	VARIO_TC,
+	VARIO_INT_TC,
+	WIND_TC,
+	MEAN_WIND_TC,
+	GNSS_CONFIGURATION,
+	ANT_BASELENGTH,
+	ANT_SLAVE_DOWN,
+	ANT_SLAVE_RIGHT
+    };
+
+#define PARAMETER_LIST_LENGTH (sizeof( parameter_list) / sizeof(EEPROM_PARAMETER_ID))
+#define PARAMETER_OFFSET 0x2000
+
+//! read or write EEPROM value
+//! @return true if value read successfully
+bool EEPROM_config_read_write( const CANpacket & p, float & return_value)
+{
+  uint16_t command = p.data_h[0];
+
+  if(( command < PARAMETER_OFFSET) || (command >= ( PARAMETER_OFFSET + PARAMETER_LIST_LENGTH)))
+    return false; // nothing for us ...
+
+  EEPROM_PARAMETER_ID id = parameter_list[ command - PARAMETER_OFFSET];
+
+  switch( p.data_b[2])
+  {
+    case 0: // get value, return true on success
+      {
+	if( read_EEPROM_value( id, return_value)) // if error
+	  return false;
+	switch( id)
+	{
+	  case SENS_TILT_ROLL: // angles need to be converted degrees->radiant
+	  case SENS_TILT_PITCH:
+	  case SENS_TILT_YAW:
+	    return_value *= M_PI / 180.0;
+	  default:
+	    break;
+	}
+	return true;
+      }
+
+    case 1: // set value
+      {
+	float value = p.data_f[1];
+	switch( id)
+	{
+	  case SENS_TILT_ROLL: // angles need to be converted radiant->degrees
+	  case SENS_TILT_PITCH:
+	  case SENS_TILT_YAW:
+	    value *= 180.0 / M_PI;
+	  default:
+	    break;
+	}
+	  lock_EEPROM( false);
+	(void) write_EEPROM_value( id, value); // no way to report errors here ...
+	  lock_EEPROM( true);
+	  communicator_command_queue.send( SOME_EEPROM_VALUE_HAS_CHANGED, 100);
+	return false; // report "nothing read"
+      }
+      break;
+
+    default:
+      return false;// error, ignore request !
+  }
+}
+
+#define XTRA_ACC_SCALE 2.39215e-3f
+#define XTRA_GYRO_SCALE 0.000076358f
+#define XTRA_MAG_SCALE 1.22e-4f;
+
+inline float TEMP_CONVERSION( int16_t x)
+{
+  return ((float)x / 256.0f + 25.0f);
+}
+
+COMMON Queue<CANpacket> can_packet_q(10,"CAN_RX");
 
 COMMON static float32_t latest_mc = 0.0, latest_bal = 0.0, latest_bugs = 0.0, latest_qnh = 0.0;
 COMMON static bool new_mc = false, new_bal = false, new_bugs = false, new_qnh = false;
@@ -76,46 +162,124 @@ bool get_qnh_updates(float32_t &value)
   return false;
 }
 
-
-void CAN_listener_task_runnable( void *)
+void
+CAN_listener_task_runnable (void*)
 {
-  CAN_distributor_entry my_entry{ 0x040F, 0x0402, &can_settings_packet_q};   // Listen for "Set System Wide Config Item" on CAN
-  subscribe_CAN_messages(my_entry);
+  CAN_distributor_entry my_entry
+    { 0x040F, 0x0402, &can_packet_q }; // Listen for "Set System Wide Config Item" on CAN
+  subscribe_CAN_messages (my_entry);
+
+#if WITH_EXTERNAL_IMU
+  my_entry.ID_value = 0x160;
+  my_entry.ID_mask = 0x0ff0;
+  subscribe_CAN_messages (my_entry);
+#endif
 
   CANpacket p;
-  while( true)
+  while (true)
     {
-      can_settings_packet_q.receive(p);
-       switch (p.data_h[0])
-       {
-	 case SYSWIDECONFIG_ITEM_ID_MC:
-	   latest_mc = p.data_f[1];
-	   new_mc = true;
-	   break;
+      can_packet_q.receive(p);
 
-	 case SYSWIDECONFIG_ITEM_ID_BALLAST:
-	   latest_bal = p.data_f[1];
-	   new_bal = true;
-           break;
+#if WITH_EXTERNAL_IMU
 
-	 case SYSWIDECONFIG_ITEM_ID_BUGS:
-	   latest_bugs = p.data_f[1];
-	   new_bugs = true;
-	   break;
+	switch (p.id)
+	  {
+	  case 0x118:
+	    output_data.extra.acc[0] = p.data_sh[0] * XTRA_ACC_SCALE;
+	    output_data.extra.acc[1] = p.data_sh[1] * XTRA_ACC_SCALE;
+	    output_data.extra.acc[2] = p.data_sh[2] * XTRA_ACC_SCALE;
+	    output_data.extra.temperature = TEMP_CONVERSION( p.data_sh[3]);
+	    break;
+	  case 0x119:
+	    output_data.extra.gyro[0] = p.data_sh[0] * XTRA_GYRO_SCALE;
+	    output_data.extra.gyro[1] = p.data_sh[1] * XTRA_GYRO_SCALE;
+	    output_data.extra.gyro[2] = p.data_sh[2] * XTRA_GYRO_SCALE;
+	    break;
+	  case 0x11a:
+	    output_data.extra.mag[0] = p.data_sh[0] * XTRA_MAG_SCALE;
+	    output_data.extra.mag[1] = p.data_sh[1] * XTRA_MAG_SCALE;
+	    output_data.extra.mag[2] = p.data_sh[2] * XTRA_MAG_SCALE;
+	    break;
+	  default:
+	    break;
+	  }
 
-	case SYSWIDECONFIG_ITEM_ID_QNH:
-	  latest_qnh = p.data_f[1];
-	  new_qnh = true;
-	   break;
+#endif
 
-	default:
-	  //0: volume_vario, 5: pilot_weight, 6: vario_mode_control not supported by PLARS Sentence
-	  break;
-        }
+      if(( p.id & 0x40F) == 0x402) // = "set system wide config item"
+        switch (p.data_h[0])
+	  {
+	  case SYSWIDECONFIG_ITEM_ID_MC:
+	    latest_mc = p.data_f[1];
+	    new_mc = true;
+	    break;
 
+	  case SYSWIDECONFIG_ITEM_ID_BALLAST:
+	    latest_bal = p.data_f[1];
+	    new_bal = true;
+	    break;
+
+	  case SYSWIDECONFIG_ITEM_ID_BUGS:
+	    latest_bugs = p.data_f[1];
+	    new_bugs = true;
+	    break;
+
+	  case SYSWIDECONFIG_ITEM_ID_QNH:
+	    latest_qnh = p.data_f[1];
+	    new_qnh = true;
+	    break;
+
+	  case CMD_MEASURE_LEFT:
+	    communicator_command_queue.send( MEASURE_CALIB_LEFT, 1);
+	    break;
+
+	  case CMD_MEASURE_RIGHT:
+	    communicator_command_queue.send( MEASURE_CALIB_RIGHT, 1);
+	    break;
+
+	  case CMD_MEASURE_LEVEL:
+	    communicator_command_queue.send( MEASURE_CALIB_LEVEL, 1);
+	    break;
+
+	  case CMD_CALCULATE:
+	    communicator_command_queue.send( SET_SENSOR_ROTATION, 1);
+	    break;
+
+	  case CMD_TUNE:
+	    communicator_command_queue.send( FINE_TUNE_CALIB, 1);
+	    break;
+
+	  default: // try to interpret the command as "set" or "get" value
+	    float value;
+	    bool read_successful = EEPROM_config_read_write( p, value);
+	    if( read_successful)
+	      {
+		CANpacket txp( CAN_Id_Send_Config_Value, 8);
+		txp.data_w[0] = p.data_h[0]; // the ID we have received
+		txp.data_f[1] = value;
+		CAN_send( txp, 1);
+	      }
+	    break;
+	  }
     }
 }
-Task CAN_listener_task (CAN_listener_task_runnable, "CAN_IN");
+
+static ROM TaskParameters_t p =
+  {
+      CAN_listener_task_runnable,
+      "CAN_RX",
+      256,
+      0,
+      CAN_PRIORITY,
+      0,
+    {
+      { COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
+      { (void *)0x80f8000, 0x8000, portMPU_REGION_READ_WRITE }, // EEPROM
+      { 0, 0, 0 }
+    }
+  };
+
+COMMON RestrictedTask CAN_listener_task (p);
 
 
 
