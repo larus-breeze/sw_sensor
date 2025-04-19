@@ -26,7 +26,19 @@
 
 #include "data_structures.h"
 
+typedef enum
+{
+  NO_COMMAND,
+  MEASURE_CALIB_LEFT,
+  MEASURE_CALIB_RIGHT,
+  MEASURE_CALIB_LEVEL,
+  SET_SENSOR_ROTATION,
+  FINE_TUNE_CALIB,
+  SOME_EEPROM_VALUE_HAS_CHANGED
+} communicator_command_t;
+
 extern output_data_t output_data;
 extern RestrictedTask communicator_task;
+extern Queue < communicator_command_t> communicator_command_queue;
 
 #endif /* COMMUNICATOR_H_ */
