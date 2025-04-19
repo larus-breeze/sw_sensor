@@ -69,10 +69,6 @@ void heartbeat(void);
 #define SUPPLY_SENSE_GPIO_Port GPIOC
 #define SPI1_NSS_Pin GPIO_PIN_4
 #define SPI1_NSS_GPIO_Port GPIOA
-#define L3GD20_INT1_Pin GPIO_PIN_0
-#define L3GD20_INT1_GPIO_Port GPIOB
-#define L3GD20_INT2_Pin GPIO_PIN_1
-#define L3GD20_INT2_GPIO_Port GPIOB
 #define SPI2_NSS_Pin GPIO_PIN_4
 #define SPI2_NSS_GPIO_Port GPIOB
 #define MTi_1IMU_PSEL0_Pin GPIO_PIN_10
@@ -85,10 +81,6 @@ void heartbeat(void);
 #define MTi_1IMU_NRST_GPIO_Port GPIOD
 #define GPS_RESETN_Pin GPIO_PIN_15
 #define GPS_RESETN_GPIO_Port GPIOD
-#define FXOS8700_INT1_Pin GPIO_PIN_8
-#define FXOS8700_INT1_GPIO_Port GPIOA
-#define FXOS8700_INT2_Pin GPIO_PIN_15
-#define FXOS8700_INT2_GPIO_Port GPIOA
 #define LED_STATUS1_Pin GPIO_PIN_3
 #define LED_STATUS1_GPIO_Port GPIOD
 #define LED_STATUS2_Pin GPIO_PIN_4
@@ -99,8 +91,6 @@ void heartbeat(void);
 #define LED_ERROR_GPIO_Port GPIOD
 #define BL_RESETB_Pin GPIO_PIN_7
 #define BL_RESETB_GPIO_Port GPIOD
-#define FXOS8700_RST_Pin GPIO_PIN_4
-#define FXOS8700_RST_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

@@ -488,8 +488,6 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOD, MTi_1IMU_PSEL0_Pin|MTi_1IMU_PSEL1_Pin|MTi_1IMU_NRST_Pin|GPS_RESETN_Pin
                           |LED_STATUS1_Pin|LED_STATUS2_Pin|LED_STATUS3_Pin|BL_RESETB_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(FXOS8700_RST_GPIO_Port, FXOS8700_RST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : SD_DETECT_Pin */
   GPIO_InitStruct.Pin = SD_DETECT_Pin;
@@ -504,11 +502,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(SPI1_NSS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : L3GD20_INT1_Pin L3GD20_INT2_Pin */
-  GPIO_InitStruct.Pin = L3GD20_INT1_Pin|L3GD20_INT2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : SPI2_NSS_Pin */
   GPIO_InitStruct.Pin = SPI2_NSS_Pin;
@@ -534,19 +527,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(MTi_1IMU_DRDY_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : FXOS8700_INT1_Pin FXOS8700_INT2_Pin */
-  GPIO_InitStruct.Pin = FXOS8700_INT1_Pin|FXOS8700_INT2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : FXOS8700_RST_Pin */
-  GPIO_InitStruct.Pin = FXOS8700_RST_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(FXOS8700_RST_GPIO_Port, &GPIO_InitStruct);
 
 }
 

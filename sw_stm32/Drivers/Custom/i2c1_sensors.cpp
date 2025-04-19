@@ -27,7 +27,6 @@
 #include "FreeRTOS_wrapper.h"
 #include "i2c.h"
 #include "common.h"
-#include "fxos8700cq.h"
 #include "communicator.h"
 #include "system_state.h"
 
@@ -50,23 +49,6 @@ restart:
   I2C_Init (&hi2c1);
   drop_privileges();
 
-#if RUN_FXOS8700
-	float xyz_acc[] = { 0, 0, 0 };
-	float xyz_mag[] = { 0, 0, 0 };
-
-	bool fxos8700_available = false;
-
-	uint32_t retries = 10;
-	while(retries--)
-	{
-		fxos8700_available = FXOS8700_Initialize(ACCEL_RANGE_4G);
-		if (true == fxos8700_available)
-		  {
-		  update_system_state_set( FXOS_SENSOR_AVAILABLE);
-		  break;
-		  }
-	}
-#endif
 #if RUN_PITOT_MODULE
   if (I2C_OK == I2C_Read (&hi2c1, I2C_ADDRESS, data, 2))
     update_system_state_set (PITOT_SENSOR_AVAILABLE);
@@ -89,24 +71,6 @@ restart:
 	  update_system_state_clear (PITOT_SENSOR_AVAILABLE);
 	  goto restart;
 	}
-#endif
-#if RUN_FXOS8700
-		if(true == fxos8700_available)  // Only read value if sensor is available
-		{
-			if (true == FXOS8700_get(xyz_acc, xyz_mag))
-			{
-				for (int i = 0; i < 3; i++)
-				{
-					output_data.m.lowcost_acc[i] = xyz_acc[i];
-					output_data.m.lowcost_mag[i] = xyz_mag[i];
-				}
-			}
-			else
-			{
-				//TODO: log Sensor read error.
-			}
-
-		}
 #endif
     }
 }
