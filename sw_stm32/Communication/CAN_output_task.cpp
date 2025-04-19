@@ -28,12 +28,22 @@
 
 void CAN_task_runnable( void *)
 {
-  delay(5000); // allow data acquisition setup
   bool horizon_available = configuration( HORIZON);
+  unsigned decimator_1_second=10;
+
+  delay(5000); // allow data acquisition setup
+
   while( true)
     {
-      notify_take();
+      notify_take(); // synchronize with data acquisition
       CAN_output( output_data, horizon_available);
+
+      --decimator_1_second;
+      if( decimator_1_second < 1)
+	{
+	  decimator_1_second=10;
+	  CAN_heartbeat();
+	}
     }
 }
 

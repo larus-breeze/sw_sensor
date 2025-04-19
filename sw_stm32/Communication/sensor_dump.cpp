@@ -49,7 +49,7 @@ void decimate_sensor_observations( const output_data_t &output_data)
   pabs_sum += (uint64_t)(output_data.m.static_pressure);
   ++samples;
   noise_energy += SQR( (uint64_t)(output_data.m.static_pressure + 0.5f) - pabs_sum / samples);
-  heading_decimator.respond( output_data.euler.y);
+  heading_decimator.respond( output_data.euler.yaw);
   voltage_decimator.respond( output_data.m.supply_voltage);
   inclination_decimator.respond( ATAN2( output_data.nav_induction_gnss[DOWN], output_data.nav_induction_gnss[NORTH]));
 }

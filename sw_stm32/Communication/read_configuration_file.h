@@ -25,7 +25,6 @@
 #ifndef SRC___READ_CONFIGURATION_FILE_H_
 #define SRC___READ_CONFIGURATION_FILE_H_
 
-void read_configuration_file(void);
-bool read_init_file(void);
+bool read_init_file( const char * filename);
 
 #endif /* SRC___READ_CONFIGURATION_FILE_H_ */
