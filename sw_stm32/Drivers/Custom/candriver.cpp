@@ -244,7 +244,7 @@ void CAN_reset_timer_callback( TimerHandle_t)
 
 bool CAN_send( const CANpacket &p, unsigned max_delay)
 {
-  CAN_driver.send(p, max_delay);
+  return CAN_driver.send(p, max_delay);
 }
 
 #if RUN_CAN_TESTER
