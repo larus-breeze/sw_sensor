@@ -36,6 +36,9 @@ COMMON UART_HandleTypeDef huart3;
 COMMON DMA_HandleTypeDef hdma_usart3_rx;
 COMMON  static TaskHandle_t USART3_task_Id = NULL;
 
+extern bool hil_simulation_mode;
+
+
 /**
  * @brief USART3 Initialization Function
  */
@@ -135,43 +138,51 @@ USART_3_runnable (void *using_DGNSS)
       start = getTime_usec_privileged();
 #endif
 
-      result = HAL_UART_Receive_DMA (&huart3, buffer, buffer_size);
-      if (result != HAL_OK)
+      if(!hil_simulation_mode)
 	{
+	  result = HAL_UART_Receive_DMA (&huart3, buffer, buffer_size);
+	  if (result != HAL_OK)
+	    {
+	      HAL_UART_Abort (&huart3);
+	      continue;
+	    }
+	  // wait for half transfer interrupt
+	  uint32_t pulNotificationValue;
+	  BaseType_t notify_result = xTaskNotifyWait(0xffffffff, 0xffffffff,
+						     &pulNotificationValue,
+						     DATA_PACKET_TIMEOUT_MS);
+	  if (notify_result != pdTRUE)
+	    {
+	      HAL_UART_Abort (&huart3);
+	      continue;
+	    }
+	  // wait for transfer complete interrupt
+	  notify_result = xTaskNotifyWait(0xffffffff, 0xffffffff,
+					  &pulNotificationValue,
+					  DATA_PACKET_TIMEOUT_MS);
+	  if (notify_result != pdTRUE)
+	    {
+	      HAL_UART_Abort (&huart3);
+	      continue;
+	    }
 	  HAL_UART_Abort (&huart3);
-	  continue;
-	}
-      // wait for half transfer interrupt
-      uint32_t pulNotificationValue;
-      BaseType_t notify_result = xTaskNotifyWait(0xffffffff, 0xffffffff,
-						 &pulNotificationValue,
-						 DATA_PACKET_TIMEOUT_MS);
-      if (notify_result != pdTRUE)
-	{
-	  HAL_UART_Abort (&huart3);
-	  continue;
-	}
-      // wait for transfer complete interrupt
-      notify_result = xTaskNotifyWait(0xffffffff, 0xffffffff,
-				      &pulNotificationValue,
-				      DATA_PACKET_TIMEOUT_MS);
-      if (notify_result != pdTRUE)
-	{
-	  HAL_UART_Abort (&huart3);
-	  continue;
-	}
-      HAL_UART_Abort (&huart3);
 
-      GNSS_Result result;
-      if (buffer_size == GPS_DMA_buffer_SIZE + GPS_RELPOS_DMA_buffer_SIZE)
-	result = GNSS.update_combined (buffer);
+	  GNSS_Result result;
+	  if (buffer_size == GPS_DMA_buffer_SIZE + GPS_RELPOS_DMA_buffer_SIZE)
+	    result = GNSS.update_combined (buffer);
+	  else
+	    result = GNSS.update (buffer);
+
+	  if (result == GNSS_ERROR)
+	    {
+	      HAL_UART_Abort (&huart3);
+	      delay (50);
+	    }
+
+	}
       else
-	result = GNSS.update (buffer);
-
-      if (result == GNSS_ERROR)
 	{
-	  HAL_UART_Abort (&huart3);
-	  delay (50);
+	  delay(100);
 	}
     }
 }

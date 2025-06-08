@@ -39,6 +39,8 @@
 #define SPAN 0.5261f
 #define OFFSET 1638 // exakt 0.1 * 16384
 
+extern bool hil_simulation_mode;
+
 static void runnable (void*)
 {
 restart:
@@ -55,8 +57,13 @@ restart:
 
   delay (10); // wait for "next measurement available"
 #endif
+
   for (synchronous_timer t (10); true; t.sync ())
     {
+
+      if(!hil_simulation_mode)
+        {
+
 #if RUN_PITOT_MODULE
       if ((I2C_OK == I2C_Read (&hi2c1, I2C_ADDRESS, data, 2)
 	  && (data[0] & 0xC0) == 0)) // no error flags read
@@ -73,6 +80,7 @@ restart:
 	}
 #endif
     }
+  }
 }
 
 RestrictedTask pitot_reading (runnable, "PITOT", 512, 0,

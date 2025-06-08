@@ -29,6 +29,9 @@
 
 extern ADC_HandleTypeDef hadc1;
 
+extern bool hil_simulation_mode;
+
+
 #define ITM_TRACE 0
 
 #define CONVERSION_FACTOR  (11.0f * 3.3f / 4096.0f)
@@ -51,6 +54,9 @@ void adc_measurement(void*)
 {
 	for(;;)
 	{
+	    if(!hil_simulation_mode)
+	    {
+
 		output_data.m.supply_voltage = get_supply_voltage();
 		delay(100);
 
@@ -65,6 +71,11 @@ void adc_measurement(void*)
 		ITM_SendChar('\r');
 		ITM_SendChar('\n');
 #endif
+	    }
+	    else
+	      {
+		delay(100);
+	      }
 	}
 }
 

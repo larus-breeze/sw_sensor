@@ -53,6 +53,9 @@ COMMON unsigned crashline;
 COMMON bool dump_sensor_readings;
 COMMON bool landing_detected;
 
+COMMON bool hil_simulation_mode = false;
+COMMON UINT number_of_byte_to_read_hil = 0;
+
 FATFS fatfs;
 extern SD_HandleTypeDef hsd;
 extern DMA_HandleTypeDef hdma_sdio_rx;
@@ -633,6 +636,40 @@ restart:
 
   UINT writtenBytes = 0;
   uint8_t *buf_ptr = mem_buffer;
+
+
+  fresult = f_open (&the_file, (char *)"hilsimulation.f37", FA_READ);
+  if (fresult == FR_OK)
+    {
+      hil_simulation_mode = true;
+    }
+
+
+  UINT bytes_read = 0;
+  number_of_byte_to_read_hil = 148;   /*Increase with debugger to loop forward*/
+
+  while(hil_simulation_mode == true)
+    {
+      notify_take (true); /*Loop every 10 ms*/
+      /*Read next f37 * 4 byte line*/
+      f_read(&the_file, mem_buffer, number_of_byte_to_read_hil, &bytes_read);
+
+      //if(bytes_read != number_of_byte_to_read_hil)
+      //{
+	//  hil_simulation_mode = false;
+	 // break;
+	//}
+
+      /* Store data to outputdata (do HIL simulation */
+      memcpy ((uint8_t*) &output_data.m, mem_buffer, sizeof(observations_type));
+    }
+
+
+
+
+
+
+
 
   fresult = f_open (&the_file, (char *)"sensor.readings", FA_READ);
   dump_sensor_readings = (fresult == FR_OK);

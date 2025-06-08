@@ -33,6 +33,8 @@
 
 #if RUN_MS5611_MODULE == 1
 
+extern bool hil_simulation_mode;
+
 void getPressure (void*)
 {
   delay (123); // de-synchronize task start
@@ -71,9 +73,11 @@ void getPressure (void*)
 
 	  if ( static_ms5611_available)
 	    {
-	      output_data.m.static_pressure = ms5611_static.get_pressure ();
-	      output_data.m.static_sensor_temperature =
-		  ms5611_static.get_temperature ();
+	      if(!hil_simulation_mode)
+		{
+		    output_data.m.static_pressure = ms5611_static.get_pressure ();
+		    output_data.m.static_sensor_temperature = ms5611_static.get_temperature ();
+		}
 	    }
 	}
     }

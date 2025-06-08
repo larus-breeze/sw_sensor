@@ -33,6 +33,10 @@ COMMON UART_HandleTypeDef huart4;
 COMMON DMA_HandleTypeDef hdma_uart4_rx;
 COMMON  static TaskHandle_t USART4_task_Id = NULL;
 
+
+extern bool hil_simulation_mode;
+
+
 /**
  * @brief USART4 Initialization Function
  */
@@ -104,35 +108,44 @@ void USART_4_runnable(void*)
   USART4_task_Id = xTaskGetCurrentTaskHandle();
   MX_USART4_UART_Init ();
   volatile HAL_StatusTypeDef result;
+
   while (true)
     {
-      result = HAL_UART_Receive_DMA (&huart4, buffer, DGNSS_DMA_buffer_SIZE);
-      if( result != HAL_OK)
-	{
-	  HAL_UART_Abort (&huart4);
-	  continue;
-	}
-      uint32_t pulNotificationValue;
-      BaseType_t notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 100);
-      if( notify_result != pdTRUE)
-	{
-	  HAL_UART_Abort (&huart4);
-	  continue;
-	}
-      notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 10);
-      if( notify_result != pdTRUE)
-	{
-	  HAL_UART_Abort (&huart4);
-	  continue;
-	}
-      HAL_UART_Abort (&huart4);
 
-      GNSS_Result result = GNSS.update_delta(buffer);
+      if(!hil_simulation_mode)
+	{
+	    result = HAL_UART_Receive_DMA (&huart4, buffer, DGNSS_DMA_buffer_SIZE);
+	    if( result != HAL_OK)
+	      {
+		HAL_UART_Abort (&huart4);
+		continue;
+	      }
+	    uint32_t pulNotificationValue;
+	    BaseType_t notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 100);
+	    if( notify_result != pdTRUE)
+	      {
+		HAL_UART_Abort (&huart4);
+		continue;
+	      }
+	    notify_result = xTaskNotifyWait( 0xffffffff, 0xffffffff, &pulNotificationValue, 10);
+	    if( notify_result != pdTRUE)
+	      {
+		HAL_UART_Abort (&huart4);
+		continue;
+	      }
+	    HAL_UART_Abort (&huart4);
 
-      if(  result == GNSS_HAVE_FIX)
-	update_system_state_set( D_GNSS_AVAILABLE);
+	    GNSS_Result result = GNSS.update_delta(buffer);
 
-      delay( 150); // uBlox sends every 200ms for 3ms
+	    if(  result == GNSS_HAVE_FIX)
+	      update_system_state_set( D_GNSS_AVAILABLE);
+
+	    delay( 150); // uBlox sends every 200ms for 3ms
+	}
+      else
+	{
+	  delay(150);
+	}
     }
 }
 

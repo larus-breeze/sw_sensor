@@ -50,6 +50,7 @@
 #define IMU_PORT   GPIOD
 
 COMMON Semaphore MTi_ready(1, 0, (char *)"MTi_RDY"); //!< ISR -> task synchronizing semaphore
+extern bool hil_simulation_mode;
 
 void sync_communicator (void);
 
@@ -129,26 +130,30 @@ readDataFrom_MTI (MtsspInterface *device, uint8_t *buf)
       if (buf[4] == 0x40 && buf[0x13] == 0x80 && buf[0x22] == 0xC0)
 	{
 	  float_word x;
-	  x.u = __REV (*(uint32_t*) (buf + 0x07 + 0));
-	  output_data.m.acc[0] = - x.f;
-	  x.u = __REV (*(uint32_t*) (buf + 0x07 + 4));
-	  output_data.m.acc[1] = x.f;
-	  x.u = __REV (*(uint32_t*) (buf + 0x07 + 8));
-	  output_data.m.acc[2] = - x.f;
 
-	  x.u = __REV (*(uint32_t*) (buf + 0x16 + 0));
-	  output_data.m.gyro[0] = isnormal(x.f) ? - x.f : 0.0f;
-	  x.u = __REV (*(uint32_t*) (buf + 0x16 + 4));
-	  output_data.m.gyro[1] = isnormal(x.f) ? x.f : 0.0f;
-	  x.u = __REV (*(uint32_t*) (buf + 0x16 + 8));
-	  output_data.m.gyro[2] = isnormal(x.f) ? - x.f : 0.0f;
+	  if(!hil_simulation_mode)
+	    {
+	      x.u = __REV (*(uint32_t*) (buf + 0x07 + 0));
+	      output_data.m.acc[0] = - x.f;
+	      x.u = __REV (*(uint32_t*) (buf + 0x07 + 4));
+	      output_data.m.acc[1] = x.f;
+	      x.u = __REV (*(uint32_t*) (buf + 0x07 + 8));
+	      output_data.m.acc[2] = - x.f;
 
-	  x.u = __REV (*(uint32_t*) (buf + 0x25 + 0));
-	  output_data.m.mag[0] = - x.f;
-	  x.u = __REV (*(uint32_t*) (buf + 0x25 + 4));
-	  output_data.m.mag[1] = x.f;
-	  x.u = __REV (*(uint32_t*) (buf + 0x25 + 8));
-	  output_data.m.mag[2] = - x.f;
+	      x.u = __REV (*(uint32_t*) (buf + 0x16 + 0));
+	      output_data.m.gyro[0] = isnormal(x.f) ? - x.f : 0.0f;
+	      x.u = __REV (*(uint32_t*) (buf + 0x16 + 4));
+	      output_data.m.gyro[1] = isnormal(x.f) ? x.f : 0.0f;
+	      x.u = __REV (*(uint32_t*) (buf + 0x16 + 8));
+	      output_data.m.gyro[2] = isnormal(x.f) ? - x.f : 0.0f;
+
+	      x.u = __REV (*(uint32_t*) (buf + 0x25 + 0));
+	      output_data.m.mag[0] = - x.f;
+	      x.u = __REV (*(uint32_t*) (buf + 0x25 + 4));
+	      output_data.m.mag[1] = x.f;
+	      x.u = __REV (*(uint32_t*) (buf + 0x25 + 8));
+	      output_data.m.mag[2] = - x.f;
+	    }
 	}
     }
 }
