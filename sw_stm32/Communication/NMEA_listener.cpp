@@ -97,6 +97,15 @@ void NMEA_listener_task_runnable( void *)
 			{
 			  ptr = &rxNMEASentence[14];
 			  value = my_atof(ptr);
+			  if(value < 0.0f)
+			    {
+			      value = 0;
+			    }
+			  if (value > 50.0f)
+			    {
+			      value = 50;
+			    }
+			  value = (value * 0.01f) + 1; //Scale to 1.0 ... 1.5
 			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_BUGS;
 			  can_packet.data_h[1] = 0;
 			  can_packet.data_f[1] = value;
