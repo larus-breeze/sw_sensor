@@ -206,11 +206,6 @@ CAN_listener_task_runnable (void*)
 	    new_mc = true;
 	    break;
 
-	  case SYSWIDECONFIG_ITEM_ID_BALLAST:
-	    latest_bal = p.data_f[1];
-	    new_bal = true;
-	    break;
-
 	  case SYSWIDECONFIG_ITEM_ID_BUGS:
 	    latest_bugs = p.data_f[1];
 	    new_bugs = true;
@@ -224,6 +219,11 @@ CAN_listener_task_runnable (void*)
 	  case SYSWIDECONFIG_ITEM_ID_VARIO_MODE:
 	    latest_vario_mode = (float)p.data_b[2];
 	    new_vario_mode = true;
+	    break;
+
+	  case SYSWIDECONFIG_ITEM_ID_BALLAST_FRACTION:
+	    latest_bal = p.data_f[1];
+	    new_bal = true;
 	    break;
 
 	  case CMD_MEASURE_LEFT:

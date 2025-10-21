@@ -88,7 +88,7 @@ void NMEA_listener_task_runnable( void *)
 			{
 			  ptr = &rxNMEASentence[13];
 			  value = my_atof(ptr);
-			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_BALLAST;
+			  can_packet.data_h[0] = SYSWIDECONFIG_ITEM_ID_BALLAST_FRACTION;
 			  can_packet.data_h[1] = 0;
 			  can_packet.data_f[1] = value;
 			  CAN_enqueue(can_packet, portMAX_DELAY);
