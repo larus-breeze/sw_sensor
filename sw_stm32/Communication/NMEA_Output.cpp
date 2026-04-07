@@ -98,8 +98,9 @@ re_initialize: // in case of USART hangup
       NMEA_buf.length = 0; // start at the beginning of the buffer
       format_NMEA_string_fast( state_vector, NMEA_buf, horizon_available);
 #if NMEA_DECIMATION_RATIO == 0
-      GNSS_data_guard.lock();
-      format_NMEA_string_slow( output_data, NMEA_buf);
+      bool ok = GNSS_data_guard.lock(100);
+      ASSERT( ok);
+      format_NMEA_string_slow( observations, coordinates, state_vector, NMEA_buf);
       GNSS_data_guard.release();
 #else
       if( --decimating_counter == 0)
