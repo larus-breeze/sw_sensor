@@ -29,7 +29,6 @@
 #include "embedded_memory.h"
 
 void sync_logger(void );
-void vTaskSuspend(uint32_t);
 
 COMMON register_dump_t register_dump;
 COMMON uint32_t FPU_register_dump[32];
@@ -41,7 +40,7 @@ void assert_failed( char * file, uint32_t line)
 {
   emergency_write_crashdump( file, line);
   while(1)
-    vTaskSuspend(0);
+    MPU_vTaskSuspend(0);
 }
 
 extern void finish_crash_handling(void);
@@ -268,6 +267,8 @@ void illegal_interrupt_vector_hook(void)
       " handler4u_address_const: .word analyze_fault_stack	       \n"
   );
 }
+
+void vTaskSuspend(uint32_t);
 
 void vApplicationReturnFromTaskProcedureHook( void)
 {
