@@ -36,6 +36,7 @@
 #include "system_state.h"
 #include "sensor_dump.h"
 #include "uSD_handler.h"
+#include "git-commit-version.h"
 
 COMMON string_buffer_t __ALIGNED( sizeof(string_buffer_t)) NMEA_buf;
 extern USBD_HandleTypeDef hUsbDeviceFS; // from usb_device.c
@@ -45,6 +46,7 @@ static void NMEA_runnable (void* data)
 {
   bool success;
   suspend(); // and wait until the communicator wakes us up
+  char fw_version[] = GIT_TAG_INFO;
 
   bool horizon_available = (system_state & HORIZON_NOT_AVAILABLE) == 0;
 
@@ -109,7 +111,7 @@ re_initialize: // in case of USART hangup
 	  decimating_counter = NMEA_DECIMATION_RATIO;
 	  bool ok = GNSS_data_guard.lock(100);
 	  ASSERT( ok);
-	  format_NMEA_string_slow( observations, coordinates, state_vector, NMEA_buf);
+	  format_NMEA_string_slow( observations, coordinates, state_vector, fw_version, NMEA_buf);
 	  GNSS_data_guard.release();
 	}
 #endif
