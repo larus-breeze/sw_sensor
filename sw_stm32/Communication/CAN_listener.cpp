@@ -61,6 +61,8 @@ ROM EEPROM_PARAMETER_ID parameter_list[] =
 #define PARAMETER_LIST_LENGTH (sizeof( parameter_list) / sizeof(EEPROM_PARAMETER_ID))
 #define PARAMETER_OFFSET 0x2000
 
+COMMON Queue< parameter_setting_message> parameter_setting_queue(3);
+
 //! read or write EEPROM value
 //! @return true if value read successfully
 bool EEPROM_config_read_write( const CANpacket & p, float & return_value)
@@ -137,62 +139,10 @@ inline float TEMP_CONVERSION( int16_t x)
 
 COMMON Queue<CANpacket> can_packet_q(10,"CAN_RX");
 
-COMMON static float32_t latest_mc = 0.0, latest_bal = 0.0, latest_bugs = 0.0, latest_qnh = 0.0, latest_vario_mode = 0.0;
-COMMON static bool new_mc = false, new_bal = false, new_bugs = false, new_qnh = false, new_vario_mode = false;
-
-bool get_mc_updates(float32_t &value)
-{
-  if(new_mc){
-      new_mc = false;
-      value = latest_mc;
-      return true;
-  }
-  return false;
-}
-
-bool get_bal_updates(float32_t &value)
-{
-  if (new_bal){
-      new_bal = false;
-      value = latest_bal;
-      return true;
-  }
-  return false;
-}
-
-bool get_bugs_updates(float32_t &value)
-{
-  if (new_bugs){
-       new_bugs = false;
-       value = latest_bugs;
-       return true;
-    }
-  return false;
-}
-
-bool get_qnh_updates(float32_t &value)
-{
-  if (new_qnh){
-       new_qnh = false;
-       value = latest_qnh;
-       return true;
-    }
-  return false;
-}
-
-bool get_vario_mode_updates(float32_t &value)
-{
-  if (new_vario_mode){
-      new_vario_mode = false;
-      value = latest_vario_mode;
-      return true;
-    }
-  return false;
-}
-
 void CAN_listener_task_runnable (void*)
 {
   TickType_t magnetometer_last_heard = 0;
+  parameter_setting_message message;
 
   CAN_distributor_entry my_entry
     { 0x040F, 0x0402, &can_packet_q }; // Listen for "Set System Wide Config Item" on CAN
@@ -220,32 +170,37 @@ void CAN_listener_task_runnable (void*)
 	      update_system_state_set (EXTERNAL_MAGNETOMETER_AVAILABLE);
 	      magnetometer_last_heard = xTaskGetTickCount ();
 	    }
-	  if ((p.id & 0x40F) == 0x402) // = "set system wide config item"
+	  else if ((p.id & 0x40F) == 0x402) // = "set system wide config item"
 	    switch (p.data_h[0])
 	      {
 	      case SYSWIDECONFIG_ITEM_ID_MC:
-		latest_mc = CLIP( p.data_f[1], 0.0f, 5.0f);
-		new_mc = true;
+		message.value = CLIP( p.data_f[1], 0.0f, 5.0f);
+		message.type = MC_CREADY;
+		parameter_setting_queue.send( message, 1);
 		break;
 
 	      case SYSWIDECONFIG_ITEM_ID_BUGS:
-		latest_bugs = p.data_f[1];
-		new_bugs = true;
+		message.value = p.data_f[1];
+		message.type = BUGS;
+		parameter_setting_queue.send( message, 1);
 		break;
 
 	      case SYSWIDECONFIG_ITEM_ID_QNH:
-		latest_qnh = CLIP( p.data_f[1], 87000.0f, 110000.0f);
-		new_qnh = true;
+		message.value = CLIP( p.data_f[1], 87000.0f, 110000.0f);
+		message.type = QNH;
+		parameter_setting_queue.send( message, 1);
 		break;
 
 	      case SYSWIDECONFIG_ITEM_ID_VARIO_MODE:
-		latest_vario_mode = (float) p.data_b[2];
-		new_vario_mode = true;
+		message.value = (float) (p.data_b[2]);
+		message.type = VARIO_MODE;
+		parameter_setting_queue.send( message, 1);
 		break;
 
 	      case SYSWIDECONFIG_ITEM_ID_BALLAST_FRACTION:
-		latest_bal = p.data_f[1];
-		new_bal = true;
+		message.value = (float) (p.data_f[1]);
+		message.type = BALLAST;
+		parameter_setting_queue.send( message, 1);
 		break;
 
 	      case CMD_MEASURE_LEFT:

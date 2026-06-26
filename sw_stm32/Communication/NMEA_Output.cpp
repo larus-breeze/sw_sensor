@@ -118,28 +118,14 @@ re_initialize: // in case of USART hangup
       //Check if there is a CAN Message received which needs to be replayed via a Larus NMEA PLARS Sentence.
       float32_t value;
       char *next = NMEA_buf.string + NMEA_buf.length;
-      if (get_mc_updates(value))
-      {
-	  format_PLARS(value, MC, next);
-      }
-      if (get_bal_updates(value))
-      {
-	  format_PLARS(value, BAL, next);
-      }
-      if (get_bugs_updates(value))
-      {
-	  format_PLARS(value, BUGS, next);
-      }
-      if (get_qnh_updates(value))
-      {
-	  format_PLARS(value, QNH, next);
-      }
-      if (get_vario_mode_updates(value))
-      {
-	  format_PLARS(value, CIR, next);  //value is converted from CAN to NMEA definition within.
-      }
-      NMEA_buf.length = next - NMEA_buf.string;
 
+      parameter_setting_message message;
+      while( parameter_setting_queue.receive( message, NO_WAIT))
+	{
+	  format_PLARS( message.value, message.type, next);
+	}
+
+      NMEA_buf.length = next - NMEA_buf.string;
 
 #if ACTIVATE_USB_NMEA
       USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t *)NMEA_buf.string, NMEA_buf.length);

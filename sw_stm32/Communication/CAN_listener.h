@@ -26,12 +26,23 @@
 
 #include "FreeRTOS_wrapper.h"
 
-extern Task CAN_listener_task;
+typedef enum
+{
+  MC_CREADY,
+  BALLAST,
+  BUGS,
+  QNH,
+  VARIO_MODE
+}
+parameter_type;
 
-bool get_mc_updates(float32_t &value);
-bool get_bal_updates(float32_t &value);
-bool get_bugs_updates(float32_t &value);
-bool get_qnh_updates(float32_t &value);
-bool get_vario_mode_updates(float32_t &value);
+typedef struct
+{
+  parameter_type type;
+  float32_t value;
+}
+parameter_setting_message;
+
+extern Queue< parameter_setting_message> parameter_setting_queue;
 
 #endif /* CAN_LISTENER_H_ */
