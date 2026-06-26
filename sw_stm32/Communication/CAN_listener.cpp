@@ -296,14 +296,13 @@ extern Semaphore trigger_flash_fill;
 		    {
 		      bool read_successful = EEPROM_config_read_write (p,value);
 
-		      ASSERT(read_successful);
+		      if( not read_successful)
+			return; // ignore request if no value in EEPROM
 
 		      CANpacket txp ( CAN_Id_Send_Config_Value, 8);
 		      txp.data_w[0] = p.data_h[0]; // the ID we have received
 		      txp.data_f[1] = value;
-		      bool ok = CAN_enqueue (txp, 1);
-
-		      ASSERT(ok);
+		      (void)CAN_enqueue (txp, 1); // ignore CAN buffer full condition
 		    }
 
 		  break;

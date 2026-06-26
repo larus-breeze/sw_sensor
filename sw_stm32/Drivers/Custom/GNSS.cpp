@@ -35,7 +35,7 @@ inline void decimate( float32_t &x, float32_t y)
   x = x * 0.905f + y * 0.095f;
 }
 
-COMMON bool GNSS_new_data_ready;
+COMMON reminder_flag GNSS_new_data_ready;
 COMMON bool D_GNSS_new_data_ready;
 COMMON uint64_t FAT_time; //!< DOS FAT time for file usage
 COMMON Mutex GNSS_data_guard;
@@ -101,7 +101,7 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	if( pvt.fix_type == 3) // 3 -> 3D-fix
 	  coordinates.sat_fix_type |= SAT_FIX;
 	else
-	  coordinates.sat_fix_type &= ! SAT_FIX;
+	  coordinates.sat_fix_type &= ~SAT_FIX;
 
 	GNSS_data_guard.lock();
 
@@ -136,12 +136,12 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	    coordinates.velocity[DOWN] 		= 0.0f;
 	    coordinates.GNSS_MSL_altitude	= 0.0f; // avoid reporting wrong GNSS altitude
 
-	    GNSS_new_data_ready = true;
+	    GNSS_new_data_ready.set();
 	    return GNSS_NO_FIX;
 	  }
 	else
 	  {
-	    GNSS_new_data_ready = true;
+	    GNSS_new_data_ready.set();
 	    return GNSS_HAVE_FIX;
 	  }
 }

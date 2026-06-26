@@ -63,13 +63,17 @@ public:
       return;
 
     UINT bytesread;
-    fresult = f_read(&infile, file_buffer, BUFLEN, &bytesread);
-    if( (fresult != FR_OK) || (bytesread == 0))
-      return;
-
+    fresult = f_read(&infile, file_buffer, BUFLEN-1, &bytesread);
     f_close( &infile);
 
+    if( (fresult != FR_OK) || (bytesread == 0) || bytesread == BUFLEN-1)
+      {
+	eof=true;
+	return;
+      }
+
     end = file_buffer + bytesread;
+    *end++ = 0; // just to be sure
     current = file_buffer;
     eof=false;
   }
@@ -80,10 +84,16 @@ public:
     if( eof)
       return false;
     target = current;
+
     while( (current < end) && (*current != '\n'))
       ++current;
+
     while( (current < end) && (*current <= ' '))
       ++current;
+
+    ++current;
+    *current = 0;
+
     eof = current >= end;
     return true;
   }

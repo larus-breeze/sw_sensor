@@ -178,7 +178,7 @@ communicator_runnable (void*)
     notify_take (true);
 
   GNSS.clear_sat_fix_type ();
-  GNSS_new_data_ready = false;
+  (void)GNSS_new_data_ready.test_and_reset();
 
   // the construction-process may be very slow and shall not wake the watchdog
   // now we can switch to our original priority
@@ -200,7 +200,7 @@ communicator_runnable (void*)
     {
       notify_take (true); // wait for synchronization by IMU @ 100 Hz
 
-      if (GNSS_new_data_ready) // triggered after 75ms or 100ms, GNSS-dependent
+      if ( GNSS_new_data_ready.test_and_reset()) // triggered after 75ms or 100ms, GNSS-dependent
 	{
 	  update_system_state_set (GNSS_AVAILABLE);
 
@@ -375,10 +375,8 @@ communicator_runnable (void*)
 		  sizeof(external_magnetometer) / sizeof(uint32_t));
 	    }
 
-	  if (GNSS_new_data_ready)
+	  if ( GNSS_new_data_ready.test_and_reset())
 	    {
-	      GNSS_new_data_ready = false;
-
 	      switch (coordinates.sat_fix_type)
 		{
 		case SAT_FIX:

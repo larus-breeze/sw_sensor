@@ -55,7 +55,7 @@ void NMEA_listener_task_runnable( void *)
 	    {
 	      i=0;
 	    }
-	  if (i < MAX_LEN)
+	  if (i < MAX_LEN -1)
 	    {
 	      rxNMEASentence[i] = rxByte;
 	      i++;
