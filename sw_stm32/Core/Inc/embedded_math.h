@@ -39,6 +39,8 @@ typedef float ftype;
 #define HALF 0.5f
 #define QUARTER 0.25f
 
+#define EPSILON 1e-12f
+
 #define SQR(x) ((x)*(x))
 #define SQRT(x) VSQRTF(x)
 #define COS(x) arm_cos_f32(x)
@@ -47,7 +49,10 @@ typedef float ftype;
 inline float ATAN2( float y, float x)
 {
   // trap division by zero
-  if(FP_ZERO == fpclassify( x))
+  if(
+      (FP_ZERO == fpclassify( x)) &&
+      (FP_ZERO == fpclassify( y))
+      )
     return ZERO;
 
   float result;

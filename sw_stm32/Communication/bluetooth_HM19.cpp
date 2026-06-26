@@ -47,7 +47,7 @@ RestrictedTask bluetooth_handling(bluetooth_hm_11, "BT_HM_11", 256);
 
 #define BLUETOOTH_DEFAULT_UART_RX_TIMEOUT 500
 #define BLUETOOTH_CONNECTION_TIMEOUT 5000
-static bool ble_connected = false;
+static volatile bool ble_connected = false;
 
 void Bluetooth_SendCmd(const uint8_t *cmd)
 {
