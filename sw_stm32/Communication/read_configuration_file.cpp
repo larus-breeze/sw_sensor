@@ -91,9 +91,6 @@ public:
     while( (current < end) && (*current <= ' '))
       ++current;
 
-    ++current;
-    *current = 0;
-
     eof = current >= end;
     return true;
   }
