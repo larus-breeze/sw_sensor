@@ -25,23 +25,7 @@
 #define CAN_LISTENER_H_
 
 #include "FreeRTOS_wrapper.h"
-
-typedef enum
-{
-  MC_CREADY,
-  BALLAST,
-  BUGS,
-  QNH,
-  VARIO_MODE
-}
-parameter_type;
-
-typedef struct
-{
-  parameter_type type;
-  float32_t value;
-}
-parameter_setting_message;
+#include "parameter_setting.h"
 
 extern Queue< parameter_setting_message> parameter_setting_queue;
 
