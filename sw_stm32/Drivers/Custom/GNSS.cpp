@@ -190,7 +190,6 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 	    coordinates.relPosHeading = 0.0f;
 	    coordinates.sat_fix_type &= ~SAT_HEADING;
 	  }
-	D_GNSS_new_data_ready = true;
 	return res;
 }
 
