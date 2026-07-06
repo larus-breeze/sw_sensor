@@ -49,6 +49,7 @@ COMMON reminder_flag write_configuration_data_now;
 extern Semaphore setup_file_handling_completed;
 
 COMMON bool dump_sensor_readings;
+COMMON uint8_t sensor_sd_status_flags = 0;
 
 COMMON FATFS fatfs;
 extern SD_HandleTypeDef hsd;
@@ -64,6 +65,7 @@ void uSD_handler_runnable (void*)
   make_firmware_digest();
 
 restart:
+  sensor_sd_status_flags = 0;
 
   HAL_SD_DeInit (&hsd);
   if(! BSP_PlatformIsDetected())
@@ -80,6 +82,8 @@ restart:
 	    goto restart;
 	}
     }
+
+  sensor_sd_status_flags |= SENSOR_SD_PRESENT;
 
   delay(500); // ensure that there is some wait time after inserting a sd-card
   HAL_StatusTypeDef hresult = HAL_SD_Init (&hsd);
@@ -107,6 +111,8 @@ restart:
 	  delay(1000);
 	}
     }
+
+  sensor_sd_status_flags |= SENSOR_SD_MOUNTED;
 
   // LED on to signal "uSD active"
   HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
@@ -157,6 +163,7 @@ restart:
 	if( crashfile)
 	  write_crash_dump( user_initiated_reset);
 	}
+  sensor_sd_status_flags |= SENSOR_SD_LOGGING_ENABLED;
 
   char out_filename[30];
 
@@ -199,6 +206,7 @@ restart:
 		  write_crash_dump( user_initiated_reset);
 	    }
 	}
+      sensor_sd_status_flags |= SENSOR_SD_FLIGHT_LOG_ACTIVE;
 
       write_configuration_data_now.set();
       unsigned file_sync_counter = 0;
@@ -224,6 +232,7 @@ restart:
 
 	  if( not success)
 	      {
+	      sensor_sd_status_flags &= ~(uint8_t)SENSOR_SD_FLIGHT_LOG_ACTIVE;
 	      flex_file.close(); // at least: try to ...
 
 	      HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
@@ -239,6 +248,7 @@ restart:
 	    {
 	      flex_file.block_input(); // avoid buffer overrun
 	      flex_file.close();
+	      sensor_sd_status_flags &= ~(uint8_t)SENSOR_SD_FLIGHT_LOG_ACTIVE;
 
 	      delay(250); // just to be sure everything is written
 	      break; /* break inner while loop and start again, which will start a new set of logfiles */
