@@ -194,6 +194,7 @@ communicator_runnable (void*)
   unsigned GNSS_watchdog = 0;		// monitor incoming GNSS data rate
   unsigned GNSS_LED_count = 0;		// maintain GNSS LED
   unsigned old_system_state = 0; 	// trigger on system state changes
+  bool new_GNSS_data_received = false;
 
   // this is the MAIN data acquisition and processing loop **********************************************
   while (true)
@@ -202,6 +203,7 @@ communicator_runnable (void*)
 
       if ( GNSS_new_data_ready.test_and_reset()) // triggered after 75ms or 100ms, GNSS-dependent
 	{
+	  new_GNSS_data_received = true;
 	  update_system_state_set (GNSS_AVAILABLE);
 
 	  organizer.update_GNSS_data (coordinates);
@@ -375,8 +377,10 @@ communicator_runnable (void*)
 		  sizeof(external_magnetometer) / sizeof(uint32_t));
 	    }
 
-	  if ( GNSS_new_data_ready.test_and_reset())
+	  if ( new_GNSS_data_received)
 	    {
+	      new_GNSS_data_received = false;
+
 	      switch (coordinates.sat_fix_type)
 		{
 		case SAT_FIX:
