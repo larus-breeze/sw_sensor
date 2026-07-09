@@ -125,6 +125,7 @@ void USART_3_runnable (void *GNSS_type)
       break;
     case GNSS_F9P_F9H:
       buffer_size = GPS_DMA_buffer_SIZE;
+      break;
     case GNSS_X20D:
       buffer_size = GPS_DMA_buffer_SIZE + GPS_DAHEADING_DMA_buffer_SIZE;
       break;
@@ -186,6 +187,7 @@ void USART_3_runnable (void *GNSS_type)
         case GNSS_M9N:
         case GNSS_F9P_F9H:
           result = GNSS.update (USART_3_RX_buffer);
+          break;
         case GNSS_F9P_F9P:
         case GNSS_X20D:
           result = GNSS.update_combined (USART_3_RX_buffer, gnss);
