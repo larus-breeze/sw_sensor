@@ -166,6 +166,14 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 	coordinates.relPosNED[NORTH]=0.01f*(float)(p.relPosN) + 0.0001f * (float)(p.relPosHP_N);
 	coordinates.relPosNED[EAST] =0.01f*(float)(p.relPosE) + 0.0001f * (float)(p.relPosHP_E);
 	coordinates.relPosNED[DOWN] =0.01f*(float)(p.relPosD) + 0.0001f * (float)(p.relPosHP_D);
+	coordinates.relPosLength = 0.01f*(float)(p.relPoslength) + 0.0001f * (float)(p.relPosHP_len);
+
+	// Extract D-GNSS accuracies: accN/E/D/len in 0.1mm, acc_heading in 1e-5 deg
+	coordinates.relPosAccN   = (float)(p.accN) * 0.0001f;           // 0.1mm -> m
+	coordinates.relPosAccE   = (float)(p.accE) * 0.0001f;
+	coordinates.relPosAccD   = (float)(p.accD) * 0.0001f;
+	coordinates.relPosAccLen = (float)(p.acc_len) * 0.0001f;
+	coordinates.relPosHeadingAcc = (float)(p.acc_heading) * 1.745329252e-7f; // 1e-5 deg -> rad
 
 #if SUPPORT_D_GNSS_ACCURACY
 	decimate( accuracy.relPosAccN, p.accN * 0.0001f);
