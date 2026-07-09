@@ -30,11 +30,6 @@
 #include "AHRS.h"
 #include "system_state.h"
 
-inline void decimate( float32_t &x, float32_t y)
-{
-  x = x * 0.905f + y * 0.095f;
-}
-
 COMMON reminder_flag GNSS_new_data_ready;
 COMMON bool D_GNSS_new_data_ready;
 COMMON uint64_t FAT_time; //!< DOS FAT time for file usage
@@ -146,10 +141,53 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	  }
 }
 
-GNSS_Result GNSS_type::update_delta(const uint8_t * data)
+GNSS_Result GNSS_type::update_delta_X20D(const uint8_t * data)
 {
-	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01)
-			|| (data[3] != 0x3c))
+	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01) || (data[3] != 0x45))
+		return GNSS_ERROR;
+
+	if (!checkSumCheck(data + 2, sizeof(uBlox_DAHEADING)))
+		return GNSS_ERROR;
+
+	uBlox_DAHEADING p;
+
+	uint32_t * from = (uint32_t *)(data + 6);
+	uint32_t * to   = (uint32_t *)&p;
+	unsigned count = sizeof(uBlox_DAHEADING) / sizeof(uint32_t);
+	while( count --)
+	  *to++ = *from++;
+
+	coordinates.relPosNED[NORTH]= SCALE_MM * (float)(p.relPosN);
+	coordinates.relPosNED[EAST] = SCALE_MM * (float)(p.relPosE);
+	coordinates.relPosNED[DOWN] = SCALE_MM * (float)(p.relPosD);
+
+#if SUPPORT_D_GNSS_ACCURACY
+	decimate( accuracy.relPosAccN, p.accN * SCALE_MM);
+	decimate( accuracy.relPosAccE, p.accE * SCALE_MM);
+	decimate( accuracy.relPosAccD, p.accD * SCALE_MM);
+	decimate( accuracy.relPosAccLen, p.acc_len * SCALE_MM);
+	decimate( accuracy.relPosHeadingAcc, p.acc_heading * 1e-5f);
+	decimate( accuracy.relPosLength, p.relPoslength * SCALE_MM);
+#endif
+
+	if( (p.flags & 0x05) == 0x05)
+	  {
+	    // 1e-5 deg -> rad
+	    coordinates.relPosHeading = (float)(p.relPosheading) * 1.745329252e-7f;
+	    coordinates.sat_fix_type |= SAT_HEADING;
+	  }
+	else
+	  {
+	    coordinates.relPosHeading = 0.0f;
+	    coordinates.sat_fix_type &= ~SAT_HEADING;
+	  }
+
+	return GNSS_HAVE_FIX;
+}
+
+GNSS_Result GNSS_type::update_delta_F9x(const uint8_t * data)
+{
+	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01) || (data[3] != 0x3c))
 		return GNSS_ERROR;
 
 	if (!checkSumCheck(data + 2, sizeof(uBlox_relpos_NED)))
@@ -193,14 +231,25 @@ GNSS_Result GNSS_type::update_delta(const uint8_t * data)
 	return res;
 }
 
-GNSS_Result
-GNSS_type::update_combined (uint8_t *data)
+GNSS_Result GNSS_type::update_combined ( const uint8_t *data, GNSS_configration_t gnss)
 {
   GNSS_Result res = GNSS.update(data);
   if( res != GNSS_HAVE_FIX)
       return res;
 
-  res = GNSS.update_delta(data + sizeof( uBlox_pvt) + 8);
+  switch( gnss)
+  {
+    default:
+    case GNSS_TYPE_NOT_DEFINED:
+      ASSERT( 0);
+      break;
+    case GNSS_F9P_F9P:
+      res = GNSS.update_delta_F9x( data + sizeof( uBlox_pvt) + 8);
+      break;
+    case GNSS_X20D:
+      res = GNSS.update_delta_X20D( data + sizeof( uBlox_pvt) + 8);
+      break;
+  }
 
   return res;
 }

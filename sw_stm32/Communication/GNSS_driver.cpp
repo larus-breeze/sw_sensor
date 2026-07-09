@@ -101,18 +101,34 @@ DMA1_Stream1_IRQHandler (void)
 uint8_t __ALIGNED(USART_3_RX_BUFFER_SIZE_ROUND_UP) USART_3_RX_buffer[USART_3_RX_BUFFER_SIZE];
 
 #if MEASURE_GNSS_REFRESH_TIME
-uint64_t getTime_usec_privileged(void);
+uint64_t getTime_usec(void);
 COMMON uint64_t delta,start,gnss_max;
 COMMON uint64_t gnss_min=-1;
 #endif
 
-void
-USART_3_runnable (void *using_DGNSS)
+void USART_3_runnable (void *GNSS_type)
 {
-  unsigned buffer_size =
-      *(bool*) using_DGNSS ?
-	  GPS_DMA_buffer_SIZE + GPS_RELPOS_DMA_buffer_SIZE :
-	  GPS_DMA_buffer_SIZE;
+  GNSS_configration_t gnss = *(GNSS_configration_t *)GNSS_type;
+
+  unsigned buffer_size = 0;
+
+  switch( gnss)
+  {
+    case GNSS_TYPE_NOT_DEFINED:
+      ASSERT( 0);
+      break;
+    case GNSS_M9N:
+      buffer_size = GPS_DMA_buffer_SIZE;
+      break;
+    case GNSS_F9P_F9P:
+      buffer_size = GPS_DMA_buffer_SIZE + GPS_RELPOS_DMA_buffer_SIZE;
+      break;
+    case GNSS_F9P_F9H:
+      buffer_size = GPS_DMA_buffer_SIZE;
+    case GNSS_X20D:
+      buffer_size = GPS_DMA_buffer_SIZE + GPS_DAHEADING_DMA_buffer_SIZE;
+      break;
+  }
 
   USART3_task_Id = xTaskGetCurrentTaskHandle ();
   MX_USART3_UART_Init ();
@@ -124,12 +140,12 @@ USART_3_runnable (void *using_DGNSS)
     {
 
 #if MEASURE_GNSS_REFRESH_TIME
-      delta = getTime_usec_privileged() - start;
+      delta = getTime_usec() - start;
       if( delta >gnss_max)
 	gnss_max=delta;
       if( delta < gnss_min)
 	gnss_min=delta;
-      start = getTime_usec_privileged();
+      start = getTime_usec();
 #endif
 
       result = HAL_UART_Receive_DMA (&huart3, USART_3_RX_buffer, buffer_size);
@@ -160,10 +176,21 @@ USART_3_runnable (void *using_DGNSS)
       HAL_UART_Abort (&huart3);
 
       GNSS_Result result;
-      if (buffer_size == GPS_DMA_buffer_SIZE + GPS_RELPOS_DMA_buffer_SIZE)
-	result = GNSS.update_combined (USART_3_RX_buffer);
-      else
-	result = GNSS.update (USART_3_RX_buffer);
+
+      switch( gnss)
+      {
+	default:
+        case GNSS_TYPE_NOT_DEFINED:
+          ASSERT( 0);
+          break;
+        case GNSS_M9N:
+        case GNSS_F9P_F9H:
+          result = GNSS.update (USART_3_RX_buffer);
+        case GNSS_F9P_F9P:
+        case GNSS_X20D:
+          result = GNSS.update_combined (USART_3_RX_buffer, gnss);
+          break;
+      }
 
       if (result == GNSS_ERROR)
 	{
