@@ -126,12 +126,7 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	fix_type = (FIX_TYPE) (pvt.fix_type);
 	if( (pvt.fix_flags & 1) == 0)
 	  {
-	    coordinates.velocity[NORTH] 	= 0.0f;
-	    coordinates.velocity[EAST] 		= 0.0f;
-	    coordinates.velocity[DOWN] 		= 0.0f;
-	    coordinates.GNSS_MSL_altitude	= 0.0f; // avoid reporting wrong GNSS altitude
-
-	    GNSS_new_data_ready.set();
+	    report_dead_GNSS();
 	    return GNSS_NO_FIX;
 	  }
 	else
@@ -252,4 +247,14 @@ GNSS_Result GNSS_type::update_combined ( const uint8_t *data, GNSS_configration_
   }
 
   return res;
+}
+
+void GNSS_type::report_dead_GNSS (void)
+{
+  coordinates.velocity[NORTH] 	= ZERO;
+  coordinates.velocity[EAST]	= ZERO;
+  coordinates.velocity[DOWN]	= ZERO;
+  coordinates.GNSS_MSL_altitude	= ZERO; // avoid reporting wrong GNSS altitude
+  coordinates.speed_acc 	= ZERO;
+  GNSS_new_data_ready.set();
 }
