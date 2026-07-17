@@ -216,7 +216,7 @@ restart:
 	    }
 
 	  success = flex_file.flush_buffer();
-	  if( ++file_sync_counter >= 8)
+	  if( ++file_sync_counter >= U_SD_WRITE_TO_SYNC_FACTOR)
 	    {
 	      file_sync_counter = 0;
 	      success &= flex_file.sync_file();

@@ -97,6 +97,8 @@
 #define NMEA_REPORTING_PERIOD		250 // period in clock ticks for NMEA output
 #define NMEA_DECIMATION_RATIO		6  // slow-down factor for the slow properties
 
+#define U_SD_WRITE_TO_SYNC_FACTOR	50
+
 #define RECURSIVE_LOCKS			1 // EEPROM mutex is recursive
 #define MUTEX_TIMEOUT			2000 // timeout EEPROM mutex, enough to survive FLASH page erase
 
