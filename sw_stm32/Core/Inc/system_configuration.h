@@ -29,7 +29,6 @@
 #include "git-commit-version.h"
 
 #define DISALLOW_DOWNGRADE		1
-#define RUN_FLASH_WRITE_TESTER		0
 #define ANALYZE_WRITE_PERFORMANCE	0
 #define MEASURE_WRITE_TIME		0
 
