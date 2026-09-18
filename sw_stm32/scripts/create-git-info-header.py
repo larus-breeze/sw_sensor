@@ -20,7 +20,7 @@ build = 0xff
 
 try:
     # Try to match tag and build number
-    match = re.match('(?P<first>[0-9]*).(?P<second>[0-9]*).(?P<third>[0-9]*)-(?P<build>[0-9]*)-.*', version_string)
+    match = re.match(r'(?P<first>[0-9]*)\.(?P<second>[0-9]*)\.(?P<third>[0-9]*)-(?P<build>[0-9]*)-.*', version_string)
     first = int(match.group('first'))
     second = int(match.group('second'))
     third = int(match.group('third'))
@@ -29,13 +29,16 @@ try:
 except Exception as e:
     # Try to match tag only from e newly created version.
     try:
-        match = re.match('(?P<first>[0-9]*).(?P<second>[0-9]*).(?P<third>[0-9]*).*', version_string)
+        match = re.match(r'(?P<first>[0-9]*)\.(?P<second>[0-9]*)\.(?P<third>[0-9]*).*', version_string)
         first = int(match.group('first'))
         second = int(match.group('second'))
         third = int(match.group('third'))
         build = 0
 
     except Exception as e:
+        # No tag reachable at all - reset to an unambiguous all-0xff
+        # sentinel instead of a half-updated mix of partial digits.
+        first = second = third = build = 0xff
         print("Something went wrong getting the TAG version information!: ", e)
 
 tagdec = '#define GIT_TAG_DEC 0x{:02x}{:02x}{:02x}{:02x}'.format(first,second,third,build)
@@ -74,8 +77,8 @@ with open(tomltemplate, "r") as file:
 for index in range(len(filelines)):
     if 'sw_version' in filelines[index]:
         filelines[index] = 'sw_version = \"{}.{}.{}.{}\"'.format(first,second,third,build)
-    if 'name = "larus_sensorVERSION.bin' in filelines[index]:
-        filelines[index] = 'name = \"larus_sensor_v{}-{}-{}-{}.bin\"\n'.format(first,second,third,build)
+    if 'name = "larus_sensor_stm32VERSION.bin' in filelines[index]:
+        filelines[index] = 'name = \"larus_sensor_stm32_v{}.{}.{}-{}.bin\"\n'.format(first,second,third,build)
 
 # Write updated file content
 with open(tomldestination, "w") as file:

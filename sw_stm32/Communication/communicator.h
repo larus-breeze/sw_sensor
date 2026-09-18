@@ -39,4 +39,9 @@ extern state_vector_t state_vector;
 extern RestrictedTask communicator_task;
 extern Queue < communicator_command_t> communicator_command_queue;
 
+static inline bool is_airborne (void)
+{
+  return state_vector.flight_mode != ON_GROUND;
+}
+
 #endif /* COMMUNICATOR_H_ */

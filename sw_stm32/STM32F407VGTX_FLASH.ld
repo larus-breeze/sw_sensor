@@ -32,7 +32,9 @@ ENTRY(Reset_Handler)
 _estack = ORIGIN(RAM) + LENGTH(RAM);	/* end of "RAM" Ram type memory */
 
 _Min_Heap_Size = 0x200 ;	/* required amount of heap  */
-Stack_Size = 0x400 ;	/* required amount of stack */
+/* MSP stack (Reset_Handler up to vTaskStartScheduler()). Doubled from
+   0x400 to 0x800 after a HardFault showed it nearly exhausted. */
+Stack_Size = 0x800 ;	/* required amount of stack */
 
 /* Memories definition */
 MEMORY
@@ -52,7 +54,10 @@ __SRAM_segment_end__ = __SRAM_segment_start__ + LENGTH( RAM );
 
 _Privileged_Functions_Region_Size = 0x4000;
 _Privileged_Data_Region_Size = 256;
-PROVIDE( _Common_Data_Region_Size = 0x8000);
+/* Must be a power of two - also the size of the COMMON_BLOCK MPU region
+   (Core/Inc/common.h). Raised from 0x8000 to 0x10000: common_data content
+   grew past the old 32 KB region with the WLAN-link feature. */
+PROVIDE( _Common_Data_Region_Size = 0x10000);
 
 /* Sections */
 SECTIONS
@@ -151,23 +156,33 @@ SECTIONS
   _sidata = LOADADDR(.data);
 
   /* Initialized data sections into "RAM" Ram type memory */
-  .data : 
+  .data :
   {
     . = ALIGN(4);
     _sdata = .;        /* create a global symbol at data start */
-    *(.data)           /* .data sections */
-    *(.data*)          /* .data* sections */
 
-	/* COMMON Block */
+	/* COMMON Block - placed first so its required alignment costs zero
+	   padding (was after *(.data)/*(.data*), wasting padding there). */
 	. = ALIGN( _Common_Data_Region_Size );
 	__common_data_start__ = . ;
     *(common_data)
 	. = ALIGN( _Common_Data_Region_Size );
 	__common_data_end__ = . ;
 
+	/* .mag_calc_data needs the same MPU power-of-two alignment - placed
+	   here, right after __common_data_end__, so it's zero-cost too. */
+	. = ALIGN(8192);
+	__mag_calc_data_start__ = . ;
+	KEEP(*(.mag_calc_data))
+	KEEP(*(.mag_calc_data*))
+	__mag_calc_data_end__ = . ;
+
+    *(.data)           /* .data sections */
+    *(.data*)          /* .data* sections */
+
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
-    
+
   } >RAM AT> FLASH
 
   /* Uninitialized data section into "RAM" Ram type memory */
@@ -196,13 +211,6 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
-  .mag_calc_data :
-  {
-    . = ALIGN(8192);
-        KEEP(*(.mag_calc_data))
-        KEEP(*(.mag_calc_data*))
-  } >RAM
-
   /* Core Coupled Memory CCM section */
   .system_ram(NOLOAD) :
   {
@@ -222,6 +230,41 @@ SECTIONS
 	__user_data_start__ = . ;
     *(user_data)
 	__user_data_end__ = . ;
+
+	/* Statically pre-aligned RestrictedTask stack buffers, reserved here
+	   instead of via pvPortMallocAlignedMemory() (which HardFaulted once
+	   the heap stopped reliably having a matching-aligned free block).
+	   Lives in CCMRAM (RAM has no headroom for it); CCM is unreachable by
+	   DMA, so no contributing stack may be a DMA source/destination. Each
+	   contributing object must still declare its own
+	   __attribute__((aligned(N))) matching its size. */
+	. = ALIGN(8192);
+	__wlan_task_stacks_start__ = . ;
+	*(wlan_task_stacks)
+	__wlan_task_stacks_end__ = . ;
+
+	/* One-shot "flash update already attempted this power-cycle" marker
+	   (uSD_handler.cpp/uSD_helpers.cpp) - deliberately kept out of .bss:
+	   this whole (NOLOAD) section is never zero-filled by the startup
+	   code's LoopFillZerobss, so the marker survives a warm reset (WWDG,
+	   SCB::sys_reset()) intact, while a genuine power-on reset loses CCM
+	   RAM content and leaves it reading as effectively random - see
+	   documentation/wlan_link.md. */
+	. = ALIGN(4);
+	__firmware_update_retry_marker_start__ = . ;
+	*(noinit_firmware_update_retry_marker)
+	__firmware_update_retry_marker_end__ = . ;
+
+	/* Boot-scoped diagnostic counters (reset_count, flash_erase_count -
+	   uSD_handler.cpp) - same NoInit mechanism as the marker above, but
+	   explicitly reset to 0 on a genuine power-on/brown-out reset (checked
+	   via RCC's PORRSTF/BORRSTF flags) rather than just relying on CCM RAM
+	   happening to read as something on power-up; a warm reset leaves them
+	   counting across the reset instead. */
+	. = ALIGN(4);
+	__boot_counters_start__ = . ;
+	*(noinit_boot_counters)
+	__boot_counters_end__ = . ;
 
 	/* FreeRTOS heap block, used for task stacks, queues, semaphores etc. */
     . = ALIGN(4);

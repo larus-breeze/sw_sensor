@@ -34,6 +34,7 @@
 #include "stdint.h"
 #include "communicator.h"
 #include "system_state.h"
+#include "wlan_link_handler.h"
 
 #if RUN_MTi_1_MODULE
 
@@ -178,6 +179,8 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == IMU_DRDY)
     MTi_ready.signal_from_ISR ();
+  else if (GPIO_Pin == WLAN_LINK_HANDSHAKE_Pin)
+    wlan_link_cs_edge ();
 }
 
 /*!	\brief Returns the value of the DataReady line

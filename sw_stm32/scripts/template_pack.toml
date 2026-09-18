@@ -9,7 +9,7 @@ addr_start = 0x0806_1000
 addr_max = 0x0806_1fff
 
 [image]
-name = "larus_sensorVERSION.bin"
+name = "larus_sensor_stm32VERSION.bin"
 addr_storage = 0x0806_0000
 hw_version = "1.1.1.0"
 sw_version = "0.0.0.0"

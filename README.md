@@ -36,6 +36,40 @@ Pull latest changes:
 - Release used for release versions (Max. optimized, no debug info)
 - Debug used for development
 
+# Building firmware from the command line
+Python dependencies (from the repository root):
+
+    python3 -m venv .venv
+    source .venv/bin/activate   # Windows: .venv\Scripts\activate
+    pip install -r requirements.txt
+
+`build_firmware_all.py` builds both the STM32 (via STM32CubeIDE's headless
+build mode) and ESP32 (via `arduino-cli`) firmware:
+
+    python3 build_firmware_all.py
+
+This leaves 5 files in the gitignored `build/` directory, all tagged with
+the same `<version>` (from `git describe`):
+- `larus_sensor_stm32_v<version>.bin` — STM32 update image for the SD
+  card or the ESP32 web UI's "STM32 firmware update" section.
+- `larus_sensor_stm32_v<version>.elf` — plain STM32 ELF, for flashing
+  directly with STM32CubeProgrammer (see "Flash and prepare the sensor
+  hardware" below).
+- `larus_sensor_esp32_v<version>.bin` — ESP32 application image, for the
+  web UI's own "ESP32 WiFi module update" section.
+- `larus_sensor_esp32_v<version>.flash1_boot.bin` /
+  `...flash2_app.bin` — ESP32 images for a from-scratch USB flash via
+  esptool-js (see `sw_esp32/README.md`), not used from the web UI.
+
+The two files needed to update a sensor from its own web UI are the first
+and third: `larus_sensor_stm32_v<version>.bin` and
+`larus_sensor_esp32_v<version>.bin`.
+
+Pass `--skip-stm32`/`--skip-esp32` to build only one side, or see
+`sw_stm32/scripts/README.md`/`sw_esp32/README.md` to run either side's
+`scripts/build_firmware.py` directly with more options (e.g. pointing at a
+non-standard STM32CubeIDE install location).
+
 # Flash and prepare the sensor hardware
 ## STM32
 - Flash via USB using the STM32CubeProgrammer and a compiled binary sw_sensor.elf file from here: https://github.com/larus-breeze/sw_sensor/releases  
@@ -43,8 +77,14 @@ Hold the Boot Button on power-on to start the STM32 in the DFU bootloader mode.
 Use the STM32CubeProgrammer to flash the binary to the STM32 micro-controller.
 
 ## ESP32 controller
-- Flash the *.ino file in ESP32_Firmware with arduino studio via the esp32 usb connector.
-- Optionally: Use the arduino IDE to change the device name and the RF mode (Bluetooth or WLAN).
+- The sketch lives in `sw_esp32/wlan_link/` (not `ESP32_Firmware/`) and
+  hosts a WiFi access point with a web UI for STM32/ESP32 firmware
+  updates and `*.lrsx` log file management. WiFi AP SSID/password are
+  generated automatically per device, not set manually.
+- See `sw_esp32/README.md` for build/flash instructions, including an
+  initial flash straight from the browser via
+  [esptool-js](https://espressif.github.io/esptool-js/), no local
+  toolchain needed.
 
 ## Prepare an sd-card with configuration files
 - put a larus_sensor_config.ini file (template in configuration/) in the sd cards root directory. Adjust the parameters as described in configuration/README.md

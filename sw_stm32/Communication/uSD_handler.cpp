@@ -36,12 +36,17 @@
 #include "emergency.h"
 #include "EEPROM_data_file_implementation.h"
 #include "uSD_handler.h"
+#include "fatfs_access.h"
 #include "watchdog_handler.h"
 #include "magnetic_induction_report.h"
 #include "persistent_data_file.h"
 #include "system_state.h"
 #include "reminder_flag.h"
 #include "uSD_helpers.h"
+#include "wlan_link_protocol.h" // wlan_link_crc32_hw_compute() - see jump_to_pending_flash_update_if_any()
+
+//!< 5 minutes (100ms loop iterations) - auto-clears a forgotten pause
+#define LOGGING_PAUSE_TIMEOUT_ITERATIONS (5 * 60 * 10)
 
 COMMON reminder_flag perform_after_landing_actions;
 COMMON reminder_flag write_configuration_data_now;
@@ -49,6 +54,22 @@ COMMON reminder_flag write_configuration_data_now;
 extern Semaphore setup_file_handling_completed;
 
 COMMON bool dump_sensor_readings;
+
+//!< true while an SD card is mounted; read by wlan_link_handler.cpp for its
+//!< STATUS_REQUEST response.
+COMMON bool sd_card_mounted = false;
+
+//!< true while a .lrsx file is open + fatfs_lock() held - see
+//!< "Logging pause", documentation/wlan_link.md.
+COMMON bool logging_active = false;
+
+//!< Set/cleared by WLAN start/stop-logging requests, or auto-cleared after
+//!< LOGGING_PAUSE_TIMEOUT_ITERATIONS. Not gated on is_airborne().
+COMMON bool logging_paused_by_user = false;
+
+//!< One-shot, set alongside clearing logging_paused_by_user - without it,
+//!< resuming while grounded would just hand back to is_airborne().
+COMMON bool logging_force_start = false;
 
 COMMON FATFS fatfs;
 extern SD_HandleTypeDef hsd;
@@ -58,20 +79,238 @@ extern uint64_t FAT_time; //!< DOS FAT time for file usage
 
 extern RestrictedTask uSD_handler_task;
 
+//!< Mirrors the copy routine's own pre-jump check (magic/CRC layout shared
+//!< with pack.py), so a staged image with a valid magic/version but a
+//!< corrupt or incomplete body is left alone instead of jumped to. See
+//!< documentation/wlan_link.md.
+//!<
+//!< MetaData layout (meta_v1.rs), packed, no padding:
+//!<    0: magic (u64)            8: crc (u32)
+//!<   12: meta_version (u32)    16: storage_addr (usize)
+//!<   20: hw_version ([u8;4])   24: sw_version ([u8;4])
+//!<   28: copy_func (usize)     32: new_app (usize)
+//!<   36: new_app_len (usize)   40: new_app_dest (usize)   - 44 bytes total.
+//!< CRC32 (STM32 hardware CRC unit) covers offset 12 through the end of
+//!< the app image - see wlan_link_crc32_hw_compute().
+static bool staged_image_crc_is_valid (const uint8_t *staged)
+{
+  uint32_t meta_crc = staged[8] | (staged[9] << 8) | (staged[10] << 16) | (staged[11] << 24);
+  uint32_t new_app = staged[32] | (staged[33] << 8) | (staged[34] << 16) | (staged[35] << 24);
+  uint32_t new_app_len = staged[36] | (staged[37] << 8) | (staged[38] << 16) | (staged[39] << 24);
+
+  uint32_t new_app_start_idx = new_app - 0x08060000u;
+  uint32_t new_app_end_idx = new_app_start_idx + new_app_len;
+
+  // Bound to the staging area (3*128KB) - a bogus new_app/new_app_len
+  // must not be able to drive a read past it.
+  if ((new_app_start_idx > 0x60000u) || (new_app_len > 0x60000u)
+      || (new_app_end_idx > 0x60000u) || (new_app_end_idx <= 12u))
+    return false;
+
+  uint32_t computed_crc = wlan_link_crc32_hw_compute (staged + 12, new_app_end_idx - 12);
+  return computed_crc == meta_crc;
+}
+
+//!< Set by read_software_update() (uSD_helpers.cpp) after staging an
+//!< image; caps jump_to_pending_flash_update_if_any() below to one jump
+//!< attempt per power-cycle. Lives in the NOLOAD
+//!< "noinit_firmware_update_retry_marker" section (STM32F407VGTX_FLASH.ld)
+//!< so it survives a warm reset (LoopFillZerobss only zero-fills .bss) and
+//!< only resets on a genuine power-on reset (CCM RAM loss). Section name
+//!< deliberately differs from the symbol name - this toolchain's assembler
+//!< rejects the object file if both match. The "= 0" initializer forces a
+//!< definite symbol instead of a common one (also toolchain-specific).
+uint32_t firmware_update_retry_marker __attribute__((section("noinit_firmware_update_retry_marker"))) = 0;
+
+//!< Diagnostic counters - see the doc comment in uSD_handler.h. Live in the
+//!< NOLOAD "noinit_boot_counters" section (STM32F407VGTX_FLASH.ld), zeroed
+//!< explicitly by uSD_handler_runnable() on a genuine power-on/brown-out
+//!< reset (RCC's PORRSTF/BORRSTF flags), left alone on a warm reset.
+uint32_t reset_count __attribute__((section("noinit_boot_counters"))) = 0;
+uint32_t flash_erase_count __attribute__((section("noinit_boot_counters"))) = 0;
+
+//!< Checks the staging area (0x08060000) for a newer image and jumps into
+//!< the copy routine if one is found and valid. Must run before the
+//!< watchdog is armed, since the copy routine never feeds it - called
+//!< once, at the very top of uSD_handler_runnable(), before anything else.
+//!< firmware_update_retry_marker caps this to one attempt per power-cycle,
+//!< so a copy-routine failure doesn't retry forever. See
+//!< documentation/wlan_link.md.
+static void jump_to_pending_flash_update_if_any (void)
+{
+  const uint8_t *staged = (const uint8_t *) 0x08060000;
+
+  uint64_t staged_magic_number = 0;
+  for (int i = 7; i >= 0; i--)
+    {
+      staged_magic_number <<= 8;
+      staged_magic_number |= (uint64_t) staged[i];
+    }
+
+  uint32_t staged_hw_version = staged[23] | (staged[22] << 8)
+      | (staged[21] << 16) | (staged[20] << 24);
+
+  if ((staged_hw_version != 0x01010100)
+      || (staged_magic_number != 0x1c8073ab20853579))
+    return; // no valid image staged (e.g. erased flash reads as 0xff)
+
+  uint32_t staged_sw_version = staged[27] | (staged[26] << 8)
+      | (staged[25] << 16) | (staged[24] << 24);
+
+#if DISALLOW_DOWNGRADE
+  if (staged_sw_version <= GIT_TAG_DEC)
+    return; // already running this version or newer - nothing to do
+#endif
+
+  if (! staged_image_crc_is_valid (staged))
+    return; // magic/version look right, but the payload is corrupt/incomplete - don't jump
+
+  if (firmware_update_retry_marker == FIRMWARE_UPDATE_ALREADY_TRIED)
+    return; // already attempted once this power-cycle
+  firmware_update_retry_marker = FIRMWARE_UPDATE_ALREADY_TRIED;
+
+  // Stale FLASH_SR error flags survive a warm reset and make the copy
+  // routine's own post-op check abort right after the first sector.
+  // Clear them so it always starts clean.
+  __HAL_FLASH_CLEAR_FLAG (FLASH_FLAG_EOP);
+  __HAL_FLASH_CLEAR_FLAG (FLASH_FLAG_OPERR);
+  __HAL_FLASH_CLEAR_FLAG (FLASH_FLAG_WRPERR);
+  __HAL_FLASH_CLEAR_FLAG (FLASH_FLAG_PGAERR);
+  __HAL_FLASH_CLEAR_FLAG (FLASH_FLAG_PGPERR);
+  __HAL_FLASH_CLEAR_FLAG (FLASH_FLAG_PGSERR);
+
+  *( ( volatile uint32_t * ) 0xe000ed94 ) = 0; // MPU off
+  __asm volatile ( "dsb" ::: "memory" );
+  __asm volatile ( "isb" );
+  typedef void(*pFunction)(void);
+  pFunction copy_function_address = *(pFunction *)0x06001c;
+  copy_function_address();
+}
+
+//!< The three staging sectors, header first - so an interrupted erase
+//!< never leaves a stale-but-valid header paired with a half-erased body.
+#define FLASH_STAGING_SECTOR_SIZE  0x20000u // 128KB
+static const struct { uint32_t sector; uint32_t address; } flash_staging_sectors[3] =
+{
+  { FLASH_SECTOR_7, 0x08060000u }, // header - erase first
+  { FLASH_SECTOR_8, 0x08080000u },
+  { FLASH_SECTOR_9, 0x080a0000u },
+};
+
+//!< true if the given address range reads back as fully erased (all
+//!< bytes 0xff).
+static bool flash_range_is_erased (uint32_t address, uint32_t length)
+{
+  const uint32_t *p = (const uint32_t *) address;
+  const uint32_t *end = (const uint32_t *) (address + length);
+  for (; p < end; ++p)
+    if (*p != 0xffffffffu)
+      return false;
+  return true;
+}
+
+//!< Erases whichever staging sectors aren't already erased (an
+//!< already-clean sector is left alone - finite erase-cycle lifetime).
+//!< Runs before the watchdog is armed: HAL_FLASHEx_Erase() can block ~1s
+//!< per 128KB sector, far past the WWDG window, so read_software_update()
+//!< (uSD_helpers.cpp) never has to erase flash itself later.
+static void erase_flash_staging_area_if_needed (void)
+{
+  bool any_dirty = false;
+  for (unsigned i = 0; i < 3; ++i)
+    if (! flash_range_is_erased (flash_staging_sectors[i].address, FLASH_STAGING_SECTOR_SIZE))
+      any_dirty = true;
+
+  if (! any_dirty)
+    return;
+
+  if (HAL_FLASH_Unlock() != HAL_OK)
+    return;
+
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP);
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPERR);
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_WRPERR);
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGAERR);
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGPERR);
+  __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGSERR);
+
+  uint32_t SectorError = 0;
+  FLASH_EraseInitTypeDef pEraseInit;
+  pEraseInit.TypeErase = FLASH_TYPEERASE_SECTORS;
+  pEraseInit.NbSectors = 1;
+  pEraseInit.VoltageRange = VOLTAGE_RANGE_3;
+
+  bool erase_failed = false;
+  for (unsigned i = 0; i < 3; ++i)
+    {
+      if (flash_range_is_erased (flash_staging_sectors[i].address, FLASH_STAGING_SECTOR_SIZE))
+	continue; // already clean - don't waste an erase cycle on it
+      pEraseInit.Sector = flash_staging_sectors[i].sector;
+      HAL_StatusTypeDef erase_status = HAL_FLASHEx_Erase (&pEraseInit, &SectorError);
+      ++flash_erase_count;
+      // Re-verify by reading back, not just erase_status/SectorError.
+      if ((erase_status != HAL_OK) || (SectorError != 0xffffffffu)
+	  || ! flash_range_is_erased (flash_staging_sectors[i].address, FLASH_STAGING_SECTOR_SIZE))
+	erase_failed = true;
+    }
+
+  HAL_FLASH_Lock();
+
+  // Flag a genuine erase failure via the LED instead of retrying now -
+  // the next boot's check above will pick it up again regardless.
+  if (erase_failed)
+    HAL_GPIO_WritePin (LED_ERROR_GPIO_Port, LED_ERROR_Pin, GPIO_PIN_SET);
+}
+
 //!< this executable takes care of all uSD reading and writing
 void uSD_handler_runnable (void*)
 {
+  // A genuine power-on/brown-out reset is the only thing that actually
+  // clears CCM RAM, so it's also the only time reset_count/flash_erase_count
+  // should restart from 0. RCC's PORRSTF/BORRSTF flags record exactly that,
+  // but persist across every later reset within the same power cycle until
+  // explicitly cleared - checked and cleared once, right here, so only a
+  // fresh power-on sees either set again.
+  if (__HAL_RCC_GET_FLAG (RCC_FLAG_PORRST) || __HAL_RCC_GET_FLAG (RCC_FLAG_BORRST))
+    {
+      reset_count = 0;
+      flash_erase_count = 0;
+    }
+  __HAL_RCC_CLEAR_RESET_FLAGS ();
+  ++reset_count;
+
+  jump_to_pending_flash_update_if_any(); // before anything else - see comment above
+  erase_flash_staging_area_if_needed();  // ditto - see comment above
+
+  // Also before the watchdog: single-bank STM32F4 flash has no
+  // read-while-write, so any flash access stalls the bus for as long as
+  // an erase/program is in progress, and the WWDG counts down through
+  // that regardless. Covers recover_and_initialize_flash() and
+  // ensure_EEPROM_parameter_integrity(), which can each trigger a full
+  // sector erase.
+  uSD_handler_task.set_priority(configMAX_PRIORITIES - 1); // set it to highest priority
+  recover_and_initialize_flash();
+  uSD_handler_task.set_priority(LOGGER_PRIORITY); // set normal priority
+  (void) ensure_EEPROM_parameter_integrity();
+
+  // Arm the watchdog now - everything above either can't be protected
+  // (flash jump/erase must stay before this point) or doesn't need to be
+  // (make_firmware_digest() below already yields every 1KB block). Safe
+  // this early: read_software_update() below resets instead of jumping
+  // directly, so jump_to_pending_flash_update_if_any() picks up a new
+  // image on the next boot.
+  watchdog_activator.signal();
+
   make_firmware_digest();
 
 restart:
 
+  sd_card_mounted = false;
+
   HAL_SD_DeInit (&hsd);
-  if(! BSP_PlatformIsDetected())
+  if( ! BSP_PlatformIsDetected())
     {
-      recover_and_initialize_flash();
-      (void) ensure_EEPROM_parameter_integrity();
       setup_file_handling_completed.signal(); // give up waiting for configuration
-      watchdog_activator.signal(); // now start the watchdog
 
   while(true) // wait until uSD plugged in and restart the uSD handler afterwards
 	{
@@ -92,7 +331,6 @@ restart:
   if (fresult != FR_OK)
     {
       setup_file_handling_completed.signal();
-      watchdog_activator.signal(); // now start the watchdog
 
       while(true) // wait until uSD UN-plugged
 	{
@@ -108,22 +346,21 @@ restart:
 	}
     }
 
+  sd_card_mounted = true;
+
   // LED on to signal "uSD active"
   HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
 
   if( read_software_update())
       {
-      *( ( volatile uint32_t * ) 0xe000ed94 ) = 0; // MPU off
-      __asm volatile ( "dsb" ::: "memory" );
-      __asm volatile ( "isb" );
-      typedef void(*pFunction)(void);
-      pFunction copy_function_address = *(pFunction *)0x06001c;
-      copy_function_address();
+      // A newer image was just staged. Don't jump directly - the
+      // watchdog is already armed and the copy routine doesn't feed it.
+      // Reset instead; jump_to_pending_flash_update_if_any() picks it up
+      // next boot, before the watchdog is armed again.
+      user_initiated_reset = true;
+      while (true)
+	;
       }
-
-  uSD_handler_task.set_priority(configMAX_PRIORITIES - 1); // set it to highest priority
-  recover_and_initialize_flash();
-  uSD_handler_task.set_priority(LOGGER_PRIORITY); // set normal priority
 
   // read configuration file if it is present on the SD card
   bool init_file_read = read_init_file( "larus_sensor_config.ini");
@@ -132,11 +369,7 @@ restart:
   if( init_file_read)
     f_rename ("larus_sensor_config.ini", "larus_sensor_config.ini.used");
 
-  (void) ensure_EEPROM_parameter_integrity();
-
   drop_privileges(); // go protected
-
-  watchdog_activator.signal(); // now start the watchdog
 
   setup_file_handling_completed.signal();
 
@@ -171,6 +404,58 @@ restart:
   // repeat writing log files for all successive flights
   while(true)
     {
+      // Only log while airborne - frees the SD card for
+      // wlan_link_handler_task while grounded. Also waits here while
+      // logging_paused_by_user is set - see "Logging pause",
+      // documentation/wlan_link.md.
+      uint8_t consecutive_not_detected = 0;
+      uint32_t logging_pause_iterations = 0;
+      while( ( ! is_airborne() && ! logging_force_start ) || logging_paused_by_user)
+	{
+	  if( crashfile)
+	    write_crash_dump( user_initiated_reset);
+
+	  // Auto-clear a forgotten pause after ~5 minutes.
+	  if( logging_paused_by_user)
+	    {
+	      if( ++logging_pause_iterations >= LOGGING_PAUSE_TIMEOUT_ITERATIONS)
+		{
+		  logging_paused_by_user = false;
+		  logging_force_start = true;
+		  logging_pause_iterations = 0;
+		}
+	    }
+	  else
+	    logging_pause_iterations = 0;
+
+	  // Detects the card being pulled while grounded. fatfs_lock()
+	  // first so an in-flight wlan_link_handler_task FatFs call
+	  // finishes first. Debounced against GPIO glitches. Skipped once
+	  // user_initiated_reset is set to avoid racing the WWDG's own
+	  // extended-reset SD teardown.
+	  if( ! user_initiated_reset && ! BSP_PlatformIsDetected())
+	    {
+	      if( ++consecutive_not_detected < 5)
+		{
+		  delay(100);
+		  continue;
+		}
+
+	      fatfs_lock();
+	      sd_card_mounted = false;
+	      f_mount (0, "", 0);
+	      fatfs_unlock();
+	      goto restart;
+	    }
+	  consecutive_not_detected = 0;
+
+	  delay(100);
+	}
+
+      logging_force_start = false; // one-shot, consumed by exiting the loop above
+
+      fatfs_lock(); // released below on landing, or on a fatal write failure
+
       // generate filename based on timestamp
       char * next = out_filename;
 
@@ -192,6 +477,7 @@ restart:
       bool success = flex_file.open(out_filename);
       if ( not success)
 	{
+	  fatfs_unlock(); // don't wedge wlan_link_handler_task out forever over a logging failure
 	  while( true)
 	    {
 		notify_take (true); // wait for synchronization by crash detection
@@ -199,6 +485,8 @@ restart:
 		  write_crash_dump( user_initiated_reset);
 	    }
 	}
+
+      logging_active = true; // cleared below wherever the lock is released again
 
       write_configuration_data_now.set();
       unsigned file_sync_counter = 0;
@@ -212,6 +500,7 @@ restart:
 	  if( crashfile)
 	    {
 	      flex_file.close();
+	      // fatfs_lock() stays held - write_crash_dump() never returns.
 	      write_crash_dump( user_initiated_reset);
 	    }
 
@@ -225,6 +514,8 @@ restart:
 	  if( not success)
 	      {
 	      flex_file.close(); // at least: try to ...
+	      logging_active = false;
+	      fatfs_unlock(); // don't wedge wlan_link_handler_task out forever over a logging failure
 
 	      HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_RESET);
 	      while( true)
@@ -235,12 +526,18 @@ restart:
 		}
 	      }
 
-	  if( perform_after_landing_actions.test_and_reset())
+	  // logging_paused_by_user closes the file immediately without
+	  // waiting for landing - see "Logging pause",
+	  // documentation/wlan_link.md.
+	  bool landed = perform_after_landing_actions.test_and_reset();
+	  if( landed || logging_paused_by_user)
 	    {
 	      flex_file.block_input(); // avoid buffer overrun
 	      flex_file.close();
 
 	      delay(250); // just to be sure everything is written
+	      logging_active = false;
+	      fatfs_unlock();
 	      break; /* break inner while loop and start again, which will start a new set of logfiles */
 	    }
 	}
@@ -259,7 +556,7 @@ static TaskParameters_t p =
       { COMMON_BLOCK, COMMON_SIZE, portMPU_REGION_READ_WRITE },
       { (void *)0x080C0000, 0x00040000, portMPU_REGION_READ_WRITE}, // EEPROM
       { 0, 0, 0}
-      } 
+      }
     };
 
 COMMON RestrictedTask uSD_handler_task (p);
@@ -269,13 +566,29 @@ void sync_logger(void)
     uSD_handler_task.notify_give ();
   }
 
-//!< this function is called synchronously from task context
+extern RestrictedTask amok_running_task_killer;
+
+//!< ASSERT() calls this from task or ISR context (e.g. spi.cpp's SPI2 DMA
+//!< IRQs). __get_IPSR() tells the contexts apart, since the
+//!< notify_give()+suspend() path below isn't ISR-safe.
 extern "C" void emergency_write_crashdump( char * file, int line)
   {
-  acquire_privileges();
   crashfile=file;
   crashline=line;
+
   extern void * pxCurrentTCB;
+
+  if (__get_IPSR() != 0) // interrupt/exception context - already privileged
+    {
+    register_dump.active_TCB = pxCurrentTCB;
+    uSD_handler_task.notify_give_from_ISR();
+    amok_running_task_killer.resume_from_ISR();
+    return;
+    }
+
+  // Task context, possibly unprivileged - raise privilege first or this
+  // faults before the real ASSERT() location is recorded.
+  acquire_privileges();
   register_dump.active_TCB = pxCurrentTCB;
   uSD_handler_task.set_priority(configMAX_PRIORITIES - 1); // set it to highest priority
   uSD_handler_task.notify_give();
