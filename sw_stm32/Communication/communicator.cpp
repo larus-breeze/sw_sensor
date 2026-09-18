@@ -70,8 +70,6 @@ COMMON Queue < communicator_command_t> communicator_command_queue(2);
 extern RestrictedTask NMEA_task;
 extern RestrictedTask communicator_task;
 
-static ROM bool TRUE=true;
-static ROM bool FALSE=false;
 static ROM float year_2000 = 3.12969516e-34f;
 
 void report_horizon_avalability( void)
@@ -107,7 +105,7 @@ static ROM TaskParameters_t usart_3_task_param =
       USART_3_runnable,
       "USART3",
       256,
-      (void *)&TRUE,
+      0,
       (STANDARD_TASK_PRIORITY+1) | portPRIVILEGE_BIT, // first: start privileged
       0,
     {
@@ -132,16 +130,18 @@ communicator_runnable (void*)
   organizer_t organizer;
   organizer.initialize_before_measurement ();
 
-  GNSS_configration_t GNSS_configuration = (GNSS_configration_t) round (
-      configuration (GNSS_CONFIGURATION));
+  GNSS_configration_t GNSS_configuration =
+      (GNSS_configration_t) round ( configuration (GNSS_CONFIGURATION));
   organizer.set_GNSS_type (GNSS_configuration); // required for speed accuracy monitoring limit value
 
   switch (GNSS_configuration)
     {
     case GNSS_M9N:
+    case GNSS_F9P_F9P:
+    case GNSS_X20D:
       {
 	TaskParameters_t parameters = usart_3_task_param;
-	parameters.pvParameters = (void*) &FALSE;
+	parameters.pvParameters = (void*) &GNSS_configuration;
 
 	acquire_privileges ();
 	RestrictedTask t (parameters);
@@ -152,7 +152,7 @@ communicator_runnable (void*)
       {
 	  {
 	    TaskParameters_t parameters = usart_3_task_param;
-	    parameters.pvParameters = (void*) &FALSE;
+	    parameters.pvParameters = (void*) &GNSS_configuration;
 
 	    acquire_privileges ();
 	    RestrictedTask t (parameters);
@@ -163,14 +163,8 @@ communicator_runnable (void*)
 	  }
       }
       break;
-    case GNSS_F9P_F9P: // no extra task for 2nd GNSS module
-      {
-	acquire_privileges ();
-	RestrictedTask t (usart_3_task_param);
-	drop_privileges();
-      }
-      break;
     default:
+      ASSERT( 0);
       break;
     }
 
@@ -282,6 +276,7 @@ communicator_runnable (void*)
 	{
 	case GNSS_F9P_F9H:
 	case GNSS_F9P_F9P:
+	case GNSS_X20D:
 	  switch (coordinates.sat_fix_type)
 	    {
 	    case SAT_FIX:
