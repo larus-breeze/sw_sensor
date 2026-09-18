@@ -6,6 +6,7 @@
 #include "my_assert.h"
 #include "EEPROM_data_file_implementation.h"
 #include "stm32f4xx_hal.h"
+#include "uSD_handler.h"
 
 #define PAGE_0_HEAD ((uint32_t *)0x080C0000)
 #define PAGE_1_HEAD ((uint32_t *)0x080E0000)
@@ -109,6 +110,7 @@ void erase_sector_operation( unsigned sector)
   EraseInit.NbSectors = 1;
 
   status = HAL_FLASHEx_Erase_IT( &EraseInit);
+  ++flash_erase_count;
   ASSERT(status == HAL_OK);
 }
 

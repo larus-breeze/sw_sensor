@@ -93,6 +93,12 @@ void heartbeat(void);
 #define BL_RESETB_GPIO_Port GPIOD
 /* USER CODE BEGIN Private defines */
 
+// ESP32 <-> STM32 WLAN link (SPI2), see documentation/wlan_link.md
+#define WLAN_LINK_HANDSHAKE_Pin GPIO_PIN_1   // ESP32 IO5  -> STM32 PB1, frame-start signal (plain GPIO, not SPI2 HW NSS - see doc)
+#define WLAN_LINK_HANDSHAKE_GPIO_Port GPIOB
+#define WLAN_LINK_READY_Pin GPIO_PIN_8       // STM32 PA8 -> ESP32 IO27, ready(high)/busy(low)
+#define WLAN_LINK_READY_GPIO_Port GPIOA
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -1,9 +1,32 @@
 #!/bin/python3
 
-import sys, io, toml, struct
+import sys, io, os, time, toml, struct
 
 from elftools.elf.elffile import ELFFile
 from elftools.elf.relocation import RelocationSection
+
+# Resolve every path against this script's own location (sw_stm32/scripts),
+# not the current working directory, so it runs the same whether invoked
+# from sw_sensor/ or from sw_sensor/sw_stm32/.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(SCRIPT_DIR)  # sw_stm32/
+REPO_ROOT_DIR = os.path.dirname(BASE_DIR)  # sw_sensor/
+# Final packaged images land in a shared top-level build/ folder (gitignored),
+# alongside the ESP32 side's own build_firmware.py output, instead of
+# sw_stm32/ - so both firmware images end up next to each other.
+BUILD_DIR = os.path.join(REPO_ROOT_DIR, "build")
+
+def warn_if_stale(elf_path, max_age_seconds=600):
+    """Return a warning message if elf_path is older than max_age_seconds -
+    a common sign that the wrong build configuration (e.g. Debug instead of
+    Release) was active last, leaving a stale image sitting in the Release
+    folder. Returns None if the file is fresh enough."""
+    age_seconds = time.time() - os.path.getmtime(elf_path)
+    if age_seconds > max_age_seconds:
+        return (f"WARNING: '{elf_path}' is {age_seconds / 60:.1f} minutes old - "
+                f"make sure it was actually just built with the Release "
+                f"configuration, not an older or Debug build.")
+    return None
 
 
 def stm32_crc(data):
@@ -20,10 +43,24 @@ def stm32_crc(data):
     return crc
 
 def get_version(version_str):
+        """Packs a dotted version string (e.g. "0.7.6.193") into a 32-bit int,
+        one byte per component - so each component must fit in 0-255. The 4th
+        component (build/commit number) is the one that keeps growing and
+        will eventually hit this on its own, silently corrupting the packed
+        version (or making struct.pack below raise) if not caught here."""
         shift_fact = 0
         version = 0
         for no in version_str.split('.'):
-            version += int(no) << shift_fact
+            value = int(no)
+            if not (0 <= value <= 255):
+                sys.exit(
+                    f"version component '{no}' in '{version_str}' is {value}, "
+                    f"outside the 0-255 range this packed format allows (1 byte "
+                    f"per component). If this is the build/commit-number "
+                    f"component, the packed version format needs widening "
+                    f"before this can keep growing."
+                )
+            version += value << shift_fact
             shift_fact += 8
 
         return version
@@ -77,17 +114,20 @@ class Binary():
         self.addr_storage = image["addr_storage"]
         self.hw_version = get_version(image["hw_version"])
         self.sw_version = get_version(image["sw_version"])
+        self.stale_warning = None
 
     def read_new_app(self, app):
         """Load the app that is to be executed later"""
-        new_app = ReadApp(app["elf"])
+        elf_path = os.path.join(BASE_DIR, app["elf"])
+        self.stale_warning = warn_if_stale(elf_path)
+        new_app = ReadApp(elf_path)
         self.app_addr_start = app["addr_start"]
         app_addr_max = app["addr_max"]
         self.app_bin = new_app.get_binary(self.app_addr_start, app_addr_max)
 
     def read_copy_app(self, copy):
         """Load the copy routine that loads the future app in the right place."""
-        copy_app = ReadApp(copy["elf"])
+        copy_app = ReadApp(os.path.join(BASE_DIR, copy["elf"]))
         self.copy_app_addr_start = copy["addr_start"]
         copy_app_addr_max = copy["addr_max"]
         self.copy_bin = copy_app.get_binary(self.copy_app_addr_start, copy_app_addr_max)
@@ -127,13 +167,18 @@ class Binary():
         print(f"  CRC inserted         0x{crc_data:08X}")
 
         print(f"\nTotal size of binary: {round(len(binary) / 1024)}k")
-        print(f"Writing binary to file '{self.name}'")
-        with open(self.name, "wb") as bin_file:
+        os.makedirs(BUILD_DIR, exist_ok=True)
+        out_path = os.path.join(BUILD_DIR, self.name)
+        print(f"Writing binary to file '{out_path}'")
+        with open(out_path, "wb") as bin_file:
             bin_file.write(binary)
+
+        if self.stale_warning:
+            print(f"\n{self.stale_warning}")
 
 if ((len(sys.argv) == 2) and ("LEGACY" in str(sys.argv[1]))):
     print("Larus App Image Packer - Legacy")
-    with open("scripts/pack_legacy.toml", "r") as f:
+    with open(os.path.join(SCRIPT_DIR, "pack_legacy.toml"), "r") as f:
         spec = toml.load(f)
         image = Binary(spec["image"])
         image.read_new_app(spec["app"])
@@ -142,7 +187,7 @@ if ((len(sys.argv) == 2) and ("LEGACY" in str(sys.argv[1]))):
 
 else:
     print("Larus App Image Packer")
-    with open("scripts/pack.toml", "r") as f:
+    with open(os.path.join(SCRIPT_DIR, "pack.toml"), "r") as f:
         spec = toml.load(f)
         image = Binary(spec["image"])
         image.read_new_app(spec["app"])

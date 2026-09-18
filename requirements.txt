@@ -1,0 +1,5 @@
+# Combined Python dependencies for build_firmware_all.py (both STM32 and
+# ESP32 side scripts). See sw_stm32/scripts/requirements.txt and
+# sw_esp32/scripts/requirements.txt if you only need one side.
+-r sw_stm32/scripts/requirements.txt
+-r sw_esp32/scripts/requirements.txt

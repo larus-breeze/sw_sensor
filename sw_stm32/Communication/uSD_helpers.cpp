@@ -36,6 +36,8 @@
 #include "communicator.h"
 #include "system_state.h"
 #include "uSD_helpers.h"
+#include "fatfs_access.h"
+#include "uSD_handler.h"
 
 COMMON char *crashfile;
 COMMON unsigned crashline;
@@ -92,6 +94,10 @@ void write_crash_dump( bool is_crash)
 #include "trcConfig.h"
   vTraceStop(); // don't trace ourselves ...
 #endif
+
+  // Best-effort only - unbounded could deadlock if the crashed task
+  // itself held the lock.
+  (void) fatfs_lock_best_effort ();
 
   next = format_date_time( buffer, coordinates);
   append_string (next, is_crash ? ".CRASHDUMP" : ".RESET");
@@ -499,7 +505,12 @@ bool read_software_update (void)
       // read first block to check hardware and firmware version
       fresult = f_read (&the_file, mem_buffer, MEM_BUFSIZE, &bytes_read);
       if (fresult != FR_OK)
-	return false;
+	{
+	  // _FS_LOCK (ffconf.h): an early return without closing leaves this
+	  // slot open forever, later rejecting a same-named WLAN upload.
+	  f_close (&the_file);
+	  return false;
+	}
       f_close (&the_file);
 
       uint32_t file_hw_version = mem_buffer[23] | (mem_buffer[22] << 8)
@@ -514,8 +525,6 @@ bool read_software_update (void)
       if ((file_hw_version == 0x01010100)
 	  && (file_magic_number == 0x1c8073ab20853579))
 	{
-	  // The files hw version is for the larus sensor and the larus magic number is correct.
-
 	  uint32_t file_sw_version = mem_buffer[27] | (mem_buffer[26] << 8)
 	      | (mem_buffer[25] << 16) | (mem_buffer[24] << 24);
 	  if (file_sw_version > highest_sw_version_found)
@@ -554,27 +563,71 @@ bool read_software_update (void)
       return false;
     }
 
-  // compare against flash content
+  // Compare the whole image, not just the first block - an interrupted
+  // earlier write could leave the first block(s) correct but the rest
+  // stale.
   uint32_t *mem_ptr;
   uint32_t *flash_ptr;
   bool image_is_equal = true;
+  uint32_t compare_address = flash_address;
+  UINT compare_bytes_read = bytes_read;
 
-  for (mem_ptr = (uint32_t*) mem_buffer, flash_ptr = (uint32_t*) flash_address;
-      mem_ptr < (uint32_t*) (mem_buffer + MEM_BUFSIZE); ++mem_ptr, ++flash_ptr)
-    if (*mem_ptr != *flash_ptr)
-      {
-	image_is_equal = false;
-	break;
-      }
+  for (;;)
+    {
+      for (mem_ptr = (uint32_t*) mem_buffer, flash_ptr = (uint32_t*) compare_address;
+	  mem_ptr < (uint32_t*) (mem_buffer + compare_bytes_read); ++mem_ptr, ++flash_ptr)
+	if (*mem_ptr != *flash_ptr)
+	  {
+	    image_is_equal = false;
+	    break;
+	  }
 
+      if ((! image_is_equal) || (compare_bytes_read < MEM_BUFSIZE))
+	break; // mismatch found, or that was the last (short) block - done either way
+
+      compare_address += compare_bytes_read;
+      fresult = f_read (&the_file, mem_buffer, MEM_BUFSIZE, &compare_bytes_read);
+      if (fresult != FR_OK)
+	{
+	  image_is_equal = false; // treat a read error conservatively as "not equal"
+	  break;
+	}
+      if (compare_bytes_read == 0)
+	break; // exact multiple of MEM_BUFSIZE - true end of file, all blocks matched
+    }
+
+  // Close the_file on every return path - _FS_LOCK (ffconf.h) else keeps
+  // its slot open, rejecting a later same-named WLAN upload.
   if (image_is_equal)
-    return false;
+    {
+      f_close (&the_file);
+      return false;
+    }
+
+  // Comparison consumed the file - rewind and re-read the first block so
+  // the program loop below starts as it always has.
+  fresult = f_lseek (&the_file, 0);
+  if (fresult != FR_OK)
+    {
+      f_close (&the_file);
+      return false;
+    }
+  fresult = f_read (&the_file, mem_buffer, MEM_BUFSIZE, &bytes_read);
+  if ((fresult != FR_OK) || (bytes_read < MEM_BUFSIZE))
+    {
+      f_close (&the_file);
+      return false;
+    }
 
   status = HAL_FLASH_Unlock ();
   if (status != HAL_OK)
-    return false;
+    {
+      f_close (&the_file);
+      return false;
+    }
 
-  // for an unknown reason error flags need to be reset
+  // Stale flags surviving a warm reset would otherwise abort programming
+  // below - see jump_to_pending_flash_update_if_any(), uSD_handler.cpp.
   __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP);
   __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPERR);
   __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_WRPERR);
@@ -582,27 +635,21 @@ bool read_software_update (void)
   __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGPERR);
   __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGSERR);
 
-  // erase flash range 0x08080000 - 0x080DFFFF
-  uint32_t SectorError = 0;
-  FLASH_EraseInitTypeDef pEraseInit;
-  pEraseInit.TypeErase = FLASH_TYPEERASE_SECTORS;
-  pEraseInit.NbSectors = 1;
-  pEraseInit.VoltageRange = VOLTAGE_RANGE_3;
-  pEraseInit.Sector = FLASH_SECTOR_7;
-  status = HAL_FLASHEx_Erase (&pEraseInit, &SectorError);
-  if ((status != HAL_OK) || (SectorError != 0xffffffff))
-    return false;
-  pEraseInit.Sector = FLASH_SECTOR_8;
-  status = HAL_FLASHEx_Erase (&pEraseInit, &SectorError);
-  if ((status != HAL_OK) || (SectorError != 0xffffffff))
-    return false;
-  pEraseInit.Sector = FLASH_SECTOR_9;
-  status = HAL_FLASHEx_Erase (&pEraseInit, &SectorError);
-  if ((status != HAL_OK) || (SectorError != 0xffffffff))
-    return false;
+  // No erase here (deliberately) - erase_flash_staging_area_if_needed()
+  // (uSD_handler.cpp) already erased this range before the watchdog was
+  // armed. Erasing here, with the watchdog live, risks a mid-erase reset
+  // leaving a corrupt-but-valid-looking header staged.
+
+  // 4096 back-to-back HAL_FLASH_Program() calls can exceed the WWDG
+  // window on their own (see documentation/wlan_link.md). Dropping below
+  // WATCHDOG_TASK_PRIORITY lets the scheduler preempt this loop; the
+  // explicit delay(1) every 256 words guarantees the watchdog gets fed
+  // regardless.
+  uSD_handler_task.set_priority (WATCHDOG_TASK_PRIORITY - 1);
 
   for (;;)
     {
+      unsigned words_since_yield = 0;
       for (uint32_t *data_pointer = (uint32_t*) mem_buffer;
 	  data_pointer < (uint32_t*) (mem_buffer + bytes_read); ++data_pointer)
 	{
@@ -611,15 +658,25 @@ bool read_software_update (void)
 	  if (status != HAL_OK)
 	    break;
 	  flash_address += sizeof(uint32_t);
+
+	  if (++words_since_yield >= 256)
+	    {
+	      words_since_yield = 0;
+	      delay (1); // beware of our watchdog !
+	    }
 	}
 
       if (last_block_read)
 	{
 	  HAL_FLASH_Lock ();
+	  uSD_handler_task.set_priority (LOGGER_PRIORITY);
 	  f_close (&the_file);
 	  delay (100); // wait until uSD operations are finished
 	  fresult = f_mount (0, "", 0); // unmount file system
 	  delay (100); // wait until uSD operations are finished
+	  // One jump attempt on the next boot - see firmware_update_retry_marker,
+	  // uSD_handler.cpp.
+	  firmware_update_retry_marker = FIRMWARE_UPDATE_JUST_STAGED;
 	  return true;
 	}
 
@@ -636,7 +693,10 @@ bool read_software_update (void)
 	  last_block_read = true;
 	}
     }
+
   HAL_FLASH_Lock ();
+  uSD_handler_task.set_priority (LOGGER_PRIORITY);
   return false;
 }
+
 

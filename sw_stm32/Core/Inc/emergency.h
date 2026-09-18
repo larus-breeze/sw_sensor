@@ -24,6 +24,8 @@
 #ifndef INC_EMERGENCY_H_
 #define INC_EMERGENCY_H_
 
+#include <stdint.h>
+
 #ifdef __cplusplus
  extern "C"
 #endif

@@ -72,6 +72,7 @@
 #define BLUETOOTH_PRIORITY		STANDARD_TASK_PRIORITY + 4
 #define CAN_PRIORITY			STANDARD_TASK_PRIORITY + 4
 #define LOGGER_PRIORITY			STANDARD_TASK_PRIORITY + 3
+#define WLAN_LINK_PRIORITY		STANDARD_TASK_PRIORITY + 3
 
 #define WATCHDOG_TASK_PRIORITY		STANDARD_TASK_PRIORITY + 2
 
@@ -86,6 +87,12 @@
 
 #define STANDARD_ISR_PRIORITY		14
 #define WATCHDOG_ISR_PRIORITY		15 // lowest priority
+
+// PB1/EXTI1 software chip-select signal from the ESP32 (see
+// documentation/wlan_link.md) - must stay numerically below
+// STANDARD_ISR_PRIORITY so it can preempt a stuck SPI2 DMA IRQ
+// (DMA1_Stream3/4_IRQn, both at STANDARD_ISR_PRIORITY).
+#define WLAN_LINK_CS_ISR_PRIORITY	11
 
 // more parameters
 

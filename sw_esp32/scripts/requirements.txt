@@ -1,0 +1,9 @@
+# Dependencies for generate_ap_label.py, plus esptool for
+# build_firmware.py's merged single-file flash image. Everything else in
+# build_firmware.py/create-git-info-header.py uses only the Python standard
+# library plus arduino-cli (a separate, non-pip install - see the ESP32
+# README).
+qrcode[pil]
+Pillow
+pyserial
+esptool

@@ -1,0 +1,5 @@
+# Dependencies for pack.py. build_firmware.py and create-git-info-header.py
+# use only the Python standard library (plus STM32CubeIDE, a separate
+# non-pip install - see README.md).
+toml
+pyelftools

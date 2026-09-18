@@ -41,11 +41,30 @@ void register_SPI_usertask(SPI_HandleTypeDef *hspi)
 	else
 		SPI2_task_Id = xTaskGetCurrentTaskHandle();
 }
+
+void notify_SPI2_task_from_ISR(uint32_t notification_value)
+{
+	if (SPI2_task_Id != 0)
+	{
+		BaseType_t xYieldRequired = pdFALSE;
+		xTaskNotifyFromISR( SPI2_task_Id, notification_value, eSetValueWithOverwrite, &xYieldRequired);
+		portEND_SWITCHING_ISR(xYieldRequired);
+	}
+}
 static inline void SPI_sync(SPI_HandleTypeDef *hspi)
 {
+	// A DMA half-transfer callback also fires (HAL_SPI_RxHalfCpltCallback(),
+	// notify value 0) even for a one-shot receive - only value 1
+	// (HAL_SPI_CpltCallback()) is the real completion. Without filtering,
+	// this used to return on the half-transfer, reading a half-DMA'd,
+	// effectively garbage buffer.
 	uint32_t pulNotificationValue;
-	BaseType_t result = xTaskNotifyWait( 0xffffffff, 0, &pulNotificationValue, SPI_DEFAULT_TIMEOUT_MS);
-	ASSERT( result == pdTRUE);
+	do
+	{
+		BaseType_t result = xTaskNotifyWait( 0xffffffff, 0, &pulNotificationValue, SPI_DEFAULT_TIMEOUT_MS);
+		ASSERT( result == pdTRUE);
+	}
+	while (pulNotificationValue == 0);
 }
 
 void SPI_Transceive(SPI_HandleTypeDef *hspi, uint8_t *pTxData, uint8_t *pRxData, uint16_t Size)
@@ -76,6 +95,29 @@ void SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size, uint3
 	SPI_sync(hspi);
 }
 
+bool SPI_Receive_Timeout(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size, uint32_t timeout_ms)
+{
+	register_SPI_usertask( hspi);
+	HAL_StatusTypeDef status = HAL_SPI_Receive_DMA(hspi, pRxData, Size);
+	ASSERT(HAL_OK == status);
+
+	// see SPI_sync()'s comment: a notification value of 0 is only the DMA
+	// half-transfer notice, not the real completion - keep waiting for a
+	// non-zero value, still bounded by timeout_ms per wait.
+	uint32_t pulNotificationValue;
+	for (;;)
+	{
+		BaseType_t result = xTaskNotifyWait( 0xffffffff, 0, &pulNotificationValue, pdMS_TO_TICKS(timeout_ms));
+		if( result != pdTRUE)
+		{
+			HAL_SPI_Abort(hspi); // cancel the pending DMA request so the next call starts clean
+			return false;
+		}
+		if (pulNotificationValue != 0)
+			return true;
+	}
+}
+
 
 void HAL_SPI_CpltCallback(SPI_HandleTypeDef *hspi)
 {
@@ -91,7 +133,7 @@ void HAL_SPI_CpltCallback(SPI_HandleTypeDef *hspi)
 		ASSERT( SPI2_task_Id !=0);
 
 		BaseType_t xYieldRequired = pdFALSE;;
-		xTaskNotifyFromISR( SPI2_task_Id, 1, eSetValueWithOverwrite, &xYieldRequired);
+		xTaskNotifyFromISR( SPI2_task_Id, WLAN_LINK_SPI2_NOTIFY_FULL_COMPLETE, eSetValueWithOverwrite, &xYieldRequired);
 		portEND_SWITCHING_ISR(xYieldRequired);
 	}
 	else
@@ -118,7 +160,7 @@ void HAL_SPI_RxHalfCpltCallback(SPI_HandleTypeDef *hspi)
 
 	BaseType_t xYieldRequired = pdFALSE;;
 	ASSERT( SPI2_task_Id !=0);
-	xTaskNotifyFromISR( SPI2_task_Id, 0, eSetValueWithOverwrite, &xYieldRequired);
+	xTaskNotifyFromISR( SPI2_task_Id, WLAN_LINK_SPI2_NOTIFY_HALF_COMPLETE, eSetValueWithOverwrite, &xYieldRequired);
 	portEND_SWITCHING_ISR(xYieldRequired);
 }
 
@@ -130,6 +172,23 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 {
+	// SPI2 (WLAN link) hardware errors recover instead of the unconditional
+	// ASSERT(0) other SPI instances get: notify the waiting arm_*() call
+	// with a distinct sentinel (WLAN_LINK_SPI2_NOTIFY_ERROR, spi.h) so it
+	// retries via the same path as a timeout, matching the WLAN link's own
+	// recover-and-retry design. SPI1 (IMU) stays fatal. See
+	// documentation/wlan_link.md.
+	if (hspi->Instance == SPI2)
+	{
+		if (SPI2_task_Id != 0)
+		{
+			BaseType_t xYieldRequired = pdFALSE;
+			xTaskNotifyFromISR( SPI2_task_Id, WLAN_LINK_SPI2_NOTIFY_ERROR, eSetValueWithOverwrite, &xYieldRequired);
+			portEND_SWITCHING_ISR(xYieldRequired);
+		}
+		return;
+	}
+
 	ASSERT(0);
 }
 
