@@ -221,12 +221,7 @@ void CAN_listener_task_runnable (void*)
 		break;
 
 	      case CMD_TUNE:
-#if RUN_FLASH_WRITE_TESTER
-extern Semaphore trigger_flash_fill;
-		    trigger_flash_fill.signal();
-#else
 		communicator_command_queue.send (FINE_TUNE_CALIB, 1);
-#endif
 		break;
 	      case CMD_RESET_SENSOR:
 #if CRASFILE_ON_USER_RESET == 0
