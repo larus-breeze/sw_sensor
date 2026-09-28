@@ -41,6 +41,14 @@
 #define BUFFER_SIZE      1024
 #define MAX_NMEA_CLIENTS    4
 
+// Bounds how long a write()/read() to one NMEA client can block this
+// function for - handleUartBridge() runs on the same single-threaded
+// loop() as handleWebServerClient(), so a client that stops ACKing
+// (e.g. an Android phone's WiFi power-save briefly pausing delivery)
+// would otherwise stall the web server and the accept() loop below for
+// every other client/port too, not just this one.
+#define NMEA_CLIENT_TIMEOUT_MS  400
+
 static HardwareSerial Serial_one (1);
 static HardwareSerial Serial_two (2);
 static HardwareSerial *COM[NUM_COM] = { &Serial, &Serial_one, &Serial_two };
@@ -87,6 +95,7 @@ void handleUartBridge (void)
                   if (tcpClient[num][slot])
                     tcpClient[num][slot].stop ();
                   tcpClient[num][slot] = tcpServer[num]->accept ();
+                  tcpClient[num][slot].setTimeout (NMEA_CLIENT_TIMEOUT_MS);
                   placed = true;
                   break;
                 }
@@ -130,7 +139,19 @@ void handleUartBridge (void)
 
           for (int slot = 0; slot < MAX_NMEA_CLIENTS; ++slot)
             if (tcpClient[num][slot])
-              tcpClient[num][slot].write (uartToNetBuf[num], uartToNetLen[num]);
+              {
+                // A short write (the client isn't ACKing within
+                // NMEA_CLIENT_TIMEOUT_MS - e.g. a phone's WiFi power-save
+                // pausing delivery) means this client is stalled, not just
+                // slow. Drop it now rather than let the same client stall
+                // this same write, on this same port, every loop() pass -
+                // that would otherwise keep blocking the web server and
+                // every other NMEA client/port for NMEA_CLIENT_TIMEOUT_MS
+                // at a time for as long as the stall lasts.
+                size_t written = tcpClient[num][slot].write (uartToNetBuf[num], uartToNetLen[num]);
+                if (written < uartToNetLen[num])
+                  tcpClient[num][slot].stop ();
+              }
 
           // Deliberately NOT echoed to COM[0] (the USB/programmer serial
           // debug console) - that would mix live NMEA/telemetry traffic

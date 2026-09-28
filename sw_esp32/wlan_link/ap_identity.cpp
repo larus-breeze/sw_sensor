@@ -99,8 +99,10 @@ static void loadOrGeneratePassword (char *passwordOut, size_t passwordCapacity)
 void computeApIdentity (char *ssidOut, size_t ssidCapacity, char *passwordOut, size_t passwordCapacity)
 {
   uint64_t mac = ESP.getEfuseMac();
-  uint16_t uid = (uint16_t) (mac & 0xFFFFu);
-  snprintf (ssidOut, ssidCapacity, "Larus_%X", uid); // matches the existing Bluetooth device name scheme
+  // getEfuseMac() packs MAC byte 0 into the LSB, so the low 16 bits are the
+  // shared Espressif OUI prefix; use the device-specific last two bytes instead.
+  uint16_t uid = (uint16_t) ((((mac >> 32) & 0xFFu) << 8) | ((mac >> 40) & 0xFFu));
+  snprintf (ssidOut, ssidCapacity, "Larus_%04X", uid); // = last 4 hex digits of the MAC
 
   loadOrGeneratePassword (passwordOut, passwordCapacity);
 }

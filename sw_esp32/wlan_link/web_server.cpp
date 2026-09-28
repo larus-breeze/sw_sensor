@@ -152,6 +152,15 @@ point.</p>
 </form>
 <div id="wifiConfigStatus"></div>
 
+<h2>Access point auto-off</h2>
+<p>Switch off the access point after 5 minutes without any connected
+client. Once switched off, a sensor restart is required.</p>
+<form id="apAutoOffForm">
+  <label><input type="checkbox" id="apAutoOffEnabled"> Enabled</label>
+  <button type="submit">Save</button>
+</form>
+<div id="apAutoOffStatus"></div>
+
 <h2>Logging</h2>
 <p>Logging must be stopped to update firmware or access log files on the SD card.</p>
 <button id="stopLoggingButton">Stop logging</button>
@@ -284,6 +293,12 @@ async function refreshStatus() {
     if (! wifiSsidField.dataset.prefilled) {
       wifiSsidField.value = s.wifiStaSsid;
       wifiSsidField.dataset.prefilled = '1';
+    }
+    // prefill once, same reasoning as wifiSsidField above
+    const apAutoOffEnabled = document.getElementById('apAutoOffEnabled');
+    if (! apAutoOffEnabled.dataset.prefilled) {
+      apAutoOffEnabled.checked = s.apAutoOff;
+      apAutoOffEnabled.dataset.prefilled = '1';
     }
     document.getElementById('sdCardStatus').textContent = formatSdCardStatus(s);
     document.getElementById('airborneStatus').textContent = s.linkOk ? (s.airborne ? 'yes' : 'no') : 'unreachable';
@@ -754,6 +769,22 @@ document.getElementById('wifiForgetButton').addEventListener('click', async () =
   await saveWifiConfig('', '');
 });
 
+document.getElementById('apAutoOffForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const apAutoOffStatus = document.getElementById('apAutoOffStatus');
+  const enabled = document.getElementById('apAutoOffEnabled').checked;
+  try {
+    const body = new URLSearchParams({enabled: enabled ? '1' : '0'});
+    const r = await fetch('/wifi/ap_auto_off', { method: 'POST', body });
+    apAutoOffStatus.textContent = r.ok ?
+      (enabled ? 'Saved - access point switches off after 5 min without a connected device.' :
+                 'Saved - access point auto-off disabled.') :
+      'Save failed: ' + await r.text();
+  } catch (e) {
+    apAutoOffStatus.textContent = 'Save failed: ' + e;
+  }
+});
+
 refreshStatus();
 refreshFiles();
 // setInterval(refreshStatus, 5000);
@@ -764,6 +795,12 @@ refreshFiles();
 
 static void handleRoot (void)
 {
+  // Temporary diagnostic for the Android "page never loads" investigation
+  // (documentation/wlan_link.md has no ticket for this yet) - confirms
+  // whether a client's GET / even reaches the WebServer's request handler
+  // at all, as opposed to failing earlier at the TCP/radio level.
+  Serial.print ("HTTP GET / from ");
+  Serial.println (server.client ().remoteIP ());
   server.send_P (200, "text/html", PAGE_HTML);
 }
 
@@ -824,6 +861,7 @@ static void handleStatus (void)
   json += ",\"wifiMode\":\"" + String (wifiConfigCurrentMode () == WIFI_CONFIG_MODE_STA ? "sta" : "ap") + "\"";
   json += ",\"wifiStaConfigured\":" + String (wifiConfigStaConfigured () ? "true" : "false");
   json += ",\"wifiStaSsid\":\"" + wifiConfigStaSsid () + "\"";
+  json += ",\"apAutoOff\":" + String (wifiConfigApAutoOff () ? "true" : "false");
   json += ",\"wifiIp\":\"" +
           (wifiConfigCurrentMode () == WIFI_CONFIG_MODE_STA ? WiFi.localIP () : WiFi.softAPIP ()).toString () + "\"";
   json += "}";
@@ -1296,6 +1334,19 @@ static void handleWifiConfigSave (void)
   saveWifiConfigAndRestart (ssid.c_str (), password.c_str ()); // never returns
 }
 
+//!< POST /wifi/ap_auto_off: enabled=1/0. Applied immediately, no restart.
+static void handleApAutoOffSave (void)
+{
+  String arg = server.arg ("enabled");
+  if (arg != "0" && arg != "1")
+    {
+      server.send (400, "text/plain", "enabled must be 0 or 1");
+      return;
+    }
+  saveApAutoOff (arg == "1");
+  server.send (200, "text/plain", "ok");
+}
+
 void setupWebServer (void)
 {
   // WiFi (access point and/or station) is already up by this point - see
@@ -1312,11 +1363,44 @@ void setupWebServer (void)
   server.on ("/update", HTTP_POST, handleFirmwareUploadComplete, handleFirmwareUploadChunk);
   server.on ("/update_esp32", HTTP_POST, handleEsp32UpdateComplete, handleEsp32UpdateChunk);
   server.on ("/wifi/config", HTTP_POST, handleWifiConfigSave);
+  server.on ("/wifi/ap_auto_off", HTTP_POST, handleApAutoOffSave);
 
   server.begin ();
 }
 
+// How long server.client() may sit "still connected" without a request
+// completing before the watchdog below force-disconnects it. Generous
+// margin above the WebServer library's own internal per-phase waits
+// (~1-3s) so a slow-but-progressing multi-request page load is never
+// the trigger - this is only meant to catch a client that's truly gone
+// silent, not one that's merely slow.
+#define WEB_SERVER_STUCK_CLIENT_TIMEOUT_MS  15000u
+
 void handleWebServerClient (void)
 {
   server.handleClient ();
+
+  // Safety net for a client whose WiFi link vanishes mid-connection (radio
+  // goes silent, no FIN/RST ever arrives - seen with at least one Android
+  // device). WebServer serves one client at a time; such a client looks
+  // "still connected" forever from the ESP32's side, since plain TCP can't
+  // tell a silently-gone peer from an idle-but-alive one without a
+  // keepalive. Without this, that one dead connection blocks
+  // server.handleClient() from ever accept()ing anyone else - including
+  // completely unrelated clients - until the offending device is forced to
+  // properly disconnect (observed fix: reboot it).
+  static unsigned long clientBusySinceMs = 0;
+  if (server.client ())
+    {
+      if (clientBusySinceMs == 0)
+        clientBusySinceMs = millis ();
+      else if (millis () - clientBusySinceMs > WEB_SERVER_STUCK_CLIENT_TIMEOUT_MS)
+        {
+          Serial.println ("WebServer: client stuck too long, forcing disconnect");
+          server.client ().stop ();
+          clientBusySinceMs = 0;
+        }
+    }
+  else
+    clientBusySinceMs = 0;
 }

@@ -4,9 +4,9 @@
  *
  * See documentation/wlan_link.md, "AP identity: SSID and password".
  *
- * SSID: unchanged from the existing sketch's scheme - "Larus_<uid>" from
- * the low 16 bits of the chip's factory-programmed MAC (ESP.getEfuseMac()),
- * matching the Bluetooth device name. Not secret, doesn't need to be.
+ * SSID: "Larus_<uid>", <uid> = the last two bytes of the chip's
+ * factory-programmed MAC (ESP.getEfuseMac()) as 4 hex digits. Not secret,
+ * doesn't need to be.
  *
  * Password: a random 80-bit value (ESP32 hardware RNG, esp_random()),
  * Crockford base32-encoded (16 chars, no ambiguous 0/O 1/I/L), generated
@@ -30,7 +30,7 @@
 
 #include <Arduino.h>
 
-#define AP_IDENTITY_SSID_MAX_LEN       16 //!< "Larus_" + up to 4 hex digits + NUL
+#define AP_IDENTITY_SSID_MAX_LEN       16 //!< "Larus_" + 4 hex digits + NUL
 #define AP_IDENTITY_PASSWORD_MAX_LEN   17 //!< 16 base32 chars + NUL
 
 //!< fills ssidOut/passwordOut (call with buffers at least
