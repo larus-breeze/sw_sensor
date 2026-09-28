@@ -50,6 +50,13 @@ void handleWifiLoop (void);
 //!< it never returns.
 void saveWifiConfigAndRestart (const char *ssid, const char *password);
 
+//!< persists and immediately applies access point auto-off: when enabled,
+//!< the AP is switched off (radio off, to save power) once it has had no
+//!< connected client for 5 minutes. Only applies in access point mode,
+//!< never while joined to a network in station mode.
+void saveApAutoOff (bool enabled);
+bool wifiConfigApAutoOff (void);
+
 wifi_config_mode_t wifiConfigCurrentMode (void);
 bool wifiConfigStaConfigured (void);
 String wifiConfigStaSsid (void); //!< configured SSID, or "" - never the password

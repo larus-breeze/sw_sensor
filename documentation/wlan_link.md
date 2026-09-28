@@ -341,10 +341,29 @@ responder bound to the old one stops working. On a network shared by
 several sensors, only one can hold that name at a time - client OS
 support for mDNS (`.local` resolution) varies.
 
+### Access point auto-off
+
+Optional power saving (web UI "Access point auto-off" section,
+`POST /wifi/ap_auto_off`, `enabled` = 0/1, persisted in NVS as
+`apautooff`, applied immediately without a restart): in access point
+mode, once `WiFi.softAPgetStationNum()` has been 0 for 5 minutes
+(`AP_AUTO_OFF_IDLE_MS`), the radio
+is switched off (`WIFI_OFF`). Any associated station keeps the AP alive,
+whether or not it talks to the web server or the TCP bridges. Never
+applies while joined to a client network. With a client network
+configured, background retries continue STA-only (no AP) while the AP is
+off; a successful join proceeds as usual, and losing that network later
+brings the AP back up. Otherwise the AP only returns after a restart.
+
 ## AP identity: SSID and password
 
-* SSID: `"Larus_<uid>"`, `<uid>` from the low 16 bits of
-  `ESP.getEfuseMac()`.
+* SSID: `"Larus_<uid>"`, `<uid>` = the last two bytes of the chip's MAC
+  as 4 hex digits (e.g. MAC `A0:B7:65:12:34:56` -> `Larus_3456`).
+  `ESP.getEfuseMac()` packs MAC byte 0 into the least significant byte of
+  its `uint64_t`, so the low 16 bits are the first two bytes of the
+  Espressif OUI - an earlier version used those, giving every chip with
+  the same OUI the same SSID (e.g. `Larus_B7A0` for `A0:B7:65`). A few
+  collisions remain possible with 16 bits, but are rare.
 * Password: a random 80-bit value from the ESP32's hardware RNG
   (`esp_random()`), Crockford base32-encoded, generated once on first boot
   and persisted in NVS (`ap_identity.cpp`, namespace `apident`) — printed
