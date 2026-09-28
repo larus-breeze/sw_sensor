@@ -13,6 +13,7 @@ Usage:
     python3 scripts/build_firmware.py [--config Release] [--cubeide PATH]
                                        [--workspace DIR] [--no-clean]
                                        [--no-pack] [--legacy]
+                                       [--allow-other-toolchain]
 
 Requires STM32CubeIDE (https://www.st.com/en/development-tools/stm32cubeide.html).
 The launcher (stm32cubeide on Linux/macOS, stm32cubeidec.exe on Windows - the
@@ -20,6 +21,11 @@ The launcher (stm32cubeide on Linux/macOS, stm32cubeidec.exe on Windows - the
 attach to a console by default) is auto-detected in common install
 locations; pass --cubeide or set the STM32CUBEIDE environment variable if
 it isn't found.
+
+After the build, the compiler identification in the ELF is compared with
+scripts/release_toolchain.txt, so a release cannot silently be built with a
+different compiler (see larus-breeze/sw_sensor#258). Use
+--allow-other-toolchain for local test builds with another STM32CubeIDE.
 """
 
 import argparse
@@ -27,6 +33,7 @@ import glob
 import os
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -38,6 +45,7 @@ SW_STM32_DIR = SCRIPT_DIR.parent
 REPO_ROOT_DIR = SW_STM32_DIR.parent
 
 DEFAULT_BUILD_CONFIG = "Release"
+RELEASE_TOOLCHAIN_FILE = SCRIPT_DIR / "release_toolchain.txt"
 
 
 def run(cmd, **kwargs):
@@ -162,6 +170,57 @@ def get_version_tag():
     return "unknown"
 
 
+def read_elf_comment(elf_path):
+    """Return the strings of the ELF's .comment section, where GCC records
+    its identification (e.g. "GCC: (GNU Tools for STM32 ...) 13.3.1 ...").
+    Minimal 32-bit little-endian ELF parser, standard library only."""
+    data = Path(elf_path).read_bytes()
+    if data[:4] != b"\x7fELF" or data[4] != 1 or data[5] != 1:
+        sys.exit(f"{elf_path} is not a 32-bit little-endian ELF file")
+    e_shoff, = struct.unpack_from("<I", data, 0x20)
+    e_shentsize, e_shnum, e_shstrndx = struct.unpack_from("<HHH", data, 0x2E)
+
+    def section(index):
+        # sh_name, sh_type, sh_flags, sh_addr, sh_offset, sh_size
+        return struct.unpack_from("<IIIIII", data, e_shoff + index * e_shentsize)
+
+    names_offset = section(e_shstrndx)[4]
+    for index in range(e_shnum):
+        sh_name, _, _, _, sh_offset, sh_size = section(index)
+        name_end = data.index(b"\0", names_offset + sh_name)
+        if data[names_offset + sh_name:name_end] == b".comment":
+            content = data[sh_offset:sh_offset + sh_size]
+            return [s.decode("ascii", "replace") for s in content.split(b"\0") if s]
+    return []
+
+
+def read_release_toolchain():
+    lines = RELEASE_TOOLCHAIN_FILE.read_text().splitlines()
+    return next(line.strip() for line in lines if line.strip() and not line.startswith("#"))
+
+
+def check_toolchain(elf_path, allow_other_toolchain):
+    """Compare the compiler that built elf_path with release_toolchain.txt.
+    Returns the compiler identification (for the release notes)."""
+    expected = read_release_toolchain()
+    found = sorted({s for s in read_elf_comment(elf_path) if s.startswith("GCC:")})
+    if found == [expected]:
+        print(f"Toolchain OK: {expected}")
+        return expected
+
+    message = (
+        "The ELF was not built with the release toolchain.\n"
+        f"  expected ({RELEASE_TOOLCHAIN_FILE.name}): {expected}\n"
+        f"  found in ELF: {'; '.join(found) if found else '(no compiler identification)'}\n"
+        "Build releases with the toolchain above (see README.md), or change it\n"
+        "deliberately by updating release_toolchain.txt (see larus-breeze/sw_sensor#258)."
+    )
+    if not allow_other_toolchain:
+        sys.exit("ERROR: " + message + "\nUse --allow-other-toolchain for a local test build.")
+    print("WARNING: " + message + "\nContinuing because of --allow-other-toolchain - do not publish this build.")
+    return "; ".join(found)
+
+
 def run_pack(legacy=False):
     cmd = [sys.executable, str(SCRIPT_DIR / "pack.py")]
     if legacy:
@@ -206,6 +265,12 @@ def main():
         action="store_true",
         help="also create the LEGACY SD-card update image (pack.py LEGACY)",
     )
+    parser.add_argument(
+        "--allow-other-toolchain",
+        action="store_true",
+        help="only warn instead of stopping if the compiler differs from "
+        "scripts/release_toolchain.txt (for local test builds, not for releases)",
+    )
     args = parser.parse_args()
 
     cubeide = find_cubeide(args.cubeide)
@@ -230,6 +295,7 @@ def main():
     if not elf_path.exists():
         sys.exit(f"expected output ELF not found: {elf_path}")
     print(f"\nApplication ELF: {elf_path}")
+    compiler = check_toolchain(elf_path, args.allow_other_toolchain)
 
     # Named, versioned copy in the shared top-level build/ folder (alongside
     # the ESP32 side's own named outputs) - e.g. for flashing/debugging
@@ -247,6 +313,10 @@ def main():
         run_pack(legacy=False)
         if args.legacy:
             run_pack(legacy=True)
+
+    if compiler.startswith("GCC: "):
+        compiler = compiler[len("GCC: "):]
+    print(f"\nFor the release notes:\n  Built with {compiler}")
 
 
 if __name__ == "__main__":

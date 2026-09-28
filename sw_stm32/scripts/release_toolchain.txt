@@ -1,0 +1,9 @@
+# Compiler used for release builds (see larus-breeze/sw_sensor#258).
+#
+# build_firmware.py compares the line below with the compiler identification
+# the compiler writes into the .comment section of the ELF and stops if they
+# differ. Changing the release compiler is a deliberate step: update this
+# line, README.md and the CI toolchain versions together.
+#
+# This toolchain ships with STM32CubeIDE 1.19.0 (used for release 0.7.6).
+GCC: (GNU Tools for STM32 13.3.rel1.20250523-0900) 13.3.1 20240614
