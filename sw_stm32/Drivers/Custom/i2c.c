@@ -172,12 +172,7 @@ I2C_StatusTypeDef I2C_Init(I2C_HandleTypeDef *hi2c)
 				status = I2C_ERROR;
 			}
 		}
-		else
-		{
-			status = I2C_OK; //Already initialized
-		}
 		I2C1_ResolveStuckSlave();
-
 	}
 	else if (hi2c->Instance == I2C2)
 	{
@@ -189,19 +184,13 @@ I2C_StatusTypeDef I2C_Init(I2C_HandleTypeDef *hi2c)
 				status = I2C_ERROR;
 			}
 		}
-		else
-		{
-			status = I2C_OK; //Already initialized
-		}
 		I2C2_ResolveStuckSlave();
-
 	}
 	else
 	{
 		status = I2C_ERROR;
 		ASSERT(0);
 	}
-
 	return status;
 }
 
