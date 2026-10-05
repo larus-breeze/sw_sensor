@@ -34,6 +34,7 @@ static uint32_t uploadChunkFillLevel;
 static uint32_t uploadChunkIndex;
 static uint32_t uploadRunningCrc32;
 static bool uploadFailed;
+static bool uploadSessionOpen; //!< an STM32-side upload session is open - see abortUploadSession()
 static wlan_link_nack_reason_t uploadFailReason;
 
 // --- ESP32 self-update state ---------------------------------------------
@@ -71,6 +72,7 @@ static const char *nackReasonText (wlan_link_nack_reason_t reason)
     case WLAN_NACK_INTERNAL_ERROR:   return "internal error on the sensor";
     case WLAN_NACK_BAD_FILENAME:     return "invalid filename";
     case WLAN_NACK_SD_CARD_BUSY:     return "SD card busy, try again shortly";
+    case WLAN_NACK_SD_CARD_FULL:     return "SD card full - delete old log files first";
     default:                         return NACK_REASON_TEXT_UNKNOWN;
     }
 }
@@ -121,7 +123,8 @@ progress { width: 100%; }
 
 <div id="linkErrorBanner" class="banner err">Lost communication with the sensor - retrying...</div>
 <div id="noSdBanner" class="banner err">No SD card detected - insert one to use firmware update or log files.</div>
-<div id="loggingActiveBanner" class="banner warn">Logging is active - stop logging below to update firmware or manage files.</div>
+<div id="sdFullBanner" class="banner err">Logging stopped - SD card full (less than 5 MB free). Delete old log files or format the card.</div>
+<div id="loggingActiveBanner" class="banner warn">Logging is active - stop logging below to manage files.</div>
 <div id="filesTruncatedBanner" class="banner warn">There are more log files than this page can list - showing only the first files found. Delete old ones to see the rest.</div>
 
 <h2>Info</h2>
@@ -162,7 +165,7 @@ client. Once switched off, a sensor restart is required.</p>
 <div id="apAutoOffStatus"></div>
 
 <h2>Logging</h2>
-<p>Logging must be stopped to update firmware or access log files on the SD card.</p>
+<p>Logging must be stopped to access log files on the SD card.</p>
 <button id="stopLoggingButton">Stop logging</button>
 <button id="startLoggingButton" style="display:none">Resume logging</button>
 <span id="loggingStatus"></span>
@@ -192,7 +195,7 @@ client. Once switched off, a sensor restart is required.</p>
   <button type="button" id="fwFileButton">Choose file</button>
   <span id="fwFileName">No file chosen</span>
   <!-- Starts disabled - no file is chosen yet at page load. Kept in sync
-       with file selection and with the SD-card/logging gate below (see
+       with file selection and with the SD-card gate below (see
        updateUploadButtonState()) so it can't be clicked into a request
        that was always going to fail (empty upload, or a misleading NACK
        reason if a file happens to be chosen while gated). -->
@@ -273,6 +276,8 @@ async function refreshStatus() {
     // own "paused" text for that same brief window.
     document.getElementById('loggingActiveBanner').style.display =
       (s.linkOk && s.sdCardPresent && !s.loggingPausedByUser && s.loggingActive) ? 'block' : 'none';
+    document.getElementById('sdFullBanner').style.display =
+      (s.linkOk && s.sdCardPresent && s.loggingStoppedSdFull) ? 'block' : 'none';
     document.getElementById('stm32Version').textContent = s.linkOk ? s.stm32Version : 'unreachable';
     document.getElementById('esp32Version').textContent = s.esp32Version;
     document.getElementById('nmeaEndpoint').textContent = s.wifiIp + ':8880';
@@ -311,7 +316,8 @@ async function refreshStatus() {
     // showing its pre-click state until the next unrelated refresh.
     document.getElementById('loggingStatus').textContent = !s.linkOk ? '' :
       (s.loggingPausedByUser ? 'paused - resumes automatically after a few minutes' :
-       (s.loggingActive ? 'active' : 'not active'));
+       (s.loggingActive ? 'active' :
+        (s.loggingStoppedSdFull ? 'stopped - SD card full' : 'not active')));
     document.getElementById('stopLoggingButton').style.display = (s.linkOk && !s.loggingPausedByUser) ? '' : 'none';
     document.getElementById('startLoggingButton').style.display = (s.linkOk && s.loggingPausedByUser) ? '' : 'none';
     // logging_active, not airborne - see "Logging pause" (documentation/wlan_link.md):
@@ -324,9 +330,11 @@ async function refreshStatus() {
     // until an unrelated refresh happened to catch up; loggingPausedByUser
     // flips the moment the STM32 ACKs the request.
     const disable = !s.sdCardPresent || (s.loggingActive && !s.loggingPausedByUser);
-    document.getElementById('fwFile').disabled = disable;
-    document.getElementById('fwFileButton').disabled = disable;
-    updateUploadButtonState('fwFile', 'fwSubmitButton', disable);
+    // No logging gate here - the upload stops logging itself, see
+    // stopLoggingForUpdate().
+    document.getElementById('fwFile').disabled = !s.sdCardPresent;
+    document.getElementById('fwFileButton').disabled = !s.sdCardPresent;
+    updateUploadButtonState('fwFile', 'fwSubmitButton', !s.sdCardPresent);
     document.getElementById('formatButton').disabled = disable;
     // Leave the button alone while a download-all run is active - it's
     // showing "Cancel" then, not "Download all", and disabling it would
@@ -666,12 +674,92 @@ document.getElementById('startLoggingButton').addEventListener('click', async ()
   refreshFilesSoonAgain();
 });
 
+// Stops logging right before the STM32 upload - the STM32 NACKs
+// UPLOAD_BEGIN while logging is active, and a manual stop is only a pause
+// that expires after ~5 minutes (LOGGING_PAUSE_TIMEOUT_ITERATIONS). Never
+// automatic while airborne: that would cut the flight log and reboot the
+// sensor mid-flight - a manual stop is still possible then. Resolves true
+// once logging is really stopped, otherwise false with the reason shown.
+const LOGGING_STOP_TIMEOUT_MS = 15000;
+
+async function fetchFreshStatus() {
+  const s = await (await fetch('/status')).json();
+  lastStatus = s;
+  return s;
+}
+
+async function stopLoggingForUpdate(status) {
+  let s = await fetchFreshStatus();
+  if (!s.linkOk) {
+    status.textContent = 'Sensor unreachable - try again.';
+    return false;
+  }
+  if (!s.loggingActive)
+    return true;
+  if (!s.loggingPausedByUser) {
+    if (s.airborne) {
+      status.textContent = 'Logging is active and the sensor reports airborne - not stopping it automatically. ' +
+        'Stop logging manually in the Logging section first if you really want to update now.';
+      return false;
+    }
+    if (!confirm('Logging is active and will be stopped for the firmware update. Continue?')) {
+      status.textContent = '';
+      return false;
+    }
+    status.textContent = 'Stopping logging...';
+    const r = await fetch('/logging/stop', { method: 'POST' });
+    if (!r.ok) {
+      status.textContent = 'Failed to stop logging - try again.';
+      return false;
+    }
+  }
+  // loggingActive only drops once the logger has closed its file (up to
+  // one logger cycle) - wait for that, not just for the ACK.
+  status.textContent = 'Waiting for logging to stop...';
+  const deadline = Date.now() + LOGGING_STOP_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    s = await fetchFreshStatus();
+    if (s.linkOk && !s.loggingActive)
+      return true;
+  }
+  status.textContent = 'Logging did not stop in time - try again.';
+  return false;
+}
+
+// The image is staged on the SD card before installing. Margin covers
+// cluster rounding. lastStatus is fresh here (stopLoggingForUpdate());
+// sdTotalBytes 0 means free space couldn't be queried - let the STM32
+// decide then (WLAN_NACK_SD_CARD_FULL).
+const UPLOAD_SD_SPACE_MARGIN_BYTES = 256 * 1024;
+
+function enoughSdSpaceForUpload(fileSize, status) {
+  const s = lastStatus;
+  if (!s || !s.sdTotalBytes) return true;
+  const needed = fileSize + UPLOAD_SD_SPACE_MARGIN_BYTES;
+  if (s.sdFreeBytes >= needed) return true;
+  status.textContent = 'Not enough free space on the SD card (' + humanSize(s.sdFreeBytes) + ' free, about ' +
+    humanSize(needed) + ' needed) - delete old log files first.';
+  return false;
+}
+
 document.getElementById('uploadForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const fileInput = document.getElementById('fwFile');
   if (!fileInput.files.length) return;
   const progress = document.getElementById('uploadProgress');
   const status = document.getElementById('uploadStatus');
+  const submitButton = document.getElementById('fwSubmitButton');
+  submitButton.disabled = true; // no second click while stopping logging
+  let loggingStopped = false;
+  try {
+    loggingStopped = await stopLoggingForUpdate(status);
+  } catch (err) {
+    status.textContent = 'Could not check the logging state: ' + err;
+  }
+  refreshStatus(); // re-applies the button/banner state either way
+  if (!loggingStopped) return;
+  if (!enoughSdSpaceForUpload(fileInput.files[0].size, status)) return;
   progress.style.display = 'block';
   progress.value = 0;
   status.textContent = 'Uploading...';
@@ -833,6 +921,7 @@ static void handleStatus (void)
       json += "\"airborne\":" + String (status.airborne ? "true" : "false") + ",";
       json += "\"loggingActive\":" + String (status.logging_active ? "true" : "false") + ",";
       json += "\"loggingPausedByUser\":" + String (status.logging_paused_by_user ? "true" : "false") + ",";
+      json += "\"loggingStoppedSdFull\":" + String (status.logging_stopped_sd_full ? "true" : "false") + ",";
       json += "\"swVersion\":" + String (status.current_sw_version) + ",";
       json += "\"stm32Version\":\"" + String (stm32TagInfo) + "\",";
       // gnssYear is 2-digit (D_GNSS_coordinates_t::year, STM32 side) - +2000
@@ -852,7 +941,7 @@ static void handleStatus (void)
       // can't reach the STM32 - treat as "no SD card" from the UI's point
       // of view (safest default: disable destructive actions)
       json += "\"sdCardPresent\":false,\"sdFreeBytes\":0,\"sdTotalBytes\":0,"
-              "\"airborne\":false,\"loggingActive\":true,\"loggingPausedByUser\":false,"
+              "\"airborne\":false,\"loggingActive\":true,\"loggingPausedByUser\":false,\"loggingStoppedSdFull\":false,"
               "\"swVersion\":0,\"stm32Version\":\"\","
               "\"gnssYear\":0,\"gnssMonth\":0,\"gnssDay\":0,\"gnssHour\":0,\"gnssMinute\":0,\"gnssSecond\":0,"
               "\"linkOk\":false";
@@ -1160,6 +1249,17 @@ static void handleStartLogging (void)
     server.send (502, "text/plain", "request failed");
 }
 
+//!< Ends the STM32-side upload session right away (closes and deletes the
+//!< partial file, releases the SD card) instead of leaving it to the
+//!< STM32's 30s idle timeout. No-op unless a session is open.
+static void abortUploadSession (void)
+{
+  if (! uploadSessionOpen)
+    return;
+  uploadSessionOpen = false;
+  wlanLink.uploadAbort ();
+}
+
 static void handleFirmwareUploadChunk (void)
 {
   HTTPUpload &upload = server.upload ();
@@ -1176,6 +1276,7 @@ static void handleFirmwareUploadChunk (void)
       // multipart request isn't the file's exact size anyway, 0 is fine.
       if (! wlanLink.uploadBegin (upload.filename.c_str (), 0, uploadFailReason))
         uploadFailed = true;
+      uploadSessionOpen = ! uploadFailed;
     }
   else if (upload.status == UPLOAD_FILE_WRITE)
     {
@@ -1200,6 +1301,7 @@ static void handleFirmwareUploadChunk (void)
               if (! wlanLink.uploadChunk (uploadChunkIndex, uploadChunkBuffer, WLAN_LINK_CHUNK_SIZE, uploadFailReason))
                 {
                   uploadFailed = true;
+                  abortUploadSession ();
                   return;
                 }
               ++uploadChunkIndex;
@@ -1228,10 +1330,12 @@ static void handleFirmwareUploadChunk (void)
           if (! wlanLink.uploadChunk (uploadChunkIndex, uploadChunkBuffer, uploadChunkFillLevel, uploadFailReason))
             {
               uploadFailed = true;
+              abortUploadSession ();
               return;
             }
         }
 
+      uploadSessionOpen = false; // UPLOAD_END closes it either way (installs or discards)
       if (! wlanLink.uploadEnd (uploadRunningCrc32, uploadFailReason))
         {
           // ambiguous on purpose: the STM32 reboots right after ACKing
@@ -1239,6 +1343,11 @@ static void handleFirmwareUploadChunk (void)
           // response never made it back, not that the update failed
           uploadFailed = true;
         }
+    }
+  else if (upload.status == UPLOAD_FILE_ABORTED)
+    {
+      uploadFailed = true;
+      abortUploadSession (); // browser went away mid-upload
     }
 }
 

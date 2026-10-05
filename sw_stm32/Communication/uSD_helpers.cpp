@@ -96,8 +96,9 @@ void write_crash_dump( bool is_crash)
 #endif
 
   // Best-effort only - unbounded could deadlock if the crashed task
-  // itself held the lock.
-  (void) fatfs_lock_best_effort ();
+  // itself held the lock. While logging_active this task already holds it.
+  if( ! logging_active)
+    (void) fatfs_lock_best_effort ();
 
   next = format_date_time( buffer, coordinates);
   append_string (next, is_crash ? ".CRASHDUMP" : ".RESET");

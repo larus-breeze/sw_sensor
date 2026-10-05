@@ -39,9 +39,12 @@ void fatfs_unlock (void)
 }
 
 // Can't wait normally (the crashed task itself might hold it) or skip
-// locking (risks re-entering FatFs mid-mutation) - a short bounded
-// attempt is the least-bad compromise.
-#define FATFS_ACCESS_CRASH_TIMEOUT_MS  20u
+// locking (risks re-entering FatFs mid-mutation) - a bounded attempt is
+// the least-bad compromise. Must exceed WLAN_LINK_HEADER_TIMEOUT_MS so an
+// idle wlan_link_handler_task gets to hand over a session lock it holds
+// (see wlan_link_handler_runnable()), yet stay well inside the WWDG's
+// early-wakeup grace period (watchdog_handler.cpp).
+#define FATFS_ACCESS_CRASH_TIMEOUT_MS  2500u
 
 bool fatfs_lock_best_effort (void)
 {

@@ -287,7 +287,14 @@ void handleWifiLoop (void)
               lastRetryAttemptMs = now;
             }
           else
-            startAccessPoint (); // undo the WIFI_AP_STA probe, resume pure AP
+            {
+              // A failed STA probe isn't AP activity - keep the idle timer,
+              // or a configured-but-absent network (retried every
+              // STA_RETRY_INTERVAL_MS) keeps the AP from ever switching off.
+              unsigned long idleSinceMs = apIdleSinceMs;
+              startAccessPoint (); // undo the WIFI_AP_STA probe, resume pure AP
+              apIdleSinceMs = idleSinceMs;
+            }
         }
       return;
     }

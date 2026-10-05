@@ -87,6 +87,7 @@ typedef enum
   WLAN_NACK_INTERNAL_ERROR    = 0x0A,
   WLAN_NACK_BAD_FILENAME      = 0x0B,
   WLAN_NACK_SD_CARD_BUSY      = 0x0C, //!< uSD_handler_task currently holds the SD card (landing/takeoff transition race), retry shortly
+  WLAN_NACK_SD_CARD_FULL      = 0x0D, //!< no room left on the SD card for the upload
 } wlan_link_nack_reason_t;
 
 //!< confirmation token FORMAT_REQUEST must carry - not a security mechanism,
@@ -143,6 +144,7 @@ typedef struct
   uint8_t  gnss_hour;
   uint8_t  gnss_minute;
   uint8_t  gnss_second;
+  uint8_t  logging_stopped_sd_full; //!< 0/1 - a new *.lrsx was refused for lack of free space. Appended last: older ESP32 builds reject the longer payload, see documentation/wlan_link.md
 } wlan_link_status_payload_t;
 
 typedef struct
