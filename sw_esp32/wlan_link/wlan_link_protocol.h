@@ -71,6 +71,7 @@ enum wlan_link_nack_reason_t : uint8_t
   WLAN_NACK_INTERNAL_ERROR    = 0x0A,
   WLAN_NACK_BAD_FILENAME      = 0x0B,
   WLAN_NACK_SD_CARD_BUSY      = 0x0C,
+  WLAN_NACK_SD_CARD_FULL      = 0x0D, // no room left on the SD card for the upload
 };
 
 #define WLAN_LINK_FORMAT_CONFIRMATION_TOKEN  0x4C617246u  // "FraL" (Larus Format), arbitrary
@@ -124,6 +125,7 @@ typedef struct
   uint8_t  gnss_hour;
   uint8_t  gnss_minute;
   uint8_t  gnss_second;
+  uint8_t  logging_stopped_sd_full; // appended last - older STM32 builds omit it, see statusRequest()
 } wlan_link_status_payload_t;
 
 typedef struct

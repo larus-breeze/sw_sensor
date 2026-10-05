@@ -14,6 +14,15 @@ extern bool sd_card_mounted;
 extern bool logging_active;
 extern bool logging_paused_by_user;
 extern bool logging_force_start;
+extern bool logging_stopped_sd_full;
+
+//!< A new *.lrsx is only opened with at least this much free space - a full
+//!< card used to fail mid-write and end in a reset loop of 0-byte files.
+#define LOGGING_MIN_FREE_BYTES (5ull * 1024ull * 1024ull)
+
+//!< Caller must hold fatfs_lock(). A failed query doesn't block logging -
+//!< only a successfully measured shortage does.
+bool sd_card_has_room_for_logging (void);
 
 // One-shot "flash update already attempted this power-cycle" marker - see
 // firmware_update_retry_marker's doc comment, uSD_handler.cpp, for why it
