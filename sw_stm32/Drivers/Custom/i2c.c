@@ -167,7 +167,6 @@ I2C_StatusTypeDef I2C_Init(I2C_HandleTypeDef *hi2c)
 		if (I2C1_CPL_Message_Id == NULL)
 		{
 			I2C1_CPL_Message_Id =  xQueueCreate(1, sizeof(I2C_StatusTypeDef));
-			I2C1_ResolveStuckSlave();
 			if (NULL == I2C1_CPL_Message_Id)
 			{
 				status = I2C_ERROR;
@@ -177,6 +176,7 @@ I2C_StatusTypeDef I2C_Init(I2C_HandleTypeDef *hi2c)
 		{
 			status = I2C_OK; //Already initialized
 		}
+		I2C1_ResolveStuckSlave();
 
 	}
 	else if (hi2c->Instance == I2C2)
@@ -184,7 +184,6 @@ I2C_StatusTypeDef I2C_Init(I2C_HandleTypeDef *hi2c)
 		if (I2C2_CPL_Message_Id == NULL)
 		{
 			I2C2_CPL_Message_Id =  xQueueCreate(1, sizeof(I2C_StatusTypeDef));
-			I2C2_ResolveStuckSlave();
 			if (NULL == I2C2_CPL_Message_Id)
 			{
 				status = I2C_ERROR;
@@ -194,6 +193,7 @@ I2C_StatusTypeDef I2C_Init(I2C_HandleTypeDef *hi2c)
 		{
 			status = I2C_OK; //Already initialized
 		}
+		I2C2_ResolveStuckSlave();
 
 	}
 	else
