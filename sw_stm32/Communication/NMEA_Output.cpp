@@ -116,7 +116,6 @@ re_initialize: // in case of USART hangup
 	}
 #endif
       //Check if there is a CAN Message received which needs to be replayed via a Larus NMEA PLARS Sentence.
-      float32_t value;
       char *next = NMEA_buf.string + NMEA_buf.length;
 
       parameter_setting_message message;
