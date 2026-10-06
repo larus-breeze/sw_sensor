@@ -22,11 +22,12 @@
 
  **************************************************************************/
 
-#include <stdint.h>
 #include "my_assert.h"
 #include "stm32f407xx.h"
 #include "emergency.h"
 #include "embedded_memory.h"
+
+void MPU_vTaskSuspend( unsigned);
 
 void sync_logger(void );
 
@@ -40,7 +41,7 @@ void assert_failed( char * file, uint32_t line)
 {
   emergency_write_crashdump( file, line);
   while(1)
-    MPU_vTaskSuspend(0);
+    MPU_vTaskSuspend( 0);
 }
 
 extern void finish_crash_handling(void);
@@ -273,7 +274,7 @@ void vTaskSuspend(uint32_t);
 void vApplicationReturnFromTaskProcedureHook( void)
 {
 	ASSERT(0);
-	vTaskSuspend(0);
+	MPU_vTaskSuspend( 0);
 }
 
 void abort( void)
