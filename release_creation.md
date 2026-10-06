@@ -32,5 +32,6 @@
 - Chose the next version number with the format x.y.z (e.g. 9.9.9) https://github.com/larus-breeze/sw_sensor/releases
 - Assign a tag to the current commit e.g. with: git tag 9.9.9
 - Push tag: git push origin tag 9.9.9
-- Create a firmware update binary with the pack tools in sw_stm32
+- Build the firmware with `python3 build_firmware_all.py` (see README.md). The build checks that the release toolchain from `sw_stm32/scripts/release_toolchain.txt` was used; do not use `--allow-other-toolchain` for releases.
 - Go to https://github.com/larus-breeze/sw_sensor/releases create a new release for the tagged commit, write release notes and attach the firmware binary
+- Add the line "Built with ..." that build_firmware.py prints at the end to the release notes

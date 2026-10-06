@@ -36,6 +36,20 @@ Pull latest changes:
 - Release used for release versions (Max. optimized, no debug info)
 - Debug used for development
 
+# Release toolchain
+Releases are built with **STM32CubeIDE 1.19.0**, i.e. with the compiler
+*GNU Tools for STM32 13.3.rel1.20250523-0900* (GCC 13.3.1). The expected
+compiler identification is recorded in `sw_stm32/scripts/release_toolchain.txt`,
+and `build_firmware.py` checks every build against it. The language standards
+are set explicitly in the project: C `gnu11` and C++ `gnu++14`, the values
+STM32CubeIDE used implicitly for releases 0.7.4 and 0.7.6 (recorded in the
+debug information of their ELF files).
+
+Newer STM32CubeIDE versions use newer compilers by default (2.1.0 and later:
+GCC 14). Changing the release compiler is a deliberate step: update
+`release_toolchain.txt`, this section and the CI toolchain versions together,
+and run the tests from `release_creation.md`.
+
 # Building firmware from the command line
 Python dependencies (from the repository root):
 
