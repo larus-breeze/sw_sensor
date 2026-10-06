@@ -39,6 +39,15 @@ serial console at boot, or the joined network's router/DHCP lease list, to
 find it. "Forget network" clears the saved credentials and returns to pure
 access point mode after a reboot.
 
+## Access point auto-off
+
+The web UI's "Access point auto-off" section can switch the access point
+off after 5 minutes without any connected device, to save power. It
+doesn't apply while joined to a network in WiFi client mode. Once off, the
+access point only comes back after the sensor is restarted (or, with a
+client network configured, after that network was joined and then lost
+again).
+
 ## Flashing the ESP32 firmware
 - Flash the *.ino file with arduino studio via the esp32 usb connector
 - Arduino IDE configuration

@@ -123,7 +123,15 @@ NACK reason codes: `0x01` header CRC mismatch, `0x02` payload CRC
 mismatch, `0x03` out-of-sequence, `0x04` SD card not available, `0x05`
 file already exists with a version >= incoming, `0x06` rejected —
 logging active (see "Logging pause"), `0x07` file not found, `0x08`
-format confirmation token mismatch.
+format confirmation token mismatch, `0x0D` SD card full (upload: no room
+for the directory entry, or a short write).
+
+A failed upload chunk (or a browser that goes away mid-upload) makes the
+ESP32 send `UPLOAD_ABORT` right away, so the STM32 deletes the partial
+file and releases the SD card immediately instead of after its 30s
+session idle timeout. Before uploading, the web UI also compares the
+file size (plus a 256KB margin) with `sdFreeBytes` and refuses up front
+if it can't fit; an older ESP32 shows `0x0D` as "unknown error".
 
 Every frame carries a `Sequence No.`; upload chunks are idempotent
 (STM32 writes at `f_lseek`'d offsets derived from `Sequence No. * CHUNK_SIZE`),
@@ -219,7 +227,16 @@ logging off.
 
 `status.airborne` still reports raw flight state for the web UI's info
 display, but it's informational only — every actual gate uses
-`logging_active`.
+`logging_active`. The one exception is web-UI side: "Upload & install"
+(STM32) stops logging by itself (`stopLoggingForUpdate()`,
+`web_server.cpp`) — fresh `/status`, confirm dialog, `/logging/stop`, then
+wait up to 15s for `loggingActive` to drop — but only while not
+`airborne`, so an update can't cut a flight log and reboot the sensor
+mid-flight by accident; a manual stop still works then. Stopping right
+before the upload also keeps the ~5 minute pause auto-clear from
+restarting logging between a manual stop and the upload. Once
+`UPLOAD_BEGIN` succeeds, the upload holds the FatFs lock, so logging
+can't restart until the STM32 reboots into the update.
 
 ## Log file download (STM32 -> ESP32)
 
@@ -275,7 +292,12 @@ detected by polling `BSP_PlatformIsDetected()` in the "wait for airborne"
 loop (grounded state, the only time `wlan_link_handler_task` can reach
 the card anyway); detecting removal there resets the flag, unmounts, and
 restarts the mount state machine so a later re-insertion is picked up
-cleanly.
+cleanly. That restart must run privileged (`HAL_SD_DeInit()`/`HAL_SD_Init()`
+touch the NVIC) — the removal path used to jump there unprivileged, which
+faulted, suspended `uSD_handler_task` and (via the crash-dump handover in
+`wlan_link_handler_runnable()`) also parked the WLAN link until a reset.
+A crash of `uSD_handler_task` itself now also forces a WWDG reset, since
+nobody else would write the dump and reset.
 
 `STATUS_REQUEST`'s response also carries `sd_free_bytes`/`sd_total_bytes`
 (both `uint64_t`, so a card past 4GB doesn't overflow) via `f_getfree()`,
@@ -284,6 +306,28 @@ attempted only when a card is present **and** `logging_active` is false
 true would just block and fail). Both fields are 0 whenever they weren't
 queried — the web UI shows a plain "present" then, rather than a
 misleading "0% free".
+
+## SD card full
+
+A full card used to make the log writes fail mid-flight, ending in a reset
+loop that left 0-byte `*.lrsx` and crash-dump files behind. Before opening
+a new `*.lrsx` (and before the EEPROM dump that precedes it),
+`uSD_handler_task` now checks `f_getfree()` against
+`LOGGING_MIN_FREE_BYTES` (5 MB, `uSD_handler.h`). Below that, no file is
+created, `logging_stopped_sd_full` is set and the check is repeated every
+~10 s while the start condition holds. The flag is cleared by the next
+successful check, a card swap, a WLAN format, or a WLAN delete that brings
+free space back above the limit.
+
+`STATUS_REQUEST` reports the flag as `logging_stopped_sd_full`, the last
+byte of `wlan_link_status_payload_t`; the web UI shows a red banner and
+"stopped - SD card full" in the Logging section. The ESP32 accepts the
+shorter payload of an older STM32 build (flag reads 0), but an older ESP32
+build rejects the longer one and shows "STM32 unreachable" — update the
+ESP32 first (its self-update doesn't depend on the STM32 link).
+
+Only the start of a new log file is guarded; a card that fills up during a
+flight still hits the existing write-failure path.
 
 ## Firmware version reporting
 
@@ -341,10 +385,32 @@ responder bound to the old one stops working. On a network shared by
 several sensors, only one can hold that name at a time - client OS
 support for mDNS (`.local` resolution) varies.
 
+### Access point auto-off
+
+Optional power saving (web UI "Access point auto-off" section,
+`POST /wifi/ap_auto_off`, `enabled` = 0/1, persisted in NVS as
+`apautooff`, applied immediately without a restart): in access point
+mode, once `WiFi.softAPgetStationNum()` has been 0 for 5 minutes
+(`AP_AUTO_OFF_IDLE_MS`), the radio
+is switched off (`WIFI_OFF`). Any associated station keeps the AP alive,
+whether or not it talks to the web server or the TCP bridges. Never
+applies while joined to a client network. With a client network
+configured, background retries continue STA-only (no AP) while the AP is
+off; a successful join proceeds as usual, and losing that network later
+brings the AP back up. Otherwise the AP only returns after a restart.
+The periodic background retry of a configured-but-absent client network
+restarts the AP each time, but deliberately doesn't reset the idle timer
+(it used to, which kept the AP from ever switching off in that case).
+
 ## AP identity: SSID and password
 
-* SSID: `"Larus_<uid>"`, `<uid>` from the low 16 bits of
-  `ESP.getEfuseMac()`.
+* SSID: `"Larus_<uid>"`, `<uid>` = the last two bytes of the chip's MAC
+  as 4 hex digits (e.g. MAC `A0:B7:65:12:34:56` -> `Larus_3456`).
+  `ESP.getEfuseMac()` packs MAC byte 0 into the least significant byte of
+  its `uint64_t`, so the low 16 bits are the first two bytes of the
+  Espressif OUI - an earlier version used those, giving every chip with
+  the same OUI the same SSID (e.g. `Larus_B7A0` for `A0:B7:65`). A few
+  collisions remain possible with 16 bits, but are rare.
 * Password: a random 80-bit value from the ESP32's hardware RNG
   (`esp_random()`), Crockford base32-encoded, generated once on first boot
   and persisted in NVS (`ap_identity.cpp`, namespace `apident`) — printed
@@ -372,8 +438,17 @@ both `uSD_handler_task` (flight logging) and `wlan_link_handler_task`
   `fatfs_lock()`/`fatfs_unlock()` (unbounded wait for `uSD_handler_task`;
   500ms timeout -> `WLAN_NACK_SD_CARD_BUSY` for `wlan_link_handler_task`,
   held for a whole session, not per-chunk), and `fatfs_lock_best_effort()`
-  (bounded 20ms, used only by `write_crash_dump()`, which can't wait
+  (bounded 2.5s, used only by `write_crash_dump()`, which can't wait
   unboundedly if the lock's holder is the task that just crashed).
+* Crash dumps vs. WLAN sessions: an upload/download session holds the lock
+  for its whole duration, so `write_crash_dump()` used to time out and
+  race the download prefetch task on FatFs/SDIO — the `*.RESET` /
+  `*.CRASHDUMP` file was then silently missing. `wlan_link_handler_task`
+  now checks `crashfile` once per request (at most every
+  `WLAN_LINK_HEADER_TIMEOUT_MS`), ends any session — releasing the lock —
+  and suspends itself; the 2.5s crash-dump timeout covers that interval.
+  If the WLAN task itself is the one that crashed, the dump falls back to
+  the old unlocked best-effort write.
 
 **Simplifying assumption**: the SD card stays inserted for the whole
 session — `wlan_link_handler_task` degrades reasonably if not (checks

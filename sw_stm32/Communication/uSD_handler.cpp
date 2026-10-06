@@ -71,6 +71,23 @@ COMMON bool logging_paused_by_user = false;
 //!< resuming while grounded would just hand back to is_airborne().
 COMMON bool logging_force_start = false;
 
+//!< ~10s (100ms loop iterations) between free-space re-checks while full
+#define SD_FULL_RETRY_ITERATIONS (10 * 10)
+
+//!< true while logging is refused for lack of free space; reported via
+//!< STATUS_REQUEST, cleared by a WLAN delete/format or the next good check.
+COMMON bool logging_stopped_sd_full = false;
+
+bool sd_card_has_room_for_logging (void)
+{
+  DWORD free_clusters = 0;
+  FATFS *fs = NULL;
+  if ((f_getfree ("", &free_clusters, &fs) != FR_OK) || (fs == NULL))
+    return true;
+  uint64_t free_bytes = (uint64_t) free_clusters * fs->csize * fs->ssize;
+  return free_bytes >= LOGGING_MIN_FREE_BYTES;
+}
+
 COMMON FATFS fatfs;
 extern SD_HandleTypeDef hsd;
 extern DMA_HandleTypeDef hdma_sdio_rx;
@@ -306,6 +323,7 @@ void uSD_handler_runnable (void*)
 restart:
 
   sd_card_mounted = false;
+  logging_stopped_sd_full = false; // possibly a different card now
 
   HAL_SD_DeInit (&hsd);
   if( ! BSP_PlatformIsDetected())
@@ -401,17 +419,23 @@ restart:
       delay (100);
     }
 
+  uint32_t sd_full_retry_iterations = 0;
+
   // repeat writing log files for all successive flights
   while(true)
     {
       // Only log while airborne - frees the SD card for
       // wlan_link_handler_task while grounded. Also waits here while
       // logging_paused_by_user is set - see "Logging pause",
-      // documentation/wlan_link.md.
+      // documentation/wlan_link.md - and between free-space re-checks.
       uint8_t consecutive_not_detected = 0;
       uint32_t logging_pause_iterations = 0;
-      while( ( ! is_airborne() && ! logging_force_start ) || logging_paused_by_user)
+      while( ( ! is_airborne() && ! logging_force_start ) || logging_paused_by_user
+	     || (sd_full_retry_iterations > 0))
 	{
+	  if( sd_full_retry_iterations > 0)
+	    --sd_full_retry_iterations;
+
 	  if( crashfile)
 	    write_crash_dump( user_initiated_reset);
 
@@ -445,6 +469,9 @@ restart:
 	      sd_card_mounted = false;
 	      f_mount (0, "", 0);
 	      fatfs_unlock();
+	      // restart: runs privileged (HAL_SD_DeInit()/HAL_SD_Init() touch
+	      // the NVIC) - unprivileged, that faulted and suspended this task.
+	      acquire_privileges();
 	      goto restart;
 	    }
 	  consecutive_not_detected = 0;
@@ -455,6 +482,15 @@ restart:
       logging_force_start = false; // one-shot, consumed by exiting the loop above
 
       fatfs_lock(); // released below on landing, or on a fatal write failure
+
+      if( ! sd_card_has_room_for_logging())
+	{
+	  logging_stopped_sd_full = true;
+	  fatfs_unlock();
+	  sd_full_retry_iterations = SD_FULL_RETRY_ITERATIONS;
+	  continue;
+	}
+      logging_stopped_sd_full = false;
 
       // generate filename based on timestamp
       char * next = out_filename;
@@ -611,6 +647,12 @@ void kill_amok_running_task( void *)
 
   if( watchdog_has_been_triggered)
     watchdog_handler.suspend(); // avoid WWDG reset out of phase if already activated
+
+  // uSD_handler_task itself crashed: no crash dump and no reset would
+  // follow, leaving the system running without logging (and
+  // wlan_link_handler_task parked) - let the WWDG reset it instead.
+  if( register_dump.active_TCB == (void *)uSD_handler_task.get_handle())
+    watchdog_handler.suspend();
 
   uSD_handler_task.set_priority(configMAX_PRIORITIES - 1); // set it to highest priority
   uSD_handler_task.notify_give();

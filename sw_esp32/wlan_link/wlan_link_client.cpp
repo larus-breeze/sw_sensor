@@ -547,9 +547,14 @@ bool WlanLinkClient::statusRequest (wlan_link_status_payload_t &out)
   if (! exchangeWithRetry (WLAN_FRAME_STATUS_REQUEST, nextSequenceNo++, nullptr, 0, nullptr,
                             respBuf, sizeof(respBuf), 4, respHeader, WLAN_LINK_READY_TIMEOUT_MS, true))
     return false;
-  if (! ((respHeader.frame_type == WLAN_FRAME_DATA) && (respHeader.payload_length == sizeof(out))))
+  // Also accept an older STM32 build's shorter payload, lacking the
+  // trailing fields added since - those read as 0.
+  const uint32_t legacyLength = offsetof (wlan_link_status_payload_t, logging_stopped_sd_full);
+  if (! ((respHeader.frame_type == WLAN_FRAME_DATA)
+         && (respHeader.payload_length >= legacyLength) && (respHeader.payload_length <= sizeof(out))))
     return false;
-  memcpy (&out, respBuf, sizeof(out));
+  memset (&out, 0, sizeof(out));
+  memcpy (&out, respBuf, respHeader.payload_length);
   return true;
 }
 
