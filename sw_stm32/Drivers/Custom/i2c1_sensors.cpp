@@ -42,7 +42,7 @@
 static void runnable (void*)
 {
 restart:
-
+  delay(200); // Wait for a stable analog voltage supply for the pitot sensor
   uint8_t data[4];
 
   acquire_privileges ();
@@ -50,8 +50,8 @@ restart:
   drop_privileges();
 
 #if RUN_PITOT_MODULE
-  if (I2C_OK == I2C_Read (&hi2c1, I2C_ADDRESS, data, 2))
-    update_system_state_set (PITOT_SENSOR_AVAILABLE);
+  if (I2C_OK != I2C_Read (&hi2c1, I2C_ADDRESS, data, 2))
+    update_system_state_clear (PITOT_SENSOR_AVAILABLE);
 
   delay (10); // wait for "next measurement available"
 #endif
