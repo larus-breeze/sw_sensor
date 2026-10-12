@@ -41,8 +41,8 @@
 
 static void runnable (void*)
 {
-  delay(200); // Wait for the analog voltage supply to be established and stable before I2C communication
 restart:
+  delay(200); // Wait for a stable analog voltage supply for the pitot sensor
   uint8_t data[4];
 
   acquire_privileges ();

@@ -165,26 +165,28 @@ I2C_StatusTypeDef I2C_Init(I2C_HandleTypeDef *hi2c)
 	if (hi2c->Instance == I2C1)
 	{
 		if (I2C1_CPL_Message_Id == NULL)
+			I2C1_CPL_Message_Id = xQueueCreate(1, sizeof(I2C_StatusTypeDef));
+
+		if (NULL == I2C1_CPL_Message_Id)
+			status = I2C_ERROR;
+		else
 		{
-			I2C1_CPL_Message_Id =  xQueueCreate(1, sizeof(I2C_StatusTypeDef));
-			if (NULL == I2C1_CPL_Message_Id)
-			{
-				status = I2C_ERROR;
-			}
+			I2C1_ResolveStuckSlave();
+			xQueueReset(I2C1_CPL_Message_Id); // drop completions of transfers aborted by the re-init
 		}
-		I2C1_ResolveStuckSlave();
 	}
 	else if (hi2c->Instance == I2C2)
 	{
 		if (I2C2_CPL_Message_Id == NULL)
+			I2C2_CPL_Message_Id = xQueueCreate(1, sizeof(I2C_StatusTypeDef));
+
+		if (NULL == I2C2_CPL_Message_Id)
+			status = I2C_ERROR;
+		else
 		{
-			I2C2_CPL_Message_Id =  xQueueCreate(1, sizeof(I2C_StatusTypeDef));
-			if (NULL == I2C2_CPL_Message_Id)
-			{
-				status = I2C_ERROR;
-			}
+			I2C2_ResolveStuckSlave();
+			xQueueReset(I2C2_CPL_Message_Id); // drop completions of transfers aborted by the re-init
 		}
-		I2C2_ResolveStuckSlave();
 	}
 	else
 	{
@@ -193,7 +195,6 @@ I2C_StatusTypeDef I2C_Init(I2C_HandleTypeDef *hi2c)
 	}
 	return status;
 }
-
 
 I2C_StatusTypeDef I2C_Read(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t Size)
 {
