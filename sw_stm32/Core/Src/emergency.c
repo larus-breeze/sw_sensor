@@ -27,6 +27,8 @@
 #include "stm32f407xx.h"
 #include "emergency.h"
 #include "embedded_memory.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 void sync_logger(void );
 
@@ -40,7 +42,7 @@ void assert_failed( char * file, uint32_t line)
 {
   emergency_write_crashdump( file, line);
   while(1)
-    MPU_vTaskSuspend(0);
+    vTaskSuspend( NULL);
 }
 
 extern void finish_crash_handling(void);
@@ -268,12 +270,10 @@ void illegal_interrupt_vector_hook(void)
   );
 }
 
-void vTaskSuspend(uint32_t);
-
 void vApplicationReturnFromTaskProcedureHook( void)
 {
 	ASSERT(0);
-	vTaskSuspend(0);
+	vTaskSuspend( NULL);
 }
 
 void abort( void)
