@@ -383,6 +383,16 @@ What helps (any one of them):
   settings and always connect manually.
 - Switch off mobile data while using the web UI.
 
+Behaviour differs between Android versions. Tested on Android 12 (Pixel
+3a): after the first failed internet check, Android marks the network as
+permanently without internet (`NETWORK_SELECTION_DISABLED_NO_INTERNET_PERMANENT`
+in `dumpsys wifi`) and never joins it automatically again - not even after
+confirming "stay connected" with "don't ask again". There it has to be
+selected manually every time. In #266 (Android 17) the phone does join
+automatically, but doesn't use the network. In both cases, apps such as
+XCSoar on the NMEA TCP bridge (port 8882) receive data after "stay
+connected" was confirmed, or with mobile data switched off.
+
 `http://larus.local` additionally needs mDNS (`.local`) support on the
 phone, which not every Android version/browser has - `http://192.168.4.1`
 always works once the WiFi network is used.
