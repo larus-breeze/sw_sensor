@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <Preferences.h>
 #include <ESPmDNS.h>
+#include <DNSServer.h>
 #include <esp_netif.h>
 #include <esp_netif_net_stack.h> // esp_netif_get_netif_impl() - not declared by esp_netif.h alone
 extern "C" {
@@ -54,6 +55,32 @@ static unsigned long retryStartedMs = 0;
 static bool apAutoOff = false;           //!< switch the AP off after AP_AUTO_OFF_IDLE_MS without a client
 static bool apSwitchedOff = false;       //!< AP mode, but radio off after the idle timeout
 static unsigned long apIdleSinceMs = 0;  //!< last time the AP had a client (or was (re)started)
+
+//!< EXPERIMENTAL captive portal (#266): in access point mode, a DNS server
+//!< answers every name with the AP's own IP, so phones' connectivity checks
+//!< (e.g. Android's http://connectivitycheck.gstatic.com/generate_204) reach
+//!< the web server, which redirects them to the web UI (web_server.cpp,
+//!< handleCaptivePortalProbe()). The phone then offers "sign in to network",
+//!< which opens the web UI even after an automatic connection. Not tested on
+//!< hardware yet - see documentation/wlan_link.md.
+#define CAPTIVE_DNS_PORT 53
+static DNSServer captiveDns;
+static bool captiveDnsRunning = false;
+
+static void stopCaptiveDns (void)
+{
+  if (! captiveDnsRunning)
+    return;
+  captiveDns.stop ();
+  captiveDnsRunning = false;
+}
+
+static void startCaptiveDns (void)
+{
+  stopCaptiveDns ();
+  captiveDns.setErrorReplyCode (DNSReplyCode::NoError);
+  captiveDnsRunning = captiveDns.start (CAPTIVE_DNS_PORT, "*", WiFi.softAPIP ());
+}
 
 static void loadStaConfig (void)
 {
@@ -152,12 +179,14 @@ static void startAccessPoint (void)
   lastRetryAttemptMs = millis ();
 
   restartMdns ();
+  startCaptiveDns ();
 
   Serial.println ("WiFi: access point mode");
 }
 
 static void switchApOff (void)
 {
+  stopCaptiveDns ();
   MDNS.end ();
   WiFi.softAPdisconnect (true);
   WiFi.mode (WIFI_OFF);
@@ -214,6 +243,7 @@ void setupWifi (const char *apSsid, const char *apPassword)
   if (WiFi.status () == WL_CONNECTED)
     {
       currentMode = WIFI_CONFIG_MODE_STA;
+      stopCaptiveDns ();
       WiFi.softAPdisconnect (true);
       WiFi.mode (WIFI_STA);
       restoreFullTxPowerForStation ();
@@ -231,6 +261,9 @@ void setupWifi (const char *apSsid, const char *apPassword)
 void handleWifiLoop (void)
 {
   unsigned long now = millis ();
+
+  if (captiveDnsRunning)
+    captiveDns.processNextRequest ();
 
   if (currentMode == WIFI_CONFIG_MODE_STA)
     {
@@ -267,6 +300,7 @@ void handleWifiLoop (void)
           retryInProgress = false;
           currentMode = WIFI_CONFIG_MODE_STA;
           staLostSinceMs = 0;
+          stopCaptiveDns ();
           if (! apSwitchedOff)
             WiFi.softAPdisconnect (true);
           apSwitchedOff = false;

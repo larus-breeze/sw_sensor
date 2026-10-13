@@ -357,6 +357,23 @@ log files section (list sorted by modification date descending, with
 Download/Delete/Download-all, "Format SD card" with its own
 confirmation).
 
+### Captive portal (experimental)
+
+(see #266) In access point mode, the ESP32 runs a DNS server
+(`DNSServer`, `wifi_config.cpp`) that answers every name with the AP's
+own IP, and the web server answers the connectivity checks of Android
+(`/generate_204`, `/gen_204`), iOS/macOS (`/hotspot-detect.html`) and
+Windows (`/connecttest.txt`, `/ncsi.txt`) - plus any request for a
+foreign host name - with a redirect to the web UI. Phones then recognize
+a captive portal and offer "sign in to network", which opens the web UI
+even after an automatic connection. Stopped when the AP goes away
+(client mode, AP auto-off).
+
+Not tested on hardware yet. Open question: a captive-portal network may
+never become the phone's default network, so apps connecting to the NMEA
+TCP bridge (e.g. XCSoar on Android) might need the phone's mobile data
+switched off, or the app to bind to the WiFi network itself.
+
 ## WiFi client mode
 
 `wifi_config.{h,cpp}`: lets the sensor join an existing WiFi network as a
