@@ -22,14 +22,13 @@
 
  **************************************************************************/
 
+#include <stdint.h>
 #include "my_assert.h"
 #include "stm32f407xx.h"
 #include "emergency.h"
 #include "embedded_memory.h"
 #include "FreeRTOS.h"
 #include "task.h"
-
-void MPU_vTaskSuspend( unsigned);
 
 void sync_logger(void );
 
@@ -274,7 +273,8 @@ void illegal_interrupt_vector_hook(void)
 void vApplicationReturnFromTaskProcedureHook( void)
 {
 	ASSERT(0);
-	vTaskSuspend( NULL);}
+	vTaskSuspend( NULL);
+}
 
 void abort( void)
 {
