@@ -40,6 +40,7 @@
 #include "EEPROM_data_file_implementation.h"
 #include "communicator.h"
 #include "flexible_log_file_implementation.h"
+#include "timestamps.h"
 
 COMMON D_GNSS_coordinates_t coordinates;
 #if SUPPORT_D_GNSS_ACCURACY
@@ -363,6 +364,7 @@ communicator_runnable (void*)
 	    }
 
 	  flex_file.append_record ( BASIC_SENSOR_DATA, (uint32_t*) &observations, sizeof(observations) / sizeof(uint32_t));
+	  flex_file.append_record ( TIMESTAMPS, (uint32_t*) &timestamps, sizeof(timestamps) / sizeof(uint32_t));
 
 	  if (system_state & EXTERNAL_MAGNETOMETER_AVAILABLE)
 	    {

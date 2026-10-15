@@ -27,6 +27,7 @@
 #include "stm32f4xx_hal.h"
 #include "GNSS.h"
 #include "GNSS_driver.h"
+#include "timestamps.h"
 
 #if RUN_GNSS
 
@@ -93,6 +94,8 @@ extern "C" void
 DMA1_Stream1_IRQHandler (void)
 {
   BaseType_t HigherPriorityTaskWoken=0;
+  if (__HAL_DMA_GET_FLAG(&hdma_usart3_rx, __HAL_DMA_GET_TC_FLAG_INDEX(&hdma_usart3_rx)))
+    timestamps.GNSS_reception = (uint32_t) timestamp_now_privileged (); // message complete
   HAL_DMA_IRQHandler (&hdma_usart3_rx);
   vTaskNotifyGiveFromISR( USART3_task_Id, &HigherPriorityTaskWoken);
   portEND_SWITCHING_ISR(HigherPriorityTaskWoken);
