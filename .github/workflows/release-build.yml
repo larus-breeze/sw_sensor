@@ -30,6 +30,7 @@ jobs:
           fetch-depth: 0 # the version header needs the tags
 
       - name: Build with STM32CubeIDE and pack the SD-card update image
+        shell: bash
         run: |
           git config --global --add safe.directory '*'
           python3 sw_stm32/scripts/build_firmware.py 2>&1 | tee build.log
@@ -37,6 +38,7 @@ jobs:
 
       - name: Summary
         if: always()
+        shell: bash
         run: |
           python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import glob
@@ -54,7 +56,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stm32-release-${{ github.ref_name }}
+          name: stm32-release-${{ github.sha }}
           path: |
             build/*.elf
             build/*.bin
