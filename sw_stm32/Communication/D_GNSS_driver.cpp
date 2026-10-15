@@ -127,7 +127,7 @@ void USART_4_runnable(void*)
 	}
       HAL_UART_Abort (&huart4);
 
-      GNSS_Result result = GNSS.update_delta(buffer);
+      GNSS_Result result = GNSS.update_delta_F9x( buffer);
 
       if(  result == GNSS_HAVE_FIX)
 	update_system_state_set( D_GNSS_AVAILABLE);
