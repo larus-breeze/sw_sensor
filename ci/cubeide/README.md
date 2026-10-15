@@ -39,10 +39,16 @@ amd64 containers; QEMU emulation tends to crash STM32's GCC).
            --build-arg INSTALLER=stm32cubeide_2.2.0_29186_20260626_0934-Lin-Deb-x86_64.sh \
            -t ghcr.io/larus-breeze/stm32cubeide:2.2.0 .
 
-   Stage 1 installs STM32CubeIDE and removes J-Link and STM32CubeProgrammer;
-   the final image only contains the cleaned `/opt/st` plus the packages
-   `pack.py` needs (about 0.9 GB). Neither the installer nor removed files
-   end up in a layer of the final image.
+   Stage 1 installs STM32CubeIDE and removes J-Link, STM32CubeProgrammer and
+   everything a headless build doesn't need: the debug device databases,
+   CMake, OpenOCD, documentation, GDB, and the GCC libraries of all CPU
+   variants except the ones listed in the build argument `MULTILIBS`
+   (default: Cortex-M4F as in this firmware and the RM3100 magnetometer
+   module, Cortex-M3 as in sw_audio_box). The final image only contains the
+   cleaned `/opt/st` (about 0.8 GB) plus the packages `pack.py` needs, about
+   490 MB compressed, which fits a free GitHub account's 500 MB of private
+   package storage. Neither the installer nor removed files end up in a layer
+   of the final image.
 3. Push it to the GitHub Container Registry with a personal access token
    that has `write:packages`:
 
@@ -63,6 +69,7 @@ release toolchain in `sw_stm32/scripts/release_toolchain.txt` (#258) together.
 ## Checked
 With STM32CubeIDE 2.2.0 (GNU Tools for STM32 14.3.rel1), `master` at
 `9bdcc91` builds in the container in about a minute (0 errors), including
-the SD-card update image. Compared with `ci_build.py` and Arm GNU Toolchain
+the SD-card update image. The slimmed image produces the same firmware as a
+full installation (identical section sizes). Compared with `ci_build.py` and Arm GNU Toolchain
 14.3.rel1 for the same commit, the RAM sections and the compiler warnings
 are identical and flash differs by 0.07%.
