@@ -172,7 +172,7 @@ def get_version_tag():
 
 def read_elf_comment(elf_path):
     """Return the strings of the ELF's .comment section, where GCC records
-    its identification (e.g. "GCC: (GNU Tools for STM32 ...) 13.3.1 ...").
+    its identification (e.g. "GCC: (GNU Tools for STM32 ...) 14.3.1 ...").
     Minimal 32-bit little-endian ELF parser, standard library only."""
     data = Path(elf_path).read_bytes()
     if data[:4] != b"\x7fELF" or data[4] != 1 or data[5] != 1:

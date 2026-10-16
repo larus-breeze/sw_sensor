@@ -5,5 +5,6 @@
 # differ. Changing the release compiler is a deliberate step: update this
 # line, README.md and the CI toolchain versions together.
 #
-# This toolchain ships with STM32CubeIDE 1.19.0 (used for release 0.7.6).
-GCC: (GNU Tools for STM32 13.3.rel1.20250523-0900) 13.3.1 20240614
+# This toolchain ships with STM32CubeIDE 2.2.0 (#258). Release 0.7.6 was
+# built with STM32CubeIDE 1.19.0: GNU Tools for STM32 13.3.rel1.20250523-0900.
+GCC: (GNU Tools for STM32 14.3.rel1.20251027-0700) 14.3.1 20250623
