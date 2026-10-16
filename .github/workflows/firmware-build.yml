@@ -144,5 +144,5 @@ jobs:
         with:
           name: esp32-${{ matrix.core }}
           path: |
-            sw_esp32/build/*.bin
+            build/larus_sensor_esp32_v*.bin
             sw_esp32/build.log
