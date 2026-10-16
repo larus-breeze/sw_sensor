@@ -1,9 +1,14 @@
 # STM32CubeIDE image for release builds in CI
 
 `.github/workflows/release-build.yml` builds the firmware with STM32CubeIDE
-itself (headless, `sw_stm32/scripts/build_firmware.py`) on `master`, on tags
-and on demand, and keeps the ELF and the SD-card update image as workflow
-artifacts. It runs in a container image with STM32CubeIDE, which a maintainer
+itself (headless, `sw_stm32/scripts/build_firmware.py`) on `master`, on
+version tags (x.y.z) and on demand, together with the ESP32 firmware
+(esp32:esp32 core pinned in the workflow), and keeps the images as workflow
+artifacts. For a version tag on a `master` commit whose library commit is
+tagged in sw_algorithms_lib, it also creates a draft release with the images,
+SHA-256 checksums and the toolchain versions (see `release_creation.md`).
+
+The STM32 job runs in a container image with STM32CubeIDE, which a maintainer
 builds from their own STM32CubeIDE download and keeps in a **private**
 registry. The pull-request checks don't need it: they use
 `sw_stm32/scripts/ci_build.py` with the Arm GNU Toolchain (see
@@ -65,6 +70,8 @@ amd64 containers; QEMU emulation tends to crash STM32's GCC).
 Build and push a new tag (e.g. `stm32cubeide:2.3.0`) from the new installer,
 then change the image tag in `.github/workflows/release-build.yml` and the
 release toolchain in `sw_stm32/scripts/release_toolchain.txt` (#258) together.
+The ESP32 core of releases is `ESP32_CORE` in the same workflow; keep it in
+line with the core that `firmware-build.yml` checks pull requests with.
 
 ## Checked
 With STM32CubeIDE 2.2.0 (GNU Tools for STM32 14.3.rel1), `master` at
