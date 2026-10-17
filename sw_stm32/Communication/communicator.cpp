@@ -84,7 +84,7 @@ void report_horizon_avalability( void)
 	return;
     }
 
-  if( coordinates.sat_fix_type == 0) // no date available
+  if( (coordinates.sat_fix_type & 0x01) == 0) // no GNSS lock -> no date available
     {
 	update_system_state_set( HORIZON_NOT_AVAILABLE);
 	return;
@@ -206,7 +206,7 @@ communicator_runnable (void*)
 	    update_system_state_set (D_GNSS_AVAILABLE);
 
 	  if ((have_first_GNSS_fix == false)
-	      && (coordinates.sat_fix_type != SAT_FIX_NONE))
+	      && ((coordinates.sat_fix_type & 0x03) != SAT_FIX_NONE))
 	    {
 	      have_first_GNSS_fix = true;
 	      organizer.update_magnetic_induction_data (coordinates.latitude,
@@ -278,7 +278,7 @@ communicator_runnable (void*)
 	case GNSS_F9P_F9H:
 	case GNSS_F9P_F9P:
 	case GNSS_X20D:
-	  switch (coordinates.sat_fix_type)
+	  switch (coordinates.sat_fix_type & 0x03) // test only the "fix" and "heading" bits here
 	    {
 	    case SAT_FIX:
 	      HAL_GPIO_WritePin (
@@ -298,7 +298,7 @@ communicator_runnable (void*)
 	    }
 	  break;
 	case GNSS_M9N:
-	  if (coordinates.sat_fix_type == SAT_FIX)
+	  if ( (coordinates.sat_fix_type & 0x03) == SAT_FIX)
 	    HAL_GPIO_WritePin (
 		LED_STATUS1_GPIO_Port, LED_STATUS1_Pin,
 		((GNSS_LED_count & 0xe0) == 0xe0) ? GPIO_PIN_SET : GPIO_PIN_RESET);
@@ -375,7 +375,7 @@ communicator_runnable (void*)
 
 	  if ( new_GNSS_data_received.test_and_reset())
 	    {
-	      switch (coordinates.sat_fix_type)
+	      switch (coordinates.sat_fix_type & 0x03)
 		{
 		case SAT_FIX:
 		default:
