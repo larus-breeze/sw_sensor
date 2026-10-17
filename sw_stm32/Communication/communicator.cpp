@@ -83,7 +83,7 @@ void report_horizon_avalability( void)
 	return;
     }
 
-  if( coordinates.sat_fix_type & 0x03 == 0) // no date available
+  if( (coordinates.sat_fix_type & 0x01) == 0) // no GNSS lock -> no date available
     {
 	update_system_state_set( HORIZON_NOT_AVAILABLE);
 	return;
