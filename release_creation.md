@@ -32,5 +32,6 @@
 - Chose the next version number with the format x.y.z (e.g. 9.9.9) https://github.com/larus-breeze/sw_sensor/releases
 - Assign a tag to the current commit e.g. with: git tag 9.9.9
 - Push tag: git push origin tag 9.9.9
-- Create a firmware update binary with the pack tools in sw_stm32
-- Go to https://github.com/larus-breeze/sw_sensor/releases create a new release for the tagged commit, write release notes and attach the firmware binary
+- The tag starts `.github/workflows/release-build.yml`. It checks that the tag is on master and that the lib commit is tagged, builds the STM32 firmware with STM32CubeIDE and the ESP32 firmware, and creates a **draft release** with the images, their SHA-256 checksums and the toolchain versions (see `ci/cubeide/README.md`).
+- Go to https://github.com/larus-breeze/sw_sensor/releases, open the draft release, write the release notes and publish it.
+- The draft release's images are the ones that get published, so test those. Builds of untagged master commits (workflow artifacts) carry a different version string (`git describe`) and are not byte-identical. If a test fails, delete the draft release and the tag.
