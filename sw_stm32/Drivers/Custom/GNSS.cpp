@@ -98,6 +98,9 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	else
 	  coordinates.sat_fix_type &= ~SAT_FIX;
 
+	coordinates.sat_fix_type &= ~0b11000000; // add the carrier solution bits
+	coordinates.sat_fix_type |= pvt.fix_flags2 & 0b11000000;
+
 	GNSS_data_guard.lock();
 
 	coordinates.latitude = (double) (pvt.latitude) * ANGLE_SCALE;
