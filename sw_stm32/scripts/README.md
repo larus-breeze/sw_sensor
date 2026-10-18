@@ -43,6 +43,13 @@ with build_firmware.py:
 directory is actually the one you intend to package - pack.py now warns if
 it's older than 10 minutes.
 
+- build_firmware.py checks which compiler built the ELF (its .comment
+section) against `release_toolchain.txt` and stops if they differ, so a
+release cannot silently be built with another STM32CubeIDE/compiler version.
+For local test builds with a different STM32CubeIDE, pass
+--allow-other-toolchain; such builds must not be published. At the end it
+prints a "Built with ..." line for the release notes.
+
 - build_firmware.py also mirrors the raw build output (*.elf, *.map, ...) from
 the Release directory into `sw_stm32/build/` (gitignored), for symmetry with
 the ESP32 side's own raw `arduino-cli` output directory (`sw_esp32/build/`).
