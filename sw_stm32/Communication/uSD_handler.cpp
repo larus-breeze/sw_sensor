@@ -411,7 +411,7 @@ restart:
   char out_filename[30];
 
   // wait until a GNSS timestamp is available.
-  while ( coordinates.sat_fix_type == 0)
+  while ( (coordinates.sat_fix_type & 0x03) == 0)
     {
 	if( crashfile)
 	  write_crash_dump( user_initiated_reset);
