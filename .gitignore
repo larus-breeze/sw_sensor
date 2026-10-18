@@ -1,5 +1,6 @@
 sw_stm32/Debug/
 sw_stm32/Release/
+sw_stm32/Release-ci/
 sw_stm32/.settings/language.settings.xml
 sw_stm32/Core/Inc/git-commit-version.h
 sw_stm32/Core/Inc/git-commit-tag.h

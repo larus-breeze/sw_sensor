@@ -1,0 +1,146 @@
+name: Firmware build
+
+# Builds the STM32 firmware without STM32CubeIDE (sw_stm32/scripts/ci_build.py,
+# settings from .cproject) and the ESP32 firmware, and reports memory usage.
+# Release images are still built with STM32CubeIDE (build_firmware.py).
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stm32:
+    name: STM32 (${{ matrix.label }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Upstream of the release toolchain (CubeIDE 2.2.0, see #258)
+          - label: GCC 14.3, as in CubeIDE 2.2.0
+            version: 14.3.rel1
+            sha256: 8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0 # create-git-info-header.py needs the tags
+
+      - name: Cache Arm GNU Toolchain
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/arm-gnu-toolchain
+          key: arm-gnu-toolchain-${{ matrix.version }}-x86_64
+
+      - name: Install Arm GNU Toolchain ${{ matrix.version }}
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          archive=arm-gnu-toolchain-${{ matrix.version }}-x86_64-arm-none-eabi.tar.xz
+          curl -sSfL -o $archive "https://developer.arm.com/-/media/Files/downloads/gnu/${{ matrix.version }}/binrel/$archive"
+          echo "${{ matrix.sha256 }}  $archive" | sha256sum -c
+          mkdir -p ~/arm-gnu-toolchain
+          tar xf $archive -C ~/arm-gnu-toolchain --strip-components=1
+
+      - name: Build
+        run: |
+          echo "$HOME/arm-gnu-toolchain/bin" >> $GITHUB_PATH
+          export PATH="$HOME/arm-gnu-toolchain/bin:$PATH"
+          python3 sw_stm32/scripts/ci_build.py --json summary.json --fail-usage FLASH=100 --fail-usage RAM=100
+
+      - name: Build the PR's base for comparison
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          git worktree add ../base ${{ github.event.pull_request.base.sha }}
+          git -C ../base submodule update --init
+          cp sw_stm32/scripts/ci_build.py ../base/sw_stm32/scripts/ci_build.py # base may predate the script
+          python3 ../base/sw_stm32/scripts/ci_build.py --json base.json > base.log 2>&1 || cat base.log
+
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, os
+          def load(p):
+              return json.load(open(p)) if os.path.exists(p) else None
+          head, base = load("summary.json"), load("base.json")
+          if not head:
+              print("Build did not produce a summary."); raise SystemExit
+          print(f"### STM32 firmware: {head['compiler']}\n")
+          print(f"{head['sources']} sources, {len(head['failed'])} failed")
+          print("\n| Region | Used | Size | Usage |" + (" Change vs. base |" if base else ""))
+          print("|---|---:|---:|---:|" + ("---:|" if base else ""))
+          for region, m in head["memory"].items():
+              if not m["used"] and region not in ("FLASH", "RAM", "CCMRAM"):
+                  continue
+              row = f"| {region} | {m['used']:,} | {m['size']:,} | {m['percent']:.1f} % |"
+              if base and region in base["memory"]:
+                  row += f" {m['used'] - base['memory'][region]['used']:+,} B |"
+              print(row)
+          if head["warnings"]:
+              print("\n| Diagnostics | Count |" + (" Base |" if base else ""))
+              print("|---|---:|" + ("---:|" if base else ""))
+              for k, n in sorted(head["warnings"].items()):
+                  print(f"| `{k}` | {n} |" + (f" {base['warnings'].get(k, 0)} |" if base else ""))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stm32-${{ matrix.version }}
+          path: |
+            sw_stm32/Release-ci/sw_sensor.elf
+            sw_stm32/Release-ci/sw_sensor.bin
+            sw_stm32/Release-ci/sw_sensor.map
+            sw_stm32/Release-ci/compile.log
+            summary.json
+            base.json
+
+  esp32:
+    name: ESP32 (esp32:esp32 ${{ matrix.core }})
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        core: ['3.3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: arduino/setup-arduino-cli@v2
+
+      - name: Install the ESP32 core
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32@${{ matrix.core }}
+          pip install esptool
+
+      - name: Build
+        run: cd sw_esp32 && python3 scripts/build_firmware.py 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### ESP32 firmware: esp32:esp32 ${{ matrix.core }}"
+            grep -E "Sketch uses|Global variables use" sw_esp32/build.log || echo "no size information"
+            echo
+            echo "Warnings in the sketch:"
+            grep -E "wlan_link/.*warning" sw_esp32/build.log || echo "none"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: esp32-${{ matrix.core }}
+          path: |
+            build/larus_sensor_esp32_v*.bin
+            sw_esp32/build.log
