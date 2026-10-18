@@ -178,7 +178,7 @@ void format_sensor_dump( const measurement_data_t &m, const D_GNSS_coordinates_t
   *s++ = '%';
   newline( s);
 
-  if( c.sat_fix_type == (SAT_FIX | SAT_HEADING))
+  if( (c.sat_fix_type & 0x03) == (SAT_FIX | SAT_HEADING))
     {
       float baselength = c.relPosNED.abs();
       append_string( s, "D-GNSS: BaseLength: ");
