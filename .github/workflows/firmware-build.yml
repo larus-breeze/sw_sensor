@@ -1,8 +1,12 @@
 name: Firmware build
 
-# Builds the STM32 firmware without STM32CubeIDE (sw_stm32/scripts/ci_build.py,
-# settings from .cproject) and the ESP32 firmware, and reports memory usage.
-# Release images are still built with STM32CubeIDE (build_firmware.py).
+# Test builds of the STM32 and ESP32 firmware, with memory usage and warnings.
+# The STM32 firmware is built with STM32CubeIDE (build_firmware.py) in the
+# private image of release-build.yml, if the variable CUBEIDE_CI is "true" and
+# the code comes from this repository. Otherwise (forks, pull requests from
+# forks) with the Arm GNU Toolchain (ci_build.py, settings from .cproject),
+# file names marked "-armgnu". The images are named after the commit, like
+# GIT_COMMIT_HASH in the firmware. Release images come from release-build.yml.
 
 on:
   push:
@@ -14,8 +18,74 @@ permissions:
   contents: read
 
 jobs:
+  stm32-cubeide:
+    name: STM32 (STM32CubeIDE)
+    if: >-
+      vars.CUBEIDE_CI == 'true' && (github.event_name != 'pull_request'
+      || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ vars.CUBEIDE_IMAGE || 'ghcr.io/larus-breeze/stm32cubeide:2.2.0' }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0 # the version header needs the tags
+
+      - name: Build with STM32CubeIDE and pack the SD-card update image
+        run: |
+          git config --global --add safe.directory '*'
+          status=0
+          python3 sw_stm32/scripts/build_firmware.py 2>&1 | tee build.log || status=$?
+          [ -f sw_stm32/Release/sw_sensor.elf ] && python3 sw_stm32/scripts/ci_summary.py from-build sw_stm32/Release/sw_sensor.elf build.log --json summary.json
+          exit $status
+
+      - name: Build the PR's base for comparison
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          git worktree add ../base ${{ github.event.pull_request.base.sha }}
+          git -C ../base submodule update --init
+          cp sw_stm32/scripts/build_firmware.py sw_stm32/scripts/ci_build.py sw_stm32/scripts/ci_summary.py ../base/sw_stm32/scripts/
+          python3 ../base/sw_stm32/scripts/build_firmware.py --no-pack > base.log 2>&1 || { tail -50 base.log; exit 1; }
+          python3 ../base/sw_stm32/scripts/ci_summary.py from-build ../base/sw_stm32/Release/sw_sensor.elf base.log --json base.json
+
+      - name: Summary
+        if: always()
+        run: python3 sw_stm32/scripts/ci_summary.py markdown summary.json base.json | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Name the images after the commit
+        id: images
+        if: always()
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/name-images.sh stm32 ""
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: larus_sensor-${{ steps.images.outputs.sha }}-stm32
+          path: |
+            images/
+            sw_stm32/Release/sw_sensor.map
+            build.log
+            summary.json
+            base.json
+
   stm32:
     name: STM32 (${{ matrix.label }})
+    if: >-
+      vars.CUBEIDE_CI != 'true' || (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -51,7 +121,10 @@ jobs:
         run: |
           echo "$HOME/arm-gnu-toolchain/bin" >> $GITHUB_PATH
           export PATH="$HOME/arm-gnu-toolchain/bin:$PATH"
-          python3 sw_stm32/scripts/ci_build.py --json summary.json --fail-usage FLASH=100 --fail-usage RAM=100
+          # pack.py takes the ELF from Release/
+          python3 sw_stm32/scripts/ci_build.py --build-dir "$PWD/sw_stm32/Release" --json summary.json --fail-usage FLASH=100 --fail-usage RAM=100
+          pip install -r sw_stm32/scripts/requirements.txt
+          python3 sw_stm32/scripts/pack.py
 
       - name: Build the PR's base for comparison
         if: github.event_name == 'pull_request'
@@ -64,41 +137,23 @@ jobs:
 
       - name: Summary
         if: always()
-        run: |
-          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
-          import json, os
-          def load(p):
-              return json.load(open(p)) if os.path.exists(p) else None
-          head, base = load("summary.json"), load("base.json")
-          if not head:
-              print("Build did not produce a summary."); raise SystemExit
-          print(f"### STM32 firmware: {head['compiler']}\n")
-          print(f"{head['sources']} sources, {len(head['failed'])} failed")
-          print("\n| Region | Used | Size | Usage |" + (" Change vs. base |" if base else ""))
-          print("|---|---:|---:|---:|" + ("---:|" if base else ""))
-          for region, m in head["memory"].items():
-              if not m["used"] and region not in ("FLASH", "RAM", "CCMRAM"):
-                  continue
-              row = f"| {region} | {m['used']:,} | {m['size']:,} | {m['percent']:.1f} % |"
-              if base and region in base["memory"]:
-                  row += f" {m['used'] - base['memory'][region]['used']:+,} B |"
-              print(row)
-          if head["warnings"]:
-              print("\n| Diagnostics | Count |" + (" Base |" if base else ""))
-              print("|---|---:|" + ("---:|" if base else ""))
-              for k, n in sorted(head["warnings"].items()):
-                  print(f"| `{k}` | {n} |" + (f" {base['warnings'].get(k, 0)} |" if base else ""))
-          PY
+        run: python3 sw_stm32/scripts/ci_summary.py markdown summary.json base.json | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Name the images after the commit
+        id: images
+        if: always()
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/name-images.sh stm32 -armgnu
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: stm32-${{ matrix.version }}
+          name: larus_sensor-${{ steps.images.outputs.sha }}-stm32
           path: |
-            sw_stm32/Release-ci/sw_sensor.elf
-            sw_stm32/Release-ci/sw_sensor.bin
-            sw_stm32/Release-ci/sw_sensor.map
-            sw_stm32/Release-ci/compile.log
+            images/
+            sw_stm32/Release/sw_sensor.map
+            sw_stm32/Release/compile.log
             summary.json
             base.json
 
@@ -137,10 +192,17 @@ jobs:
             grep -E "wlan_link/.*warning" sw_esp32/build.log || echo "none"
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
+      - name: Name the images after the commit
+        id: images
+        if: always()
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/name-images.sh esp32 ""
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: esp32-${{ matrix.core }}
+          name: larus_sensor-${{ steps.images.outputs.sha }}-esp32
           path: |
-            build/larus_sensor_esp32_v*.bin
+            images/
             sw_esp32/build.log
