@@ -201,7 +201,7 @@ void USART_3_runnable (void *GNSS_type)
       if ( result >= GNSS_ERROR_1)
 	{
 	  HAL_UART_Abort (&huart3);
-	  signal_debug_event( (debug_points)result);
+	  signal_debug_event( (debug_points)GNSS_DATA_ERROR, result);
 	  delay (50);
 	}
     }
