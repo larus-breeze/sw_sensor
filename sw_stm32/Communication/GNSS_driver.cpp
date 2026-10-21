@@ -27,10 +27,12 @@
 #include "stm32f4xx_hal.h"
 #include "GNSS.h"
 #include "GNSS_driver.h"
+#include "signal_flight_event.h"
 
 #if RUN_GNSS
 
-#define DATA_PACKET_TIMEOUT_MS 250 //
+#define DATA_PACKET_TIMEOUT_MS 250
+#define HALF_DATA_PACKET_TIMEOUT_MS 50
 
 COMMON UART_HandleTypeDef huart3;
 COMMON DMA_HandleTypeDef hdma_usart3_rx;
@@ -163,15 +165,17 @@ void USART_3_runnable (void *GNSS_type)
       if (notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart3);
+	  signal_debug_event( GNSS_TIMEOUT_HALF);
 	  continue;
 	}
       // wait for transfer complete interrupt
       notify_result = xTaskNotifyWait(0xffffffff, 0xffffffff,
 				      &pulNotificationValue,
-				      DATA_PACKET_TIMEOUT_MS);
+				      HALF_DATA_PACKET_TIMEOUT_MS);
       if (notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart3);
+	  signal_debug_event( GNSS_TIMEOUT_FULL);
 	  continue;
 	}
       HAL_UART_Abort (&huart3);
@@ -194,9 +198,10 @@ void USART_3_runnable (void *GNSS_type)
           break;
       }
 
-      if (result == GNSS_ERROR)
+      if ( result >= GNSS_ERROR_1)
 	{
 	  HAL_UART_Abort (&huart3);
+	  signal_debug_event( (debug_points)result);
 	  delay (50);
 	}
     }
