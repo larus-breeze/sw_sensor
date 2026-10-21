@@ -429,8 +429,15 @@ restart:
       // documentation/wlan_link.md - and between free-space re-checks.
       uint8_t consecutive_not_detected = 0;
       uint32_t logging_pause_iterations = 0;
+#if 0 // todo fixme
       while( ( ! is_airborne() && ! logging_force_start ) || logging_paused_by_user
 	     || (sd_full_retry_iterations > 0))
+#else
+      while(
+	  not logging_force_start
+	  or logging_paused_by_user
+	  or (sd_full_retry_iterations > 0))
+#endif
 	{
 	  if( sd_full_retry_iterations > 0)
 	    --sd_full_retry_iterations;
