@@ -90,13 +90,10 @@ jobs:
       vars.CUBEIDE_CI != 'true' || (github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Upstream of the release toolchain (CubeIDE 2.2.0, see #258)
-          - version: 14.3.rel1
-            sha256: 8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd
+    env:
+      # Upstream of the release toolchain (CubeIDE 2.2.0, see #258)
+      ARM_GNU_VERSION: 14.3.rel1
+      ARM_GNU_SHA256: 8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd
     steps:
       - uses: actions/checkout@v4
         with:
@@ -108,14 +105,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/arm-gnu-toolchain
-          key: arm-gnu-toolchain-${{ matrix.version }}-x86_64
+          key: arm-gnu-toolchain-${{ env.ARM_GNU_VERSION }}-x86_64
 
-      - name: Install Arm GNU Toolchain ${{ matrix.version }}
+      - name: Install Arm GNU Toolchain ${{ env.ARM_GNU_VERSION }}
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          archive=arm-gnu-toolchain-${{ matrix.version }}-x86_64-arm-none-eabi.tar.xz
-          curl -sSfL -o $archive "https://developer.arm.com/-/media/Files/downloads/gnu/${{ matrix.version }}/binrel/$archive"
-          echo "${{ matrix.sha256 }}  $archive" | sha256sum -c
+          archive=arm-gnu-toolchain-${{ env.ARM_GNU_VERSION }}-x86_64-arm-none-eabi.tar.xz
+          curl -sSfL -o $archive "https://developer.arm.com/-/media/Files/downloads/gnu/${{ env.ARM_GNU_VERSION }}/binrel/$archive"
+          echo "${{ env.ARM_GNU_SHA256 }}  $archive" | sha256sum -c
           mkdir -p ~/arm-gnu-toolchain
           tar xf $archive -C ~/arm-gnu-toolchain --strip-components=1
 
