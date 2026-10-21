@@ -53,11 +53,14 @@ jobs:
         if: github.event_name == 'pull_request'
         continue-on-error: true
         run: |
-          git worktree add ../base ${{ github.event.pull_request.base.sha }}
-          git -C ../base submodule update --init
-          cp sw_stm32/scripts/build_firmware.py sw_stm32/scripts/ci_build.py sw_stm32/scripts/ci_summary.py ../base/sw_stm32/scripts/
-          python3 ../base/sw_stm32/scripts/build_firmware.py --no-pack > base.log 2>&1 || { tail -50 base.log; exit 1; }
-          python3 ../base/sw_stm32/scripts/ci_summary.py from-build ../base/sw_stm32/Release/sw_sensor.elf base.log --json base.json
+          # STM32CubeIDE puts absolute header paths into the image (__FILE__),
+          # so the base needs a path of the same length for the same size.
+          name=${PWD##*/}; base=../${name//?/b}
+          git worktree add $base ${{ github.event.pull_request.base.sha }}
+          git -C $base submodule update --init
+          cp sw_stm32/scripts/build_firmware.py sw_stm32/scripts/ci_build.py sw_stm32/scripts/ci_summary.py $base/sw_stm32/scripts/
+          python3 $base/sw_stm32/scripts/build_firmware.py --no-pack > base.log 2>&1 || { tail -50 base.log; exit 1; }
+          python3 $base/sw_stm32/scripts/ci_summary.py from-build $base/sw_stm32/Release/sw_sensor.elf base.log --json base.json
 
       - name: Summary
         if: always()
@@ -82,7 +85,7 @@ jobs:
             base.json
 
   stm32:
-    name: STM32 (${{ matrix.label }})
+    name: STM32 (Arm GNU Toolchain)
     if: >-
       vars.CUBEIDE_CI != 'true' || (github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name != github.repository)
@@ -92,8 +95,7 @@ jobs:
       matrix:
         include:
           # Upstream of the release toolchain (CubeIDE 2.2.0, see #258)
-          - label: GCC 14.3, as in CubeIDE 2.2.0
-            version: 14.3.rel1
+          - version: 14.3.rel1
             sha256: 8f6903f8ceb084d9227b9ef991490413014d991874a1e34074443c2a72b14dbd
     steps:
       - uses: actions/checkout@v4
