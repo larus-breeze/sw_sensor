@@ -71,12 +71,14 @@ COMMON float delta_t;
 
 GNSS_Result GNSS_type::update(const uint8_t * data)
 {
-	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01)
-			|| (data[3] != 0x07))
-		return GNSS_ERROR_1;
+	if ((data[0] != 0xb5) || (data[1] != 'b'))
+	  return GNSS_ERROR_1;
+
+	if( (data[2] != 0x01) || (data[3] != 0x07))
+	  return GNSS_ERROR_2;
 
 	if (!checkSumCheck(data + 2, sizeof(uBlox_pvt)))
-		return GNSS_ERROR_2;
+		return GNSS_ERROR_3;
 
 	uBlox_pvt pvt;
 
@@ -141,11 +143,13 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 
 GNSS_Result GNSS_type::update_delta_X20D(const uint8_t * data)
 {
-	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01) || (data[3] != 0x45))
-		return GNSS_ERROR_3;
+	if ((data[0] != 0xb5) || (data[1] != 'b'))
+	  return GNSS_ERROR_4;
+	if((data[2] != 0x01) || (data[3] != 0x45))
+	  return GNSS_ERROR_5;
 
 	if (!checkSumCheck(data + 2, sizeof(uBlox_DAHEADING)))
-		return GNSS_ERROR_4;
+		return GNSS_ERROR_6;
 
 	uBlox_DAHEADING p;
 
@@ -189,11 +193,14 @@ GNSS_Result GNSS_type::update_delta_X20D(const uint8_t * data)
 
 GNSS_Result GNSS_type::update_delta_F9x(const uint8_t * data)
 {
-	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01) || (data[3] != 0x3c))
-		return GNSS_ERROR_5;
+	if ((data[0] != 0xb5) || (data[1] != 'b'))
+	  return GNSS_ERROR_7;
+
+	if((data[2] != 0x01) || (data[3] != 0x3c))
+	  return GNSS_ERROR_8;
 
 	if (!checkSumCheck(data + 2, sizeof(uBlox_relpos_NED)))
-		return GNSS_ERROR_6;
+		return GNSS_ERROR_9;
 
 	uBlox_relpos_NED p;
 
