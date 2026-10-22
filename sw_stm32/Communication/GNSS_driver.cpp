@@ -31,8 +31,8 @@
 
 #if RUN_GNSS
 
-#define DATA_PACKET_TIMEOUT_MS 250
-#define HALF_DATA_PACKET_TIMEOUT_MS 50
+#define DATA_PACKET_TIMEOUT_MS 100
+#define HALF_DATA_PACKET_TIMEOUT_MS 20
 
 COMMON UART_HandleTypeDef huart3;
 COMMON DMA_HandleTypeDef hdma_usart3_rx;
@@ -86,6 +86,9 @@ static inline void MX_USART3_UART_Init (void)
 
     HAL_NVIC_SetPriority (DMA1_Stream1_IRQn, STANDARD_ISR_PRIORITY, 0);
     HAL_NVIC_EnableIRQ (DMA1_Stream1_IRQn);
+
+    HAL_NVIC_SetPriority (USART3_IRQn, STANDARD_ISR_PRIORITY, 0);
+    HAL_NVIC_EnableIRQ (USART3_IRQn);
 }
 
 /**
@@ -206,5 +209,14 @@ void USART_3_runnable (void *GNSS_type)
 	}
     }
 }
+
+/**
+ * @brief This function handles USART 2 global interrupt.
+ */
+extern "C" void USART3_IRQHandler (void)
+{
+  HAL_UART_IRQHandler (&huart3);
+}
+
 
 #endif
