@@ -91,7 +91,9 @@ same regardless of partition scheme) via `arduino-cli compile
 
 Once a board is already running this sketch, later updates don't need a USB
 connection: connect to the device's WiFi AP, open its web UI (`192.168.4.1`
-by default, or `http://larus.local` if the client OS supports mDNS), and
+by default, or `http://larus.local` if the client OS supports mDNS; on
+Android, if neither loads, see "Android: web UI not reachable after an
+automatic connection" in `documentation/wlan_link.md`), and
 use the "ESP32 WiFi module update" section to upload a new
 `larus_sensor_esp32_v<version>.bin` (from `scripts/build_firmware.py` - see
 below - or the Arduino IDE's "Export compiled Binary", which instead names
