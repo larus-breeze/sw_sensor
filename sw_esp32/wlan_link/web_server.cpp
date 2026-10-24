@@ -1456,6 +1456,43 @@ static void handleApAutoOffSave (void)
   server.send (200, "text/plain", "ok");
 }
 
+//!< EXPERIMENTAL captive portal (#266), together with the DNS server in
+//!< wifi_config.cpp: in access point mode, answer the connectivity checks of
+//!< Android, iOS/macOS and Windows - and any request for a foreign host name -
+//!< with a redirect to the web UI, so the phone reports a "sign in to network"
+//!< page instead of silently treating the network as "no internet".
+static bool isOwnHost (const String &host)
+{
+  String h = host;
+  int colon = h.indexOf (':');
+  if (colon >= 0)
+    h = h.substring (0, colon); // strip ":port"
+  return h.length () == 0 || h == WiFi.softAPIP ().toString () || h.equalsIgnoreCase ("larus.local")
+      || h.equalsIgnoreCase ("larus");
+}
+
+static void redirectToWebUi (void)
+{
+  server.sendHeader ("Location", String ("http://") + WiFi.softAPIP ().toString () + "/", true);
+  server.send (302, "text/plain", "");
+}
+
+static void handleCaptivePortalProbe (void)
+{
+  if (wifiConfigCurrentMode () == WIFI_CONFIG_MODE_AP)
+    redirectToWebUi ();
+  else
+    server.send (404, "text/plain", "Not found");
+}
+
+static void handleNotFound (void)
+{
+  if (wifiConfigCurrentMode () == WIFI_CONFIG_MODE_AP && ! isOwnHost (server.hostHeader ()))
+    redirectToWebUi ();
+  else
+    server.send (404, "text/plain", String ("Not found: ") + server.uri ());
+}
+
 void setupWebServer (void)
 {
   // WiFi (access point and/or station) is already up by this point - see
@@ -1473,6 +1510,14 @@ void setupWebServer (void)
   server.on ("/update_esp32", HTTP_POST, handleEsp32UpdateComplete, handleEsp32UpdateChunk);
   server.on ("/wifi/config", HTTP_POST, handleWifiConfigSave);
   server.on ("/wifi/ap_auto_off", HTTP_POST, handleApAutoOffSave);
+
+  // EXPERIMENTAL captive portal (#266): connectivity checks
+  server.on ("/generate_204", HTTP_GET, handleCaptivePortalProbe);         // Android
+  server.on ("/gen_204", HTTP_GET, handleCaptivePortalProbe);              // Android
+  server.on ("/hotspot-detect.html", HTTP_GET, handleCaptivePortalProbe);  // iOS, macOS
+  server.on ("/connecttest.txt", HTTP_GET, handleCaptivePortalProbe);      // Windows
+  server.on ("/ncsi.txt", HTTP_GET, handleCaptivePortalProbe);             // Windows
+  server.onNotFound (handleNotFound);
 
   server.begin ();
 }
