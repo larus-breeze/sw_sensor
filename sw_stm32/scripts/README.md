@@ -20,6 +20,21 @@ pulls in this file plus the ESP32 side's.)
 into a c header for the compile process and into the toml files which are used
 to create firmware images.
 
+## CI build without STM32CubeIDE
+`ci_build.py` builds the firmware with the Arm GNU Toolchain on `PATH`
+(`arm-none-eabi-gcc`), using the build settings stored in `.cproject`
+(Release by default, including the per-folder optimization and warning
+settings), and reports memory usage per region and compiler warnings:
+
+    python3 scripts/ci_build.py [--config Release] [--json summary.json]
+
+The GitHub workflow `.github/workflows/firmware-build.yml` runs it for every
+pull request with the toolchain of the current releases and with the next
+one, and compares memory usage with the PR's base. It is a check, not a
+release build: ST's "GNU Tools for STM32" in STM32CubeIDE differ slightly
+from the Arm GNU Toolchain (for 0.7.6: identical RAM sections, flash about
+0.6% smaller), so release images still come from `build_firmware.py`.
+
 ## Building the firmware
 - Either build it in STM32CubeIDE itself (Project -> Build Project, with the
 "Release" build configuration active), or headlessly from the command line
@@ -42,6 +57,13 @@ with build_firmware.py:
 - Either way, make sure the *.elf binary this produces in the Release
 directory is actually the one you intend to package - pack.py now warns if
 it's older than 10 minutes.
+
+- build_firmware.py checks which compiler built the ELF (its .comment
+section) against `release_toolchain.txt` and stops if they differ, so a
+release cannot silently be built with another STM32CubeIDE/compiler version.
+For local test builds with a different STM32CubeIDE, pass
+--allow-other-toolchain; such builds must not be published. At the end it
+prints a "Built with ..." line for the release notes.
 
 - build_firmware.py also mirrors the raw build output (*.elf, *.map, ...) from
 the Release directory into `sw_stm32/build/` (gitignored), for symmetry with

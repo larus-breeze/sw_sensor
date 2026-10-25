@@ -357,6 +357,46 @@ log files section (list sorted by modification date descending, with
 Download/Delete/Download-all, "Format SD card" with its own
 confirmation).
 
+### Android: web UI not reachable after an automatic connection
+
+(see #266) An Android phone that has the sensor's access point saved with
+"connect automatically" joins it on its own when the sensor powers up -
+but `http://192.168.4.1` and `http://larus.local` then don't load while
+the phone also has mobile data.
+
+Cause: after joining a WiFi network, Android checks whether it reaches the
+internet (an HTTP request to a Google connectivity-check URL). The access
+point has no internet, and the ESP32 runs no DNS server, so the check
+fails and Android marks the network "no internet". It stays connected,
+but keeps mobile data as the default network, and the browser sends the
+request for `192.168.4.1` there. Apps connecting to the NMEA TCP bridge
+are affected the same way, unless they bind to the WiFi network
+themselves. When the user selects the network manually instead, Android
+asks whether to stay connected without internet and then routes traffic
+over the WiFi network - which is why reconnecting by hand works.
+
+What helps (any one of them):
+
+- Disconnect from `Larus_xxxx` and connect to it again manually; confirm
+  "stay connected" if Android asks about the missing internet access.
+- Turn off "connect automatically" for `Larus_xxxx` in Android's WiFi
+  settings and always connect manually.
+- Switch off mobile data while using the web UI.
+
+Behaviour differs between Android versions. Tested on Android 12 (Pixel
+3a): after the first failed internet check, Android marks the network as
+permanently without internet (`NETWORK_SELECTION_DISABLED_NO_INTERNET_PERMANENT`
+in `dumpsys wifi`) and never joins it automatically again - not even after
+confirming "stay connected" with "don't ask again". There it has to be
+selected manually every time. In #266 (Android 17) the phone does join
+automatically, but doesn't use the network. In both cases, apps such as
+XCSoar on the NMEA TCP bridge (port 8882) receive data after "stay
+connected" was confirmed, or with mobile data switched off.
+
+`http://larus.local` additionally needs mDNS (`.local`) support on the
+phone, which not every Android version/browser has - `http://192.168.4.1`
+always works once the WiFi network is used.
+
 ## WiFi client mode
 
 `wifi_config.{h,cpp}`: lets the sensor join an existing WiFi network as a
