@@ -197,16 +197,10 @@ GNSS_Result GNSS_type::update_delta_F9x(const uint8_t * data)
 	if( *(uint32_t *)data != RELPOSNED_PREAMBLE) // heading record first
 	    return GNSS_ERROR_5;
 
-	if ( not checkSumCheck(data + 2, sizeof(uBlox_DAHEADING)))
-	  {
-	    coordinates.sat_fix_type &= ~SAT_HEADING;
-	    return GNSS_ERROR_6;
-	  }
-
 	if (!checkSumCheck(data + 2, sizeof(uBlox_relpos_NED)))
 	  {
 	    coordinates.sat_fix_type &= ~SAT_HEADING;
-	    return GNSS_ERROR_7;
+	    return GNSS_ERROR_6;
 	  }
 
 	uBlox_relpos_NED p;
@@ -266,14 +260,14 @@ GNSS_Result GNSS_type::update_combined ( const uint8_t *data, GNSS_configration_
       if( *(uint32_t *)data == RELPOSNED_PREAMBLE) // heading record first
 	{
 	  res = GNSS.update_delta_F9x( data);
-	  if( res >= GNSS_ERROR_1)
+	  if( res >= GNSS_ERROR_7)
 	    return res;
 	  res = GNSS.update( data + sizeof( uBlox_relpos_NED) + 8);
 	}
       else // PVT record first
 	{
 	  res = GNSS.update( data);
-	  if( res >= GNSS_ERROR_1)
+	  if( res >= GNSS_ERROR_8)
 	    return res;
 	  res = GNSS.update_delta_F9x( data + sizeof( uBlox_pvt) + 8);
 	}
@@ -282,14 +276,14 @@ GNSS_Result GNSS_type::update_combined ( const uint8_t *data, GNSS_configration_
       if( *(uint32_t *)data == DAHEADING_PREAMBLE) // heading record first
 	{
 	  res = GNSS.update_delta_X20D( data);
-	  if( res >= GNSS_ERROR_1)
+	  if( res >= GNSS_ERROR_9)
 	    return res;
 	  res = GNSS.update( data + sizeof( uBlox_DAHEADING) + 8);
 	}
       else // PVT record first
 	{
 	  res = GNSS.update( data);
-	  if( res >= GNSS_ERROR_1)
+	  if( res >= GNSS_ERROR_10)
 	    return res;
 	  res = GNSS.update_delta_X20D( data + sizeof( uBlox_pvt) + 8);
 	}
