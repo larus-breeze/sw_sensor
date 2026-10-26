@@ -60,6 +60,7 @@ SETUP_PAGE_NAME_TEMPLATE = "larus_sensor_esp32_v{}.setup.html"
 
 SETUP_PAGE_TEMPLATE = SCRIPT_DIR / "web_tool" / "larus_esp32_setup.html"
 ESPTOOL_JS_BUNDLE = SCRIPT_DIR / "web_tool" / "vendor" / "esptool-js.bundle.js"
+ESPTOOL_JS_LICENSE = SCRIPT_DIR / "web_tool" / "vendor" / "esptool-js.LICENSE"
 
 # Standard Arduino-ESP32 offsets (same regardless of partition scheme,
 # hence hardcoded rather than parsed out of partitions.bin): the NVS
@@ -231,7 +232,13 @@ def render_setup_page(output_path, version, offset_file_pairs):
         ('<script id="firmwareData" type="application/json">null</script>',
          f'<script id="firmwareData" type="application/json">{json.dumps(firmware)}</script>'),
         ("<script id=\"esptoolJs\">/* esptool-js bundle */</script>",
-         f'<script id="esptoolJs">{esptool_js_classic_script()}</script>'),
+         '<script id="esptoolJs">/*!\n'
+         'MODIFIED esptool-js bundle: esptool_js_classic_script in\n'
+         'sw_esp32/scripts/build_firmware.py converts the ES module to a classic\n'
+         'script by replacing its exports with window.esptooljs and wrapping\n'
+         'the bundle in an immediately invoked function for offline file:// use.\n\n'
+         + ESPTOOL_JS_LICENSE.read_text(encoding="utf-8")
+         + f'\n*/\n{esptool_js_classic_script()}</script>'),
     ):
         if page.count(placeholder) != 1:
             sys.exit(f"{SETUP_PAGE_TEMPLATE}: placeholder not found exactly once: {placeholder}")

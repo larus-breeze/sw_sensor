@@ -14,7 +14,9 @@ local toolchain" in `sw_esp32/README.md`.
   an ES module into a classic script that sets `window.esptooljs`. Chrome
   doesn't run module scripts (not even from a `blob:` URL) in a page opened
   via `file://`; a classic inline script does, so the page works when
-  double-clicked, offline.
+  double-clicked, offline. The generated script starts with a modification
+  notice and the full `vendor/esptool-js.LICENSE`, so every standalone page
+  includes the license.
 
 Opened directly, the template only offers the WiFi label part.
 
