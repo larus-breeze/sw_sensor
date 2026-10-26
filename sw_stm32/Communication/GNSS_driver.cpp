@@ -31,8 +31,11 @@
 
 #if RUN_GNSS
 
-#define DATA_PACKET_TIMEOUT_MS 100
 #define HALF_DATA_PACKET_TIMEOUT_MS 20
+#define DATA_PACKET_TIMEOUT_MS 20
+#define DATA_PACKET_GAP_SLOW_MS 85
+#define DATA_PACKET_GAP_FAST_MS 60
+#define NEXT_PACKET_DELAY 100
 
 COMMON UART_HandleTypeDef huart3;
 COMMON DMA_HandleTypeDef hdma_usart3_rx;
@@ -87,8 +90,10 @@ static inline void MX_USART3_UART_Init (void)
     HAL_NVIC_SetPriority (DMA1_Stream1_IRQn, STANDARD_ISR_PRIORITY, 0);
     HAL_NVIC_EnableIRQ (DMA1_Stream1_IRQn);
 
+#if 0 // for testing with ISR
     HAL_NVIC_SetPriority (USART3_IRQn, STANDARD_ISR_PRIORITY, 0);
     HAL_NVIC_EnableIRQ (USART3_IRQn);
+#endif
 }
 
 /**
@@ -114,7 +119,9 @@ COMMON uint64_t gnss_min=-1;
 void USART_3_runnable (void *GNSS_type)
 {
   GNSS_configration_t gnss = *(GNSS_configration_t *)GNSS_type;
+  bool need_synchronization = true;
 
+  TickType_t last_reception_done;
   unsigned buffer_size = 0;
 
   switch( gnss)
@@ -158,30 +165,38 @@ void USART_3_runnable (void *GNSS_type)
       if (result != HAL_OK)
 	{
 	  HAL_UART_Abort (&huart3);
+	  need_synchronization = true;
 	  continue;
 	}
       // wait for half transfer interrupt
       uint32_t pulNotificationValue;
-      BaseType_t notify_result = xTaskNotifyWait(0xffffffff, 0xffffffff,
-						 &pulNotificationValue,
-						 DATA_PACKET_TIMEOUT_MS);
+      BaseType_t notify_result = xTaskNotifyWait(
+	  0xffffffff, 0xffffffff, &pulNotificationValue,
+	  need_synchronization ? NEXT_PACKET_DELAY : HALF_DATA_PACKET_TIMEOUT_MS);
+
+      last_reception_done = xTaskGetTickCount();
+
       if (notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart3);
-	  signal_debug_event( GNSS_TIMEOUT_HALF);
+	  signal_debug_event( GNSS_TIMEOUT_HALF, notify_result & 0xffff);
+	  need_synchronization = true;
 	  continue;
 	}
       // wait for transfer complete interrupt
       notify_result = xTaskNotifyWait(0xffffffff, 0xffffffff,
 				      &pulNotificationValue,
-				      HALF_DATA_PACKET_TIMEOUT_MS);
+				      DATA_PACKET_TIMEOUT_MS);
       if (notify_result != pdTRUE)
 	{
 	  HAL_UART_Abort (&huart3);
-	  signal_debug_event( GNSS_TIMEOUT_FULL);
+	  signal_debug_event( GNSS_TIMEOUT_FULL, notify_result & 0xffff);
+	  need_synchronization = true;
 	  continue;
 	}
+
       HAL_UART_Abort (&huart3);
+      need_synchronization = false;
 
       GNSS_Result result;
 
@@ -200,13 +215,16 @@ void USART_3_runnable (void *GNSS_type)
           result = GNSS.update_combined (USART_3_RX_buffer, gnss);
           break;
       }
-
+#if 1
       if ( result >= GNSS_ERROR_1)
 	{
-	  HAL_UART_Abort (&huart3);
-	  signal_debug_event( (debug_points)GNSS_DATA_ERROR, result);
-	  delay (50);
+	  signal_debug_event( (debug_points)GNSS_DATA_ERROR, result & 0xffff);
+	  need_synchronization = true;
 	}
+#endif
+      GNSS_new_data_ready.set();
+      vTaskDelayUntil( &last_reception_done,
+	(gnss == GNSS_M9N) ? DATA_PACKET_GAP_FAST_MS : DATA_PACKET_GAP_SLOW_MS);
     }
 }
 
