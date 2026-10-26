@@ -318,7 +318,7 @@ async function refreshStatus() {
     // logger cycle - keying off loggingActive here left the button
     // showing its pre-click state until the next unrelated refresh.
     document.getElementById('loggingStatus').textContent = !s.linkOk ? '' :
-      (s.loggingPausedByUser ? 'paused - resumes automatically after a few minutes' :
+      (s.loggingPausedByUser ? 'paused - resumes at takeoff' :
        (s.loggingActive ? 'active' :
         (s.loggingStoppedSdFull ? 'stopped - SD card full' : 'not active')));
     document.getElementById('stopLoggingButton').style.display = (s.linkOk && !s.loggingPausedByUser) ? '' : 'none';
@@ -682,8 +682,7 @@ document.getElementById('startLoggingButton').addEventListener('click', async ()
 });
 
 // Stops logging right before the STM32 upload - the STM32 NACKs
-// UPLOAD_BEGIN while logging is active, and a manual stop is only a pause
-// that expires after ~5 minutes (LOGGING_PAUSE_TIMEOUT_ITERATIONS). Never
+// UPLOAD_BEGIN while logging is active. Never
 // automatic while airborne: that would cut the flight log and reboot the
 // sensor mid-flight - a manual stop is still possible then. Resolves true
 // once logging is really stopped, otherwise false with the reason shown.
