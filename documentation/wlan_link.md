@@ -217,13 +217,17 @@ reason `0x06`, named `WLAN_NACK_LOGGING_ACTIVE` on the wire), instead of
 set/clear `logging_paused_by_user`, which the "wait for airborne" loop
 treats the same as being grounded — it closes the current file (if any)
 and stays out of `logging_active` regardless of `is_airborne()`. This
-lets a user resume logging deliberately while still airborne. To guard
-against a pause simply being forgotten, `logging_paused_by_user`
-auto-clears after `LOGGING_PAUSE_TIMEOUT_ITERATIONS` (~5 minutes) with no
-explicit resume, also setting `logging_force_start` (a one-shot flag that
-exits the "wait for airborne" loop the same way `is_airborne()` does) so
-the timeout firing while genuinely grounded doesn't silently leave
-logging off.
+lets a user resume logging deliberately while still airborne.
+`START_LOGGING_REQUEST` also sets `logging_force_start` (a one-shot flag
+that exits the "wait for airborne" loop the same way `is_airborne()`
+does), so a manual resume starts a file even on the ground. A log file is
+therefore only opened at takeoff or by a manual resume. To guard against
+a pause simply being forgotten before a flight, the loop clears
+`logging_paused_by_user` on the ground -> airborne transition; there is
+no time-based auto-resume, so a pause set on the ground never starts a
+file on the ground. A pause set in flight lasts until the next takeoff.
+Any landing reported while paused is discarded before the next file is
+opened, so it can't close that file right away.
 
 `status.airborne` still reports raw flight state for the web UI's info
 display, but it's informational only — every actual gate uses
@@ -232,9 +236,7 @@ display, but it's informational only — every actual gate uses
 `web_server.cpp`) — fresh `/status`, confirm dialog, `/logging/stop`, then
 wait up to 15s for `loggingActive` to drop — but only while not
 `airborne`, so an update can't cut a flight log and reboot the sensor
-mid-flight by accident; a manual stop still works then. Stopping right
-before the upload also keeps the ~5 minute pause auto-clear from
-restarting logging between a manual stop and the upload. Once
+mid-flight by accident; a manual stop still works then. Once
 `UPLOAD_BEGIN` succeeds, the upload holds the FatFs lock, so logging
 can't restart until the STM32 reboots into the update.
 
