@@ -25,6 +25,7 @@ partition - WiFi credentials, AP identity) is never overwritten.
 """
 
 import argparse
+import base64
 import json
 import re
 import shutil
@@ -55,6 +56,10 @@ DEFAULT_PARTITION_SCHEME = "min_spiffs"
 OUTPUT_NAME_TEMPLATE = "larus_sensor_esp32_v{}.bin"
 MERGED_BOOT_NAME_TEMPLATE = "larus_sensor_esp32_v{}.flash1_boot.bin"
 MERGED_APP_NAME_TEMPLATE = "larus_sensor_esp32_v{}.flash2_app.bin"
+SETUP_PAGE_NAME_TEMPLATE = "larus_sensor_esp32_v{}.setup.html"
+
+SETUP_PAGE_TEMPLATE = SCRIPT_DIR / "web_tool" / "larus_esp32_setup.html"
+ESPTOOL_JS_BUNDLE = SCRIPT_DIR / "web_tool" / "vendor" / "esptool-js.bundle.js"
 
 # Standard Arduino-ESP32 offsets (same regardless of partition scheme,
 # hence hardcoded rather than parsed out of partitions.bin): the NVS
@@ -185,6 +190,55 @@ def find_boot_app0_bin():
     return matches[-1]  # highest installed core version, if more than one
 
 
+def esptool_js_classic_script():
+    """Rewrites the vendored esptool-js ES module bundle into a classic
+    script that sets window.esptooljs. Chrome refuses module scripts (also
+    via a blob: URL) in a page opened from file://, so the setup page could
+    only run when served; a plain inline script works when double-clicked.
+    """
+    bundle = ESPTOOL_JS_BUNDLE.read_text(encoding="utf-8")
+    match = re.search(r"export\s*\{([^}]*)\};?\s*$", bundle)
+    if not match or "import(" in bundle or "import.meta" in bundle or "</script" in bundle.lower():
+        sys.exit(f"{ESPTOOL_JS_BUNDLE}: not a self-contained bundle ending in one export {{...}}; can't inline it")
+    exports = []
+    for item in match.group(1).split(","):
+        local, _, exported = item.strip().partition(" as ")
+        exports.append(f"{exported or local}:{local}")
+    return (
+        '(function(){"use strict";\n'
+        + bundle[: match.start()]
+        + "\nwindow.esptooljs={" + ",".join(exports) + "};\n})();"
+    )
+
+
+def render_setup_page(output_path, version, offset_file_pairs):
+    """Writes the browser setup page (initial flash + WiFi label, see
+    web_tool/README.md) with these flash images and esptool-js inlined."""
+    firmware = {
+        "version": version,
+        "files": [
+            {
+                "name": path.name,
+                "address": address,
+                "size": path.stat().st_size,
+                "data": base64.b64encode(path.read_bytes()).decode("ascii"),
+            }
+            for address, path in offset_file_pairs
+        ],
+    }
+    page = SETUP_PAGE_TEMPLATE.read_text(encoding="utf-8")
+    for placeholder, content in (
+        ('<script id="firmwareData" type="application/json">null</script>',
+         f'<script id="firmwareData" type="application/json">{json.dumps(firmware)}</script>'),
+        ("<script id=\"esptoolJs\">/* esptool-js bundle */</script>",
+         f'<script id="esptoolJs">{esptool_js_classic_script()}</script>'),
+    ):
+        if page.count(placeholder) != 1:
+            sys.exit(f"{SETUP_PAGE_TEMPLATE}: placeholder not found exactly once: {placeholder}")
+        page = page.replace(placeholder, content)
+    output_path.write_text(page, encoding="utf-8")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -306,12 +360,19 @@ def main():
     shutil.copyfile(boot_binary, named_boot_copy)
     named_app_copy = final_build_dir / MERGED_APP_NAME_TEMPLATE.format(get_version_tag())
     shutil.copyfile(app_flash_binary, named_app_copy)
+    named_setup_page = final_build_dir / SETUP_PAGE_NAME_TEMPLATE.format(get_version_tag())
+    render_setup_page(
+        named_setup_page,
+        get_version_tag(),
+        [(0x1000, named_boot_copy), (NVS_PARTITION_END, named_app_copy)],
+    )
 
     print(f"\nApplication binary (for OTA updates): {named_copy}")
     print("Flash images for a from-scratch flash (esptool-js or esptool.py write_flash),")
     print("NVS/WiFi credentials untouched - see sw_esp32/README.md:")
     print(f"  0x1000  {named_boot_copy}")
     print(f"  0x{NVS_PARTITION_END:x}  {named_app_copy}")
+    print(f"Browser page for the initial flash + WiFi label (Chrome/Edge): {named_setup_page}")
     print(f"All build outputs (incl. bootloader/partitions for a full flash): {args.output_dir}")
 
 

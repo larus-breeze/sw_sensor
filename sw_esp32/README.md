@@ -60,7 +60,18 @@ again).
       OTA updatability matters here, so this keeps the OTA_0/OTA_1
       partition pair rather than switching to a larger no-OTA scheme.
 
-### Initial flash without a local toolchain (esptool-js)
+### Initial flash without a local toolchain (browser setup page)
+
+The simplest way: open `larus_sensor_esp32_v<version>.setup.html` (from
+`build/` after a build, or from the release) in Chrome or Edge — a
+double-click is enough, no server or internet connection needed. Connect
+the board over USB and click **Connect board & flash**. The page
+contains both flash images below and writes them at the right offsets,
+checks them by MD5, and then reads the new WiFi AP SSID/password from the
+boot output and renders the printable label (see "Generating a printable
+WiFi-AP label" below). How it is put together: `scripts/web_tool/README.md`.
+
+#### Manual alternative: esptool-js
 
 For a first flash on a blank board, or a full reflash of an already-set-up
 one, use Espressif's [esptool-js](https://espressif.github.io/esptool-js/)
@@ -138,7 +149,7 @@ IDE instead skips that step - run `scripts/create-git-info-header.py` by
 hand first if you want an up-to-date version string in an IDE-built
 binary; otherwise it falls back to a placeholder.
 
-Three named images are copied to `build/` at the repository root (shared
+Four named files are copied to `build/` at the repository root (shared
 with the STM32 side's `scripts/build_firmware.py`, so both firmware
 images end up next to each other), all tagged with the same
 `MAJOR.MINOR.PATCH-BUILD` from `git describe` (e.g. `0.7.6-157`) as the
@@ -146,6 +157,9 @@ STM32 side's own `larus_sensor_stm32_v<version>.bin` naming, close enough
 to tell at a glance which pair of binaries belongs together:
 - `larus_sensor_esp32_v<version>.bin` — the application image alone, for
   OTA updates or for re-flashing over an already-flashed board.
+- `larus_sensor_esp32_v<version>.setup.html` — the browser setup page
+  (initial flash + WiFi label) with the two images below built in, see
+  "Initial flash without a local toolchain" above.
 - `larus_sensor_esp32_v<version>.flash1_boot.bin` /
   `...flash2_app.bin` — bootloader + partition table, and
   `boot_app0.bin` + application, merged into two flat images at their
@@ -181,6 +195,10 @@ python3 scripts/generate_ap_label.py --ssid Larus_1A2B --password ABCDEFGH234567
 # read them directly from a freshly flashed/reset board:
 python3 scripts/generate_ap_label.py --serial-port /dev/ttyUSB0
 ```
+
+The same works without Python in the browser setup page
+(`larus_sensor_esp32_v<version>.setup.html`, see above): the label part
+of it also works for boards that are already flashed.
 
 Without `--output`, the label is written to
 `build/larus_wifi_label_<ssid>.png` at the repository root (same `build/`

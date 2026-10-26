@@ -152,6 +152,7 @@ jobs:
           name: esp32-release-${{ github.sha }}
           path: |
             build/larus_sensor_esp32_v*.bin
+            build/larus_sensor_esp32_v*.setup.html
             sw_esp32/build.log
 
   release:
@@ -178,7 +179,7 @@ jobs:
         run: |
           mkdir release
           cp artifacts/stm32-release-*/build/larus_sensor_stm32_v*.{bin,elf} \
-             artifacts/esp32-release-*/build/larus_sensor_esp32_v*.bin release/
+             artifacts/esp32-release-*/build/larus_sensor_esp32_v*.{bin,setup.html} release/
           (cd release && sha256sum *) > SHA256SUMS
           mv SHA256SUMS release/
           run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
@@ -194,6 +195,7 @@ jobs:
                 *.flash1_boot.bin) what="initial ESP32 flash with esptool at 0x1000 (see sw_esp32/README.md)" ;;
                 *.flash2_app.bin) what="initial ESP32 flash with esptool at 0xe000" ;;
                 *esp32*.bin) what="ESP32 update for the web UI" ;;
+                *.setup.html) what="browser page (Chrome/Edge): initial ESP32 flash over USB + WiFi label" ;;
                 *) continue ;;
               esac
               echo "- \`$f\`: $what"
