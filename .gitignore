@@ -16,3 +16,4 @@ sw_esp32/wlan_link/build/
 sw_esp32/build/
 /build/
 .venv/
+__pycache__/

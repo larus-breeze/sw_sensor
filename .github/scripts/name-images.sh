@@ -15,7 +15,8 @@ case $target in
     for kind in .flash1_boot .flash2_app; do
       mv build/larus_sensor_esp32_v*$kind.bin "images/larus_sensor_esp32-$sha$kind.bin"
     done
-    mv build/larus_sensor_esp32_v*.bin "images/larus_sensor_esp32-$sha.bin" ;;
+    mv build/larus_sensor_esp32_v*.bin "images/larus_sensor_esp32-$sha.bin"
+    mv build/larus_sensor_esp32_v*.setup.html "images/larus_sensor_esp32-$sha.setup.html" ;;
 esac
 {
   echo "### Test build of $sha, not a release"

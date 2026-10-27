@@ -105,6 +105,9 @@ h4 { font-size: 0.95em; margin: 1em 0 0.3em; }
 table { width: 100%; border-collapse: collapse; }
 td, th { text-align: left; padding: 0.3em 0.4em; border-bottom: 1px solid #ddd; }
 button { padding: 0.3em 0.8em; }
+/* nowrap + gap keep Download and Delete apart on narrow screens, where they were easy to mis-tap */
+.file-actions { white-space: nowrap; }
+.file-actions button + button { margin-left: 0.8em; }
 .danger { background: #c02020; color: white; border: none; border-radius: 4px; }
 progress { width: 100%; }
 #uploadStatus, #formatStatus { margin-top: 0.5em; }
@@ -315,7 +318,7 @@ async function refreshStatus() {
     // logger cycle - keying off loggingActive here left the button
     // showing its pre-click state until the next unrelated refresh.
     document.getElementById('loggingStatus').textContent = !s.linkOk ? '' :
-      (s.loggingPausedByUser ? 'paused - resumes automatically after a few minutes' :
+      (s.loggingPausedByUser ? 'paused - resumes at takeoff' :
        (s.loggingActive ? 'active' :
         (s.loggingStoppedSdFull ? 'stopped - SD card full' : 'not active')));
     document.getElementById('stopLoggingButton').style.display = (s.linkOk && !s.loggingPausedByUser) ? '' : 'none';
@@ -442,7 +445,7 @@ function renderFilePage() {
       (lastStatus.loggingActive && !lastStatus.loggingPausedByUser))) ? 'disabled' : '';
     const modified = fatDateTimeToDate(f.fatDate, f.fatTime).toLocaleString();
     tr.innerHTML = '<td>' + f.name + '</td><td>' + humanSize(f.size) + '</td><td>' + modified + '</td>' +
-      '<td><a href="/files/download?name=' + encodeURIComponent(f.name) + '">Download</a> ' +
+      '<td class="file-actions"><button onclick="downloadFile(\'' + f.name + '\')">Download</button>' +
       '<button ' + disable + ' onclick="deleteFile(\'' + f.name + '\')">Delete</button></td>';
     body.appendChild(tr);
   }
@@ -572,6 +575,10 @@ async function downloadAllFiles() {
   }
 }
 
+function downloadFile(name) {
+  window.location.href = '/files/download?name=' + encodeURIComponent(name);
+}
+
 async function deleteFile(name) {
   if (!confirm('Delete ' + name + '?')) return;
   const r = await fetch('/files/delete', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: 'name=' + encodeURIComponent(name) });
@@ -675,8 +682,7 @@ document.getElementById('startLoggingButton').addEventListener('click', async ()
 });
 
 // Stops logging right before the STM32 upload - the STM32 NACKs
-// UPLOAD_BEGIN while logging is active, and a manual stop is only a pause
-// that expires after ~5 minutes (LOGGING_PAUSE_TIMEOUT_ITERATIONS). Never
+// UPLOAD_BEGIN while logging is active. Never
 // automatic while airborne: that would cut the flight log and reboot the
 // sensor mid-flight - a manual stop is still possible then. Resolves true
 // once logging is really stopped, otherwise false with the reason shown.
