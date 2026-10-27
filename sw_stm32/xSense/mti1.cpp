@@ -35,6 +35,7 @@
 #include "communicator.h"
 #include "system_state.h"
 #include "wlan_link_handler.h"
+#include "timestamps.h"
 
 #if RUN_MTi_1_MODULE
 
@@ -51,6 +52,7 @@
 #define IMU_PORT   GPIOD
 
 COMMON Semaphore MTi_ready(1, 0, (char *)"MTi_RDY"); //!< ISR -> task synchronizing semaphore
+COMMON static volatile uint64_t data_ready_time; //!< timestamp of the latest data-ready edge
 
 void sync_communicator (void);
 
@@ -85,9 +87,16 @@ init_ports_and_reset_mti (void) // GPIO stuff
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   HAL_GPIO_Init (IMU_PORT, &GPIO_InitStruct);
 
+  timestamps_init ();
+
   GPIO_InitStruct.Pin = IMU_DRDY;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   HAL_GPIO_Init (IMU_PORT, &GPIO_InitStruct);
+
+  // DRDY additionally feeds TIM4_CH1, which captures the edge (#263):
+  // alternate function mode, the EXTI line stays active
+  MODIFY_REG(IMU_PORT->MODER, GPIO_MODER_MODER12, GPIO_MODER_MODER12_1);
+  MODIFY_REG(IMU_PORT->AFR[1], 0xfu << ((12 - 8) * 4), GPIO_AF2_TIM4 << ((12 - 8) * 4));
 
   HAL_NVIC_SetPriority (EXTI15_10_IRQn, STANDARD_ISR_PRIORITY, 0);
   HAL_NVIC_EnableIRQ (EXTI15_10_IRQn);
@@ -178,7 +187,10 @@ extern "C" void EXTI15_10_IRQHandler (void)
 void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == IMU_DRDY)
-    MTi_ready.signal_from_ISR ();
+    {
+      data_ready_time = timestamp_IMU_data_ready_privileged ();
+      MTi_ready.signal_from_ISR ();
+    }
   else if (GPIO_Pin == WLAN_LINK_HANDSHAKE_Pin)
     wlan_link_cs_edge ();
 }
@@ -292,6 +304,7 @@ restart:
 	goto restart;
 
       readDataFrom_MTI (&IMU_interface, buf);
+      timestamps.IMU_sample = (uint32_t) data_ready_time;
 
       sync_communicator (); // trigger computations @ 100Hz
     }
