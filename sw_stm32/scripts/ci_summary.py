@@ -91,10 +91,11 @@ def markdown(head, base):
         if base and region in base["memory"]:
             row += f" {m['used'] - base['memory'][region]['used']:+,} B |"
         lines.append(row)
-    if head["warnings"]:
+    kinds = head["warnings"].keys() | (base["warnings"].keys() if base else set())
+    if kinds:
         lines += ["\n| Diagnostics | Count |" + (" Base |" if base else ""), "|---|---:|" + ("---:|" if base else "")]
-        for k, n in sorted(head["warnings"].items()):
-            lines.append(f"| `{k}` | {n} |" + (f" {base['warnings'].get(k, 0)} |" if base else ""))
+        for k in sorted(kinds):
+            lines.append(f"| `{k}` | {head['warnings'].get(k, 0)} |" + (f" {base['warnings'].get(k, 0)} |" if base else ""))
     return "\n".join(lines)
 
 
