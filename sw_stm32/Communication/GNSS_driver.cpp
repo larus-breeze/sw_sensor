@@ -38,6 +38,13 @@ COMMON UART_HandleTypeDef huart3;
 COMMON DMA_HandleTypeDef hdma_usart3_rx;
 COMMON  static TaskHandle_t USART3_task_Id = NULL;
 
+ROM uint8_t config_message_0[] = { 0xb5, 0x62, 0x06, 0x8a, 0x08, 0x00, 0x00, 0x07, 0x00, 0x00, 0xb5, 0x01, 0x91, 0x20, 0x00, 0x06, 0xd1};
+ROM uint8_t config_message_1[] = { 0xb5, 0x62, 0x06, 0x8a, 0x08, 0x00, 0x00, 0x07, 0x00, 0x00, 0xba, 0x01, 0x91, 0x20, 0x00, 0x0b, 0xe4};
+ROM uint8_t config_message_2[] = { 0xb5, 0x62, 0x06, 0x8a, 0x08, 0x00, 0x00, 0x07, 0x00, 0x00, 0x48, 0x00, 0x91, 0x20, 0x00, 0x98, 0xcb};
+ROM uint8_t config_message_3[] = { 0xb5, 0x62, 0x06, 0x09, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x2F, 0xAE};
+
+ROM uint8_t poll_message_0[] = { 0xB5, 0x62, 0x06, 0x8A, 0x0D, 0x00, 0x01, 0x00, 0x00, 0x00, 0xBA, 0x01, 0x91, 0x20, 0x01, 0x00, 0x7B, 0x2E};
+
 /**
  * @brief USART3 Initialization Function
  */
@@ -87,10 +94,8 @@ static inline void MX_USART3_UART_Init (void)
     HAL_NVIC_SetPriority (DMA1_Stream1_IRQn, STANDARD_ISR_PRIORITY, 0);
     HAL_NVIC_EnableIRQ (DMA1_Stream1_IRQn);
 
-#if 0 // for testing with ISR
     HAL_NVIC_SetPriority (USART3_IRQn, STANDARD_ISR_PRIORITY, 0);
     HAL_NVIC_EnableIRQ (USART3_IRQn);
-#endif
 }
 
 /**
@@ -142,6 +147,22 @@ void USART_3_runnable (void *GNSS_type)
   USART3_task_Id = xTaskGetCurrentTaskHandle ();
   MX_USART3_UART_Init ();
   volatile HAL_StatusTypeDef result;
+
+  if( gnss == GNSS_F9P_F9P)
+    {
+      for( unsigned i=20; i > 0; --i)
+	{
+	  HAL_UART_Transmit_IT (&huart3, (uint8_t *)poll_message_0, sizeof( poll_message_0));
+	  delay(30);
+	}
+
+	HAL_UART_Transmit_IT (&huart3, (uint8_t *)config_message_1, sizeof(config_message_1));
+	delay(10);
+	HAL_UART_Transmit_IT (&huart3, (uint8_t *)config_message_2, sizeof(config_message_2));
+	delay(10);
+	HAL_UART_Transmit_IT (&huart3, (uint8_t *)config_message_3, sizeof(config_message_3));
+	delay(10);
+    }
 
   drop_privileges();
 
