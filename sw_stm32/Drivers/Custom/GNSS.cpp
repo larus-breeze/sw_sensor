@@ -267,7 +267,7 @@ GNSS_Result GNSS_type::update_combined ( const uint8_t *data, GNSS_configration_
       else // PVT record first
 	{
 	  res = GNSS.update( data);
-	  if( res >= GNSS_ERROR_8)
+	  if( res >= GNSS_ERROR_1)
 	    return res;
 	  res = GNSS.update_delta_F9x( data + sizeof( uBlox_pvt) + 8);
 	}
