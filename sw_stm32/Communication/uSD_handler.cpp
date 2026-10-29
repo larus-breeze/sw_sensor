@@ -420,26 +420,15 @@ restart:
   // repeat writing log files for all successive flights
   while(true)
     {
-      // Only log while airborne - frees the SD card for
-      // wlan_link_handler_task while grounded. Also waits here while
-      // logging_paused_by_user is set - see "Logging pause",
+      // Waits here while logging_paused_by_user is set - see "Logging pause",
       // documentation/wlan_link.md - and between free-space re-checks.
       uint8_t consecutive_not_detected = 0;
-      bool was_airborne = is_airborne();
-      while( ( ! is_airborne() && ! logging_force_start ) || logging_paused_by_user
-	     || (sd_full_retry_iterations > 0))
+      while( logging_paused_by_user or (sd_full_retry_iterations > 0))
 	{
-	  if( sd_full_retry_iterations > 0)
-	    --sd_full_retry_iterations;
+    --sd_full_retry_iterations;
 
 	  if( crashfile)
 	    write_crash_dump( user_initiated_reset);
-
-	  // A forgotten pause must not cost the next flight: clear it at takeoff.
-	  bool airborne_now = is_airborne();
-	  if( airborne_now && ! was_airborne)
-	    logging_paused_by_user = false;
-	  was_airborne = airborne_now;
 
 	  // Detects the card being pulled while grounded. fatfs_lock()
 	  // first so an in-flight wlan_link_handler_task FatFs call

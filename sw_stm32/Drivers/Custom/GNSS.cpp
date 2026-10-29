@@ -29,9 +29,9 @@
 #include "common.h"
 #include "AHRS.h"
 #include "system_state.h"
+#include "signal_flight_event.h"
 
 COMMON reminder_flag GNSS_new_data_ready;
-COMMON bool D_GNSS_new_data_ready;
 COMMON uint64_t FAT_time; //!< DOS FAT time for file usage
 COMMON Mutex GNSS_data_guard;
 
@@ -61,9 +61,7 @@ GNSS_type::GNSS_type( D_GNSS_coordinates_t & coo, D_GNSS_accuracy_t &acc) :
 	{}
 #else
 GNSS_type::GNSS_type( D_GNSS_coordinates_t & coo) :
-		coordinates( coo),
-		fix_type(FIX_none),
-		num_SV(0)
+		coordinates( coo)
 	{}
 #endif
 
@@ -73,12 +71,17 @@ COMMON float delta_t;
 
 GNSS_Result GNSS_type::update(const uint8_t * data)
 {
-	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01)
-			|| (data[3] != 0x07))
-		return GNSS_ERROR;
+	if( *(uint32_t *)data != PVT_PREAMBLE) // heading record first
+	  {
+	    signal_GNSS_log_event( (data[2] << 8) | data[3] );
+	    return GNSS_ERROR_1;
+	  }
 
 	if (!checkSumCheck(data + 2, sizeof(uBlox_pvt)))
-		return GNSS_ERROR;
+	  {
+	    coordinates.sat_fix_type = 0;
+	    return GNSS_ERROR_2;
+	  }
 
 	uBlox_pvt pvt;
 
@@ -92,16 +95,18 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	FAT_time = ((pvt.year - 1980) << 25) + (pvt.month << 21) + (pvt.day << 16)
 			+ (pvt.hour << 11) + (pvt.minute << 5) + (pvt.second >> 1);
 
-	coordinates.SATS_number = num_SV = pvt.num_SV;
+	GNSS_data_guard.lock();
+
+	coordinates.SATS_number = pvt.num_SV;
 	if( pvt.fix_type == 3) // 3 -> 3D-fix
 	  coordinates.sat_fix_type |= SAT_FIX;
 	else
 	  coordinates.sat_fix_type &= ~SAT_FIX;
 
-	coordinates.sat_fix_type &= ~0b11000000; // add the carrier solution bits
-	coordinates.sat_fix_type |= pvt.fix_flags2 & 0b11000000;
-
-	GNSS_data_guard.lock();
+	coordinates.sat_fix_type &= ~CARRIER_SOLUTION_MASK;
+	coordinates.sat_fix_type |= pvt.fix_flags & CARRIER_SOLUTION_MASK; // add the carrier solution bits
+	if( pvt.fix_flags & 0b00000010)
+	  pvt.fix_flags |= DIFFERENTIAL_SOLUTION;
 
 	coordinates.latitude = (double) (pvt.latitude) * ANGLE_SCALE;
 	coordinates.longitude = (double) (pvt.longitude) * ANGLE_SCALE;
@@ -126,7 +131,6 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	coordinates.velocity[EAST]  = pvt.speed[EAST]  * SCALE_MM;
 	coordinates.velocity[DOWN]  = pvt.speed[DOWN]  * SCALE_MM;
 
-	fix_type = (FIX_TYPE) (pvt.fix_type);
 	if( (pvt.fix_flags & 1) == 0)
 	  {
 	    report_dead_GNSS();
@@ -134,26 +138,29 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	  }
 	else
 	  {
-	    GNSS_new_data_ready.set();
 	    return GNSS_HAVE_FIX;
 	  }
 }
 
 GNSS_Result GNSS_type::update_delta_X20D(const uint8_t * data)
 {
-	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01) || (data[3] != 0x45))
-		return GNSS_ERROR;
+	if( *(uint32_t *)data != DAHEADING_PREAMBLE) // heading record first
+	    return GNSS_ERROR_3;
 
-	if (!checkSumCheck(data + 2, sizeof(uBlox_DAHEADING)))
-		return GNSS_ERROR;
+	if ( not checkSumCheck(data + 2, sizeof(uBlox_DAHEADING)))
+	  {
+	    coordinates.sat_fix_type &= ~SAT_HEADING;
+	    return GNSS_ERROR_4;
+	  }
 
 	uBlox_DAHEADING p;
-
 	uint32_t * from = (uint32_t *)(data + 6);
 	uint32_t * to   = (uint32_t *)&p;
 	unsigned count = sizeof(uBlox_DAHEADING) / sizeof(uint32_t);
 	while( count --)
 	  *to++ = *from++;
+
+	GNSS_data_guard.lock();
 
 	coordinates.relPosNED[NORTH]= SCALE_MM * (float)(p.relPosN);
 	coordinates.relPosNED[EAST] = SCALE_MM * (float)(p.relPosE);
@@ -168,7 +175,7 @@ GNSS_Result GNSS_type::update_delta_X20D(const uint8_t * data)
 	decimate( accuracy.relPosLength, p.relPoslength * SCALE_MM);
 #endif
 
-	if( (p.flags & 0x05) == 0x05)
+	if( p.flags & 0x40)
 	  {
 	    // 1e-5 deg -> rad
 	    coordinates.relPosHeading = (float)(p.relPosheading) * 1.745329252e-7f;
@@ -180,16 +187,21 @@ GNSS_Result GNSS_type::update_delta_X20D(const uint8_t * data)
 	    coordinates.sat_fix_type &= ~SAT_HEADING;
 	  }
 
+	GNSS_data_guard.release();
+
 	return GNSS_HAVE_FIX;
 }
 
 GNSS_Result GNSS_type::update_delta_F9x(const uint8_t * data)
 {
-	if ((data[0] != 0xb5) || (data[1] != 'b') || (data[2] != 0x01) || (data[3] != 0x3c))
-		return GNSS_ERROR;
+	if( *(uint32_t *)data != RELPOSNED_PREAMBLE) // heading record first
+	    return GNSS_ERROR_5;
 
 	if (!checkSumCheck(data + 2, sizeof(uBlox_relpos_NED)))
-		return GNSS_ERROR;
+	  {
+	    coordinates.sat_fix_type &= ~SAT_HEADING;
+	    return GNSS_ERROR_6;
+	  }
 
 	uBlox_relpos_NED p;
 
@@ -198,6 +210,8 @@ GNSS_Result GNSS_type::update_delta_F9x(const uint8_t * data)
 	unsigned count = sizeof(uBlox_relpos_NED)/sizeof(uint32_t);
 	while( count --)
 	  *to++ = *from++;
+
+	GNSS_data_guard.lock();
 
 	coordinates.relPosNED[NORTH]=0.01f*(float)(p.relPosN) + 0.0001f * (float)(p.relPosHP_N);
 	coordinates.relPosNED[EAST] =0.01f*(float)(p.relPosE) + 0.0001f * (float)(p.relPosHP_E);
@@ -226,14 +240,15 @@ GNSS_Result GNSS_type::update_delta_F9x(const uint8_t * data)
 	    coordinates.relPosHeading = 0.0f;
 	    coordinates.sat_fix_type &= ~SAT_HEADING;
 	  }
+
+	GNSS_data_guard.release();
+
 	return res;
 }
 
 GNSS_Result GNSS_type::update_combined ( const uint8_t *data, GNSS_configration_t gnss)
 {
-  GNSS_Result res = GNSS.update(data);
-  if( res != GNSS_HAVE_FIX)
-      return res;
+  GNSS_Result res;
 
   switch( gnss)
   {
@@ -242,11 +257,36 @@ GNSS_Result GNSS_type::update_combined ( const uint8_t *data, GNSS_configration_
       ASSERT( 0);
       break;
     case GNSS_F9P_F9P:
-      res = GNSS.update_delta_F9x( data + sizeof( uBlox_pvt) + 8);
+      if( *(uint32_t *)data == RELPOSNED_PREAMBLE) // heading record first
+	{
+	  res = GNSS.update_delta_F9x( data);
+	  if( res >= GNSS_ERROR_1)
+	    return res;
+	  res = GNSS.update( data + sizeof( uBlox_relpos_NED) + 8);
+	}
+      else // PVT record first
+	{
+	  res = GNSS.update( data);
+	  if( res >= GNSS_ERROR_1)
+	    return res;
+	  res = GNSS.update_delta_F9x( data + sizeof( uBlox_pvt) + 8);
+	}
       break;
     case GNSS_X20D:
-      res = GNSS.update_delta_X20D( data + sizeof( uBlox_pvt) + 8);
-      break;
+      if( *(uint32_t *)data == DAHEADING_PREAMBLE) // heading record first
+	{
+	  res = GNSS.update_delta_X20D( data);
+	  if( res >= GNSS_ERROR_1)
+	    return res;
+	  res = GNSS.update( data + sizeof( uBlox_DAHEADING) + 8);
+	}
+      else // PVT record first
+	{
+	  res = GNSS.update( data);
+	  if( res >= GNSS_ERROR_1)
+	    return res;
+	  res = GNSS.update_delta_X20D( data + sizeof( uBlox_pvt) + 8);
+	}
   }
 
   return res;
@@ -257,7 +297,8 @@ void GNSS_type::report_dead_GNSS (void)
   coordinates.velocity[NORTH] 	= ZERO;
   coordinates.velocity[EAST]	= ZERO;
   coordinates.velocity[DOWN]	= ZERO;
-  coordinates.GNSS_MSL_altitude	= ZERO; // avoid reporting wrong GNSS altitude
+  coordinates.GNSS_MSL_altitude	= ZERO;
   coordinates.speed_acc 	= ZERO;
+  coordinates.sat_fix_type	= ZERO;
   GNSS_new_data_ready.set();
 }
