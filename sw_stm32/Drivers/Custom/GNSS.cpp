@@ -105,8 +105,6 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 
 	coordinates.sat_fix_type &= ~CARRIER_SOLUTION_MASK;
 	coordinates.sat_fix_type |= pvt.fix_flags & CARRIER_SOLUTION_MASK; // add the carrier solution bits
-	if( pvt.fix_flags & 0b00000010)
-	  pvt.fix_flags |= DIFFERENTIAL_SOLUTION;
 
 	coordinates.latitude = (double) (pvt.latitude) * ANGLE_SCALE;
 	coordinates.longitude = (double) (pvt.longitude) * ANGLE_SCALE;
