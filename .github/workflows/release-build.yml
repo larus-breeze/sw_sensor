@@ -1,0 +1,217 @@
+name: Release build (STM32CubeIDE)
+
+# Builds the STM32 firmware with STM32CubeIDE itself (headless build_firmware.py)
+# in a private container image - see ci/cubeide/README.md - and the ESP32
+# firmware with a pinned esp32:esp32 core. A version tag (x.y.z) on a master
+# commit also creates a draft release with both. Pull requests are checked by
+# firmware-build.yml instead; forks can't pull the private image.
+
+on:
+  push:
+    branches: [master]
+    tags: ['[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  # Release toolchain of the ESP32 firmware. firmware-build.yml checks pull
+  # requests with the same core; change both together.
+  ESP32_CORE: '3.3.12'
+  ARDUINO_CLI: '1.5.1'
+  ESPTOOL: '5.5.0'
+
+jobs:
+  checks:
+    name: Release checks
+    runs-on: ubuntu-24.04
+    outputs:
+      lib_commit: ${{ steps.lib.outputs.commit }}
+      lib_tags: ${{ steps.lib.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Library commit is tagged
+        id: lib
+        run: |
+          commit=$(git rev-parse HEAD:sw_stm32/lib)
+          tags=$(git ls-remote --tags https://github.com/larus-breeze/sw_algorithms_lib \
+            | awk -v c="$commit" '$1 == c { sub("refs/tags/", "", $2); sub(/\^\{\}$/, "", $2); print $2 }' \
+            | sort -u | paste -sd ' ')
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+          echo "sw_algorithms_lib: \`$commit\` ${tags:-(no tag)}" >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "$tags" ]; then
+            msg="sw_stm32/lib ($commit) has no tag in sw_algorithms_lib; releases need one (release_creation.md)"
+            if [ "$GITHUB_REF_TYPE" = tag ]; then echo "::error::$msg"; exit 1; fi
+            echo "::warning::$msg"
+          fi
+
+      - name: Tag is on master
+        if: github.ref_type == 'tag'
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/master \
+            || { echo "::error::$GITHUB_REF_NAME is not on master; releases are made from master commits only"; exit 1; }
+
+  cubeide:
+    name: STM32 (STM32CubeIDE)
+    if: github.repository == 'larus-breeze/sw_sensor'
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/larus-breeze/stm32cubeide:2.2.0
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      compiler: ${{ steps.summary.outputs.compiler }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0 # the version header needs the tags
+
+      - name: Build with STM32CubeIDE and pack the SD-card update image
+        shell: bash
+        run: |
+          git config --global --add safe.directory '*'
+          python3 sw_stm32/scripts/build_firmware.py 2>&1 | tee build.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Summary
+        id: summary
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import glob, os
+          from elftools.elf.elffile import ELFFile
+          print("### STM32CubeIDE release build\n")
+          for elf in glob.glob("build/*.elf"):
+              with open(elf, "rb") as f:
+                  comment = ELFFile(f).get_section_by_name(".comment").data().split(b"\0")[0].decode()
+              print(f"- `{elf}`: {comment}")
+              with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+                  out.write(f"compiler={comment}\n")
+          for name in sorted(glob.glob("build/*.bin")):
+              print(f"- `{name}`")
+          PY
+          grep -E "Build Finished|Build Failed" build.log | tee -a "$GITHUB_STEP_SUMMARY" || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stm32-release-${{ github.sha }}
+          path: |
+            build/*.elf
+            build/*.bin
+            sw_stm32/Release/sw_sensor.map
+            build.log
+
+  esp32:
+    name: ESP32 (esp32:esp32)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the version header needs the tags
+
+      - uses: arduino/setup-arduino-cli@v2
+        with:
+          version: ${{ env.ARDUINO_CLI }}
+
+      - name: Install the ESP32 core
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install "esp32:esp32@$ESP32_CORE"
+          pip install "esptool==$ESPTOOL"
+
+      - name: Build
+        run: |
+          # The core embeds __DATE__/__TIME__; the commit time keeps the image reproducible.
+          export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
+          cd sw_esp32 && python3 scripts/build_firmware.py 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### ESP32 release build: esp32:esp32 $ESP32_CORE"
+            grep -E "Sketch uses|Global variables use" sw_esp32/build.log || echo "no size information"
+            ls build/larus_sensor_esp32_v*.bin | sed 's/^/- /'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: esp32-release-${{ github.sha }}
+          path: |
+            build/larus_sensor_esp32_v*.bin
+            build/larus_sensor_esp32_v*.setup.html
+            sw_esp32/build.log
+
+  release:
+    name: Draft release
+    if: github.ref_type == 'tag'
+    needs: [checks, cubeide, esp32]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-release-${{ github.sha }}'
+          path: artifacts # one directory per artifact
+
+      - name: Create or update the draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          COMPILER: ${{ needs.cubeide.outputs.compiler }}
+          LIB_COMMIT: ${{ needs.checks.outputs.lib_commit }}
+          LIB_TAGS: ${{ needs.checks.outputs.lib_tags }}
+        run: |
+          mkdir release
+          cp artifacts/stm32-release-*/build/larus_sensor_stm32_v*.{bin,elf} \
+             artifacts/esp32-release-*/build/larus_sensor_esp32_v*.{bin,setup.html} release/
+          (cd release && sha256sum *) > SHA256SUMS
+          mv SHA256SUMS release/
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          {
+            echo "<!-- Release notes. Publish only after the hardware lab test and the flight test (release_creation.md). -->"
+            echo
+            echo "## Files"
+            for f in release/*; do
+              f=${f#release/}
+              case $f in
+                *stm32*.bin) what="STM32 update image (SD card or web UI)" ;;
+                *stm32*.elf) what="STM32 firmware for a debugger or STM32CubeProgrammer" ;;
+                *.flash1_boot.bin) what="initial ESP32 flash with esptool at 0x1000 (see sw_esp32/README.md)" ;;
+                *.flash2_app.bin) what="initial ESP32 flash with esptool at 0xe000" ;;
+                *esp32*.bin) what="ESP32 update for the web UI" ;;
+                *.setup.html) what="browser page (Chrome/Edge): initial ESP32 flash over USB + WiFi label" ;;
+                *) continue ;;
+              esac
+              echo "- \`$f\`: $what"
+            done
+            echo
+            echo "## Built with"
+            echo "- STM32: STM32CubeIDE 2.2.0, $COMPILER"
+            echo "- ESP32: esp32:esp32 $ESP32_CORE, arduino-cli $ARDUINO_CLI, esptool $ESPTOOL"
+            echo "- sw_algorithms_lib: ${LIB_TAGS} (\`$LIB_COMMIT\`)"
+            echo
+            echo "Built by [this workflow run]($run_url) from \`$GITHUB_SHA\`. SHA-256 checksums are in \`SHA256SUMS\`."
+          } > notes.md
+          if draft=$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null); then
+            [ "$draft" = true ] || { echo "::error::release $TAG is already published; not replacing its files"; exit 1; }
+            gh release upload "$TAG" release/* --clobber
+          else
+            gh release create "$TAG" --draft --verify-tag --title "$TAG" --notes-file notes.md release/*
+          fi
+          echo "Draft release: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$TAG" >> "$GITHUB_STEP_SUMMARY"

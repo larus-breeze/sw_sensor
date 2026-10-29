@@ -44,9 +44,6 @@
 #include "uSD_helpers.h"
 #include "wlan_link_protocol.h" // wlan_link_crc32_hw_compute() - see jump_to_pending_flash_update_if_any()
 
-//!< 5 minutes (100ms loop iterations) - auto-clears a forgotten pause
-#define LOGGING_PAUSE_TIMEOUT_ITERATIONS (5 * 60 * 10)
-
 COMMON reminder_flag perform_after_landing_actions;
 COMMON reminder_flag write_configuration_data_now;
 
@@ -62,8 +59,8 @@ COMMON bool sd_card_mounted = false;
 //!< "Logging pause", documentation/wlan_link.md.
 COMMON bool logging_active = false;
 
-//!< Set/cleared by WLAN start/stop-logging requests, or auto-cleared after
-//!< LOGGING_PAUSE_TIMEOUT_ITERATIONS. Not gated on is_airborne().
+//!< Set/cleared by WLAN start/stop-logging requests, or auto-cleared at
+//!< takeoff. Not gated on is_airborne().
 COMMON bool logging_paused_by_user = false;
 
 //!< One-shot, set alongside clearing logging_paused_by_user - without it,
@@ -427,31 +424,18 @@ restart:
       // documentation/wlan_link.md - and between free-space re-checks.
       uint8_t consecutive_not_detected = 0;
       uint32_t logging_pause_iterations = 0;
-#if 0 // todo fixme
-      while( ( ! is_airborne() && ! logging_force_start ) || logging_paused_by_user
-	     || (sd_full_retry_iterations > 0))
-#else
       while( logging_paused_by_user or (sd_full_retry_iterations > 0))
-#endif
 	{
-	  if( sd_full_retry_iterations > 0)
-	    --sd_full_retry_iterations;
+    --sd_full_retry_iterations;
 
 	  if( crashfile)
 	    write_crash_dump( user_initiated_reset);
 
-	  // Auto-clear a forgotten pause after ~5 minutes.
-	  if( logging_paused_by_user)
-	    {
-	      if( ++logging_pause_iterations >= LOGGING_PAUSE_TIMEOUT_ITERATIONS)
-		{
-		  logging_paused_by_user = false;
-		  logging_force_start = true;
-		  logging_pause_iterations = 0;
-		}
-	    }
-	  else
-	    logging_pause_iterations = 0;
+	  // A forgotten pause must not cost the next flight: clear it at takeoff.
+	  bool airborne_now = is_airborne();
+	  if( airborne_now && ! was_airborne)
+	    logging_paused_by_user = false;
+	  was_airborne = airborne_now;
 
 	  // Detects the card being pulled while grounded. fatfs_lock()
 	  // first so an in-flight wlan_link_handler_task FatFs call
@@ -481,6 +465,9 @@ restart:
 	}
 
       logging_force_start = false; // one-shot, consumed by exiting the loop above
+
+      // A landing while paused would otherwise close the new file right away.
+      (void) perform_after_landing_actions.test_and_reset();
 
       fatfs_lock(); // released below on landing, or on a fatal write failure
 

@@ -1288,8 +1288,8 @@ static void handle_status_request (const wlan_link_frame_header_t &header)
 //!< resolving to ON_GROUND without a settled fix), since that's the
 //!< situation it exists to unblock. A user able to reach the sensor's own
 //!< WLAN AP to send this is presumed to be physically at the sensor.
-//!< logging_paused_by_user auto-clears after LOGGING_PAUSE_TIMEOUT_ITERATIONS
-//!< (uSD_handler.cpp) if never explicitly resumed - see "Logging pause".
+//!< logging_paused_by_user auto-clears at takeoff (uSD_handler.cpp) if never
+//!< explicitly resumed - see "Logging pause".
 static void handle_stop_logging_request (const wlan_link_frame_header_t &header)
 {
   logging_paused_by_user = true;

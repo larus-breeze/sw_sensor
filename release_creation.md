@@ -32,6 +32,7 @@
 - Chose the next version number with the format x.y.z (e.g. 9.9.9) https://github.com/larus-breeze/sw_sensor/releases
 - Assign a tag to the current commit e.g. with: git tag 9.9.9
 - Push tag: git push origin tag 9.9.9
-- Build the firmware with `python3 build_firmware_all.py` (see README.md). The build checks that the release toolchain from `sw_stm32/scripts/release_toolchain.txt` was used; do not use `--allow-other-toolchain` for releases.
-- Go to https://github.com/larus-breeze/sw_sensor/releases create a new release for the tagged commit, write release notes and attach the firmware binary
-- Add the line "Built with ..." that build_firmware.py prints at the end to the release notes
+- The tag starts `.github/workflows/release-build.yml`. It checks that the tag is on master and that the lib commit is tagged, builds the STM32 firmware with STM32CubeIDE (`build_firmware.py`, which checks the release toolchain from `sw_stm32/scripts/release_toolchain.txt`) and the ESP32 firmware, and creates a **draft release** with the images, their SHA-256 checksums and the toolchain versions (see `ci/cubeide/README.md`).
+- Go to https://github.com/larus-breeze/sw_sensor/releases, open the draft release, write the release notes and publish it.
+- The draft release's images are the ones that get published, so test those. Builds of untagged master commits (workflow artifacts) carry a different version string (`git describe`) and are not byte-identical. If a test fails, delete the draft release and the tag.
+- Without CI, build locally with `python3 build_firmware_all.py` (see README.md), never with `--allow-other-toolchain`, and add the "Built with ..." line that build_firmware.py prints to the release notes.
