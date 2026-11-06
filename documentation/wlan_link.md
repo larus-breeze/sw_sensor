@@ -392,7 +392,7 @@ in `dumpsys wifi`) and never joins it automatically again - not even after
 confirming "stay connected" with "don't ask again". There it has to be
 selected manually every time. In #266 (Android 17) the phone does join
 automatically, but doesn't use the network. In both cases, apps such as
-XCSoar on the NMEA TCP bridge (port 8882) receive data after "stay
+XCSoar on the NMEA TCP bridge (port 8880) receive data after "stay
 connected" was confirmed, or with mobile data switched off.
 
 `http://larus.local` additionally needs mDNS (`.local`) support on the
