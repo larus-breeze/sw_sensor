@@ -37,7 +37,7 @@ public:
       return true; // silently give up
 
     // delegate to base class
-    return flexible_log_file_t::append_record(type, data, data_size_words);
+    return flexible_log_file_t::append_record(type, data, data_size_words, FLEXIBLE_LOG_FILE_FORMAT_VERSION);
   }
 
   bool open( char * file_name) override;
