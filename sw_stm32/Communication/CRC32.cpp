@@ -4,6 +4,7 @@
 CRC32::CRC32( void)
 {
   __HAL_RCC_CRC_CLK_ENABLE ();
+  CRC->CR = CRC_CR_RESET;
 }
 
 //! match STM32F407 hardware CRC unit
