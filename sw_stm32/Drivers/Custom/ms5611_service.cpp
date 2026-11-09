@@ -71,9 +71,10 @@ void getPressure (void*)
 
 	  if ( static_ms5611_available)
 	    {
+	      IMU_pressures_lock.lock();
 	      observations.static_pressure = ms5611_static.get_pressure ();
-	      observations.static_sensor_temperature =
-		  ms5611_static.get_temperature ();
+	      observations.static_sensor_temperature = ms5611_static.get_temperature ();
+	      IMU_pressures_lock.release();
 	    }
 	}
     }

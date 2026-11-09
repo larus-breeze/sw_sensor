@@ -62,12 +62,14 @@ restart:
 	  && (data[0] & 0xC0) == 0)) // no error flags read
 	{
 	  uint16_t raw_data = (data[0] << 8) | data[1];
+	  IMU_pressures_lock.lock();
 	  observations.pitot_pressure = ((float) (raw_data - OFFSET) * SPAN);
+	  IMU_pressures_lock.release();
 	  update_system_state_set (PITOT_SENSOR_AVAILABLE);
 	}
       else
 	{
-	  observations.pitot_pressure = 0.0f;
+	  observations.pitot_pressure = 0.0f; // ignore concurrency here
 	  update_system_state_clear (PITOT_SENSOR_AVAILABLE);
 	  goto restart;
 	}
