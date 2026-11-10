@@ -33,11 +33,28 @@ extern D_GNSS_coordinates_t coordinates;
 extern D_GNSS_accuracy_t accuracy;
 #endif
 extern measurement_data_t observations;
-extern float3vector external_magnetometer;
+extern Queue < magnetometer_data_timed_t> external_magnetometer_data_Q;
 extern state_vector_t state_vector;
 
 extern RestrictedTask communicator_task;
 extern Queue < communicator_command_t> communicator_command_queue;
+extern int32_t clock_TOW_offset;
+
+uint64_t getTime_usec(void);
+
+inline int32_t get_TOW( void)
+{
+  int64_t time = getTime_usec();
+  time /= 1000; // -> ms
+  return time - clock_TOW_offset;
+}
+
+inline void set_TOW( int32_t time_TOW_now)
+{
+  int64_t time = getTime_usec();
+  time /= 1000; // -> ms
+  clock_TOW_offset = time - time_TOW_now;
+}
 
 static inline bool is_airborne (void)
 {

@@ -40,18 +40,21 @@
 #include "EEPROM_data_file_implementation.h"
 #include "communicator.h"
 #include "flexible_log_file_implementation.h"
+#include "system_support.h"
 
 COMMON D_GNSS_coordinates_t coordinates;
 #if SUPPORT_D_GNSS_ACCURACY
 COMMON D_GNSS_accuracy_t accuracy;
 #endif
 COMMON measurement_data_t observations;
-COMMON float3vector external_magnetometer;
+COMMON Queue < magnetometer_data_timed_t> external_magnetometer_data_Q( 2);
+
 COMMON state_vector_t state_vector;
 
 extern "C" void sync_logger (void);
 
 COMMON Semaphore setup_file_handling_completed(1,0,(char *)"SETUP");
+COMMON int32_t clock_TOW_offset;
 
 COMMON Queue <uint32_t> flight_event_queue(3);
 void signal_logger_event( uint32_t event)
@@ -114,8 +117,6 @@ static ROM TaskParameters_t usart_3_task_param =
       { 0, 0, 0 }
     }
   };
-
-uint64_t getTime_usec(void);
 
 void
 communicator_runnable (void*)
@@ -228,7 +229,16 @@ communicator_runnable (void*)
 
       organizer.on_new_pressure_data (observations.static_pressure,
 				      observations.pitot_pressure);
-      organizer.update_at_100_Hz (observations, system_state, external_magnetometer);
+
+      {
+	magnetometer_data_timed_t external_magnetometer_data;
+	bool ext_mag_available = external_magnetometer_data_Q.receive(external_magnetometer_data, 0);
+	organizer.update_at_100_Hz (observations, ext_mag_available, external_magnetometer_data.induction);
+
+	if( ext_mag_available)
+	  flex_file.append_record ( MAGNETOMETER_DATA,
+		(uint32_t*) &external_magnetometer_data, sizeof( external_magnetometer_data) / sizeof(uint32_t));
+      }
 
       // service external commands if any ***************************************************************
       communicator_command_t command;
@@ -363,13 +373,6 @@ communicator_runnable (void*)
 	    }
 
 	  flex_file.append_record ( BASIC_SENSOR_DATA, (uint32_t*) &observations, sizeof(observations) / sizeof(uint32_t));
-
-	  if (system_state & EXTERNAL_MAGNETOMETER_AVAILABLE)
-	    {
-	      flex_file.append_record (
-		  MAGNETOMETER_DATA, (uint32_t*) &external_magnetometer,
-		  sizeof(external_magnetometer) / sizeof(uint32_t));
-	    }
 
 	  if ( new_GNSS_data_received.test_and_reset())
 	    {

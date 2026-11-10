@@ -13,6 +13,7 @@
 #include "communicator.h"
 #include "microphone.h"
 #include "embedded_math.h"
+#include "system_support.h"
 
 #if RUN_MICROPHONE
 
@@ -116,8 +117,6 @@ void resample( uint8_t * bytes, int8_t * samples, unsigned output_bytecount)
     }
   while( output_bytecount > 0);
 }
-
-uint64_t getTime_usec(void);
 
 static void runnable (void*)
 {

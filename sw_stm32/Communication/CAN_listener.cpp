@@ -35,6 +35,7 @@
 #include "uSD_handler.h"
 #include "signal_flight_event.h"
 #include "CAN_listener.h"
+#include "data_structures.h"
 
 #define CAN_Id_Send_Config_Value 0x12f
 
@@ -162,12 +163,16 @@ void CAN_listener_task_runnable (void*)
 	{
 	  if ((p.id == 0x070) && (p.dlc == 6))
 	    {
-	      external_magnetometer[0] = (float32_t) (p.data_sh[0])
+	      magnetometer_data_timed_t external_magnetometer_data;
+	      external_magnetometer_data.timestamp=get_TOW();
+	      external_magnetometer_data.induction[0] = (float32_t) (p.data_sh[0])
 		  * 0.01333333f; // 75LSB / uTesla
-	      external_magnetometer[1] = (float32_t) (p.data_sh[1])
+	      external_magnetometer_data.induction[1] = (float32_t) (p.data_sh[1])
 		  * 0.01333333f;
-	      external_magnetometer[2] = (float32_t) (p.data_sh[2])
+	      external_magnetometer_data.induction[2] = (float32_t) (p.data_sh[2])
 		  * 0.01333333f;
+	      external_magnetometer_data_Q.send( external_magnetometer_data, 1);
+
 	      update_system_state_set (EXTERNAL_MAGNETOMETER_AVAILABLE);
 	      magnetometer_last_heard = xTaskGetTickCount ();
 	    }

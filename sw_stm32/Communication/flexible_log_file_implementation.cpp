@@ -5,6 +5,7 @@
 #include "common.h"
 #include "system_configuration.h"
 #include "signal_flight_event.h"
+#include "system_support.h"
 
 bool flexible_log_file_implementation_t::open (char *file_name)
 {
@@ -51,8 +52,7 @@ bool flexible_log_file_implementation_t::flush_buffer( void)
 
 #if MEASURE_WRITE_TIME
   uint64_t time;
-  extern uint64_t getTime_usec(void);
-  #endif
+#endif
 
   unsigned size_bytes = (second_part - buffer) * sizeof( uint32_t);
 

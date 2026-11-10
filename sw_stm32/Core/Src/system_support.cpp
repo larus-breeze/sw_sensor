@@ -26,6 +26,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "my_assert.h"
+#include "system_support.h"
 
 #if configUSE_TRACE_FACILITY == 1
 #include "trcConfig.h"
