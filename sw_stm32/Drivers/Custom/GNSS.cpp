@@ -30,6 +30,7 @@
 #include "AHRS.h"
 #include "system_state.h"
 #include "signal_flight_event.h"
+#include "communicator.h"
 
 COMMON reminder_flag GNSS_new_data_ready;
 COMMON uint64_t FAT_time; //!< DOS FAT time for file usage
@@ -40,6 +41,7 @@ COMMON Mutex GNSS_data_guard;
 #define SCALE_CM 0.01f
 #define DEG_2_METER 111111.111e-7f // (10000 / 90) m / degree on great circle
 #define ANGLE_SCALE (double)1e-7
+#define GNSS_PACKET_DELAY_MS 8
 
 void GNSS_data_lock( unsigned function)
 {
@@ -90,6 +92,13 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	unsigned count = sizeof(uBlox_pvt)/sizeof(uint32_t);
 	while( count --)
 	  *to++ = *from++;
+
+	// tune our timestamp mechanism
+	// the timestamp of this data packet has been set in the past.
+	// we compare this old timestamp to the present time.
+	// GNSS_PACKET_DELAY_MS reflects the estimated propagation time
+	// of the data to arrive here.
+	set_TOW( pvt.iTOW + GNSS_PACKET_DELAY_MS);
 
 	/* Pack date and time into a DWORD variable */
 	FAT_time = ((pvt.year - 1980) << 25) + (pvt.month << 21) + (pvt.day << 16)
