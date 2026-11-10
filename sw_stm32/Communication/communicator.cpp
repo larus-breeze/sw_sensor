@@ -46,7 +46,7 @@ COMMON D_GNSS_coordinates_t coordinates;
 #if SUPPORT_D_GNSS_ACCURACY
 COMMON D_GNSS_accuracy_t accuracy;
 #endif
-COMMON measurement_data_t observations;
+COMMON measurement_data_timed_t observations;
 COMMON Queue < magnetometer_data_timed_t> external_magnetometer_data_Q( 2);
 
 COMMON state_vector_t state_vector;

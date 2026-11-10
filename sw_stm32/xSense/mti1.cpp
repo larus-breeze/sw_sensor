@@ -178,7 +178,10 @@ extern "C" void EXTI15_10_IRQHandler (void)
 void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == IMU_DRDY)
-    MTi_ready.signal_from_ISR ();
+    {
+      MTi_ready.signal_from_ISR ();
+      observations.timestamp = get_TOW_privileged();
+    }
   else if (GPIO_Pin == WLAN_LINK_HANDSHAKE_Pin)
     wlan_link_cs_edge ();
 }

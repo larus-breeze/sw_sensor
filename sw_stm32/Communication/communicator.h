@@ -32,7 +32,7 @@ extern D_GNSS_coordinates_t coordinates;
 #if SUPPORT_D_GNSS_ACCURACY
 extern D_GNSS_accuracy_t accuracy;
 #endif
-extern measurement_data_t observations;
+extern measurement_data_timed_t observations;
 extern Queue < magnetometer_data_timed_t> external_magnetometer_data_Q;
 extern state_vector_t state_vector;
 
@@ -45,6 +45,13 @@ uint64_t getTime_usec(void);
 inline int32_t get_TOW( void)
 {
   int64_t time = getTime_usec();
+  time /= 1000; // -> ms
+  return time - clock_TOW_offset;
+}
+
+inline int32_t get_TOW_privileged( void)
+{
+  int64_t time = getTime_usec_privileged();
   time /= 1000; // -> ms
   return time - clock_TOW_offset;
 }
