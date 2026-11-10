@@ -96,7 +96,7 @@ uint32_t wlan_link_crc32_update (uint32_t crc, const uint8_t *data, size_t len)
 uint32_t wlan_link_crc32_hw_compute (const uint8_t *data, size_t len)
 {
   volatile CRC32 dummy; // used to synchronize CRC32 hardware access
-  CRC->CR = CRC_CR_RESET;
+//  CRC->CR = CRC_CR_RESET; superfluous - done by the constructor above
 
   size_t word_aligned_len = len & ~(size_t) 3u;
   for (size_t i = 0; i < word_aligned_len; i += 4)

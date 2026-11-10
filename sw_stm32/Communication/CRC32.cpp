@@ -3,7 +3,7 @@
 #include "FreeRTOS_wrapper.h"
 #include "my_assert.h"
 
-Mutex CRC32_lock;
+COMMON Mutex CRC32_lock;
 
 CRC32::CRC32( void)
 {
