@@ -29,6 +29,7 @@
 #include "common.h"
 #include "communicator.h"
 #include "system_state.h"
+#include "CRC32.h"
 
 #define I2C_ADDRESS (0x28<<1) // 7 bits left-adjusted
 /*
@@ -62,9 +63,10 @@ restart:
 	  && (data[0] & 0xC0) == 0)) // no error flags read
 	{
 	  uint16_t raw_data = (data[0] << 8) | data[1];
-	  IMU_pressures_lock.lock();
+	  {
+	  CRC32 dummy; // used to lock the hardwre CRC unit
 	  observations.pitot_pressure = ((float) (raw_data - OFFSET) * SPAN);
-	  IMU_pressures_lock.release();
+	  }
 	  update_system_state_set (PITOT_SENSOR_AVAILABLE);
 	}
       else

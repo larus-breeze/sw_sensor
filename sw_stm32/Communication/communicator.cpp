@@ -48,7 +48,6 @@ COMMON D_GNSS_accuracy_t accuracy;
 COMMON measurement_data_t observations;
 COMMON float3vector external_magnetometer;
 COMMON state_vector_t state_vector;
-COMMON Mutex IMU_pressures_lock;
 
 extern "C" void sync_logger (void);
 
@@ -363,9 +362,7 @@ communicator_runnable (void*)
 		}
 	    }
 
-	  IMU_pressures_lock.lock();
 	  flex_file.append_record ( BASIC_SENSOR_DATA, (uint32_t*) &observations, sizeof(observations) / sizeof(uint32_t));
-	  IMU_pressures_lock.release();
 
 	  if (system_state & EXTERNAL_MAGNETOMETER_AVAILABLE)
 	    {

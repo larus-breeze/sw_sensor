@@ -115,6 +115,7 @@ extern "C" void MPU_initialization(void)
   MX_USART6_UART_Init();
   MX_FATFS_Init();
   MX_ADC1_Init();
+  __HAL_RCC_CRC_CLK_ENABLE ();
 
   UNIQUE_ID[1]=*(uint32_t *)0x1fff7a10;
   UNIQUE_ID[2]=*(uint32_t *)0x1fff7a14;

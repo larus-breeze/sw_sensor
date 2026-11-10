@@ -1,10 +1,20 @@
 #include "CRC32.h"
 #include "stm32f4xx_hal.h"
+#include "FreeRTOS_wrapper.h"
+#include "my_assert.h"
+
+Mutex CRC32_lock;
 
 CRC32::CRC32( void)
 {
-  __HAL_RCC_CRC_CLK_ENABLE ();
+  bool success = CRC32_lock.lock(2);
+  ASSERT( success); // be sure to have the lock
   CRC->CR = CRC_CR_RESET;
+}
+
+CRC32::~CRC32( void)
+{
+  CRC32_lock.release();
 }
 
 //! match STM32F407 hardware CRC unit

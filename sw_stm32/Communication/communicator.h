@@ -38,7 +38,6 @@ extern state_vector_t state_vector;
 
 extern RestrictedTask communicator_task;
 extern Queue < communicator_command_t> communicator_command_queue;
-extern Mutex IMU_pressures_lock;
 
 static inline bool is_airborne (void)
 {

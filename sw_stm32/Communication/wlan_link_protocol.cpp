@@ -23,6 +23,7 @@
 #include "wlan_link_protocol.h"
 #include "stm32f4xx_hal.h" // CRC->, CRC_CR_RESET, __HAL_RCC_CRC_CLK_ENABLE() - see wlan_link_crc32_hw_compute()
 #include <string.h> // memcpy, wlan_link_crc32_hw_compute()'s remainder padding
+#include "CRC32.h"
 
 uint16_t wlan_link_crc16_ccitt (const uint8_t *data, size_t len)
 {
@@ -94,7 +95,7 @@ uint32_t wlan_link_crc32_update (uint32_t crc, const uint8_t *data, size_t len)
 // just this function in isolation.
 uint32_t wlan_link_crc32_hw_compute (const uint8_t *data, size_t len)
 {
-  __HAL_RCC_CRC_CLK_ENABLE ();
+  volatile CRC32 dummy; // used to synchronize CRC32 hardware access
   CRC->CR = CRC_CR_RESET;
 
   size_t word_aligned_len = len & ~(size_t) 3u;

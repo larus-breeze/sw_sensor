@@ -30,6 +30,7 @@
 #include "common.h"
 #include "communicator.h"
 #include "system_state.h"
+#include "CRC32.h"
 
 #if RUN_MS5611_MODULE == 1
 
@@ -71,10 +72,9 @@ void getPressure (void*)
 
 	  if ( static_ms5611_available)
 	    {
-	      IMU_pressures_lock.lock();
+	      CRC32 dummy;
 	      observations.static_pressure = ms5611_static.get_pressure ();
 	      observations.static_sensor_temperature = ms5611_static.get_temperature ();
-	      IMU_pressures_lock.release();
 	    }
 	}
     }
