@@ -28,6 +28,7 @@
 #include "my_assert.h"
 #include "i2c.h"
 #include "main.h"
+#include "communicator.h"
 
 #if RUN_MS5611_MODULE
 
@@ -206,6 +207,7 @@ bool MS5611::update (void)
 		ADC_pressure_reading = tmp;
 		start_temperature_conversion ();
 		measure_temperature = true;
+		pressure_timestamp = get_TOW();
 		calibrate (ADC_pressure_reading, ADC_temperature_reading);
 	}
 	return true;

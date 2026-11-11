@@ -65,13 +65,13 @@ restart:
 	  uint16_t raw_data = (data[0] << 8) | data[1];
 	  {
 	  CRC32 dummy; // used to lock the hardwre CRC unit
-	  observations.pitot_pressure = ((float) (raw_data - OFFSET) * SPAN);
+	  pitot_pressure = ((float) (raw_data - OFFSET) * SPAN);
 	  }
 	  update_system_state_set (PITOT_SENSOR_AVAILABLE);
 	}
       else
 	{
-	  observations.pitot_pressure = 0.0f; // ignore concurrency here
+	  pitot_pressure = 0.0f; // ignore concurrency here
 	  update_system_state_clear (PITOT_SENSOR_AVAILABLE);
 	  goto restart;
 	}

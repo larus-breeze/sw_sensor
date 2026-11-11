@@ -51,6 +51,7 @@
 #define IMU_PORT   GPIOD
 
 COMMON Semaphore MTi_ready(1, 0, (char *)"MTi_RDY"); //!< ISR -> task synchronizing semaphore
+COMMON imu_data_timed_t imu_data;
 
 void sync_communicator (void);
 
@@ -131,25 +132,25 @@ readDataFrom_MTI (MtsspInterface *device, uint8_t *buf)
 	{
 	  float_word x;
 	  x.u = __REV (*(uint32_t*) (buf + 0x07 + 0));
-	  observations.acc[0] = - x.f;
+	  imu_data.acc[0] = - x.f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x07 + 4));
-	  observations.acc[1] = x.f;
+	  imu_data.acc[1] = x.f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x07 + 8));
-	  observations.acc[2] = - x.f;
+	  imu_data.acc[2] = - x.f;
 
 	  x.u = __REV (*(uint32_t*) (buf + 0x16 + 0));
-	  observations.gyro[0] = isnormal(x.f) ? - x.f : 0.0f;
+	  imu_data.gyro[0] = isnormal(x.f) ? - x.f : 0.0f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x16 + 4));
-	  observations.gyro[1] = isnormal(x.f) ? x.f : 0.0f;
+	  imu_data.gyro[1] = isnormal(x.f) ? x.f : 0.0f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x16 + 8));
-	  observations.gyro[2] = isnormal(x.f) ? - x.f : 0.0f;
+	  imu_data.gyro[2] = isnormal(x.f) ? - x.f : 0.0f;
 
 	  x.u = __REV (*(uint32_t*) (buf + 0x25 + 0));
-	  observations.mag[0] = - x.f;
+	  imu_data.mag[0] = - x.f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x25 + 4));
-	  observations.mag[1] = x.f;
+	  imu_data.mag[1] = x.f;
 	  x.u = __REV (*(uint32_t*) (buf + 0x25 + 8));
-	  observations.mag[2] = - x.f;
+	  imu_data.mag[2] = - x.f;
 	}
     }
 }
@@ -180,7 +181,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
   if (GPIO_Pin == IMU_DRDY)
     {
       MTi_ready.signal_from_ISR ();
-      observations.timestamp = get_TOW_privileged();
+      imu_data.timestamp = get_TOW_privileged();
     }
   else if (GPIO_Pin == WLAN_LINK_HANDSHAKE_Pin)
     wlan_link_cs_edge ();
@@ -295,8 +296,8 @@ restart:
 	goto restart;
 
       readDataFrom_MTI (&IMU_interface, buf);
-
-      sync_communicator (); // trigger computations @ 100Hz
+      bool result = imu_data_Q.send( imu_data, 3);
+      ASSERT( result); // be sure NOT to have a congestion
     }
 }
 

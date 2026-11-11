@@ -40,7 +40,7 @@ void getPressure (void*)
 
   while (true) // re-initialization loop
     {
-      update_system_state_clear(MS5611_STATIC_AVAILABLE);
+re_initialize:
 
       acquire_privileges ();
       I2C_Init (MS5611_I2C);
@@ -50,32 +50,38 @@ void getPressure (void*)
       bool static_ms5611_available = false;
 
       static_ms5611_available = ms5611_static.initialize ();
-      if (static_ms5611_available)
-	update_system_state_set (MS5611_STATIC_AVAILABLE);
-      else
+      if ( not static_ms5611_available)
 	{
 	  delay( 1000);
-	  continue; // restart this task
+	  continue; // try re - initialization
 	}
+
+      value_and_timestamp_t static_pressure;
 
       for( synchronous_timer t (10); true; t.sync()) // measurement loop
 	{
 	  if ( static_ms5611_available)
 	    if (ms5611_static.update () == false)
-	      break;;
+	      {
+		update_system_state_clear(MS5611_STATIC_AVAILABLE);
+		goto re_initialize;
+	      }
 
 	  t.sync ();
 
 	  if ( static_ms5611_available)
 	    if (ms5611_static.update () == false)
-	      break;;
+	      {
+		update_system_state_clear(MS5611_STATIC_AVAILABLE);
+		goto re_initialize;
+	      }
 
-	  if ( static_ms5611_available)
-	    {
-	      CRC32 dummy;
-	      observations.static_pressure = ms5611_static.get_pressure ();
-	      observations.static_sensor_temperature = ms5611_static.get_temperature ();
-	    }
+	  update_system_state_set (MS5611_STATIC_AVAILABLE);
+
+	  static_pressure.value = ms5611_static.get_pressure ();
+	  static_pressure.timestamp = ms5611_static.get_timestamp();
+	  sensor_temperature = ms5611_static.get_temperature ();
+	  static_pressure_Q.send( static_pressure, 1);
 	}
     }
 }

@@ -27,18 +27,25 @@
 #include "data_structures.h"
 #include "reminder_flag.h"
 #include "communicator_command.h"
+#include <FreeRTOS_wrapper.h>
 
 extern D_GNSS_coordinates_t coordinates;
 #if SUPPORT_D_GNSS_ACCURACY
 extern D_GNSS_accuracy_t accuracy;
 #endif
-extern measurement_data_timed_t observations;
 extern Queue < magnetometer_data_timed_t> external_magnetometer_data_Q;
+extern Queue <imu_data_timed_t> imu_data_Q;
+extern Queue <value_and_timestamp_t> static_pressure_Q;
+
 extern state_vector_t state_vector;
 
 extern RestrictedTask communicator_task;
 extern Queue < communicator_command_t> communicator_command_queue;
 extern int32_t clock_TOW_offset;
+extern float32_t supply_voltage;
+extern float32_t pitot_pressure;
+extern float32_t sensor_temperature;
+extern measurement_data_timed_t observations;
 
 uint64_t getTime_usec(void);
 
@@ -46,21 +53,21 @@ inline int32_t get_TOW( void)
 {
   int64_t time = getTime_usec();
   time /= 1000; // -> ms
-  return time - clock_TOW_offset;
+  return (int32_t)time - clock_TOW_offset;
 }
 
 inline int32_t get_TOW_privileged( void)
 {
   int64_t time = getTime_usec_privileged();
   time /= 1000; // -> ms
-  return time - clock_TOW_offset;
+  return (int32_t)time - clock_TOW_offset;
 }
 
 inline void set_TOW( int32_t time_TOW_now)
 {
   int64_t time = getTime_usec();
   time /= 1000; // -> ms
-  clock_TOW_offset = time - time_TOW_now;
+  clock_TOW_offset = (int32_t)time - time_TOW_now;
 }
 
 static inline bool is_airborne (void)

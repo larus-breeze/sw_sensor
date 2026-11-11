@@ -25,6 +25,10 @@ public:
   {
 	  return temperature_celsius * 0.01f;
   }
+  int32_t get_timestamp( void) const
+  {
+    return pressure_timestamp;
+  }
   bool start_pressure_conversion( void);   //TODO: shall this be private functions instead?
   bool start_temperature_conversion( void);
 
@@ -43,6 +47,7 @@ private:
   int32_t  temperature_celsius;		//!< sensor temperature in 1/100 Degrees Celsius
   uint16_t PromData[8]; 		//!< coefficients table for pressure sensor PROM values
   bool measure_temperature;	//!< Measurement cycle flip-flop
+  int32_t pressure_timestamp;
 };
 
 #endif /* MS5611_01BA01_H_ */

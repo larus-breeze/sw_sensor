@@ -46,10 +46,16 @@ COMMON D_GNSS_coordinates_t coordinates;
 #if SUPPORT_D_GNSS_ACCURACY
 COMMON D_GNSS_accuracy_t accuracy;
 #endif
+
 COMMON measurement_data_timed_t observations;
 COMMON Queue < magnetometer_data_timed_t> external_magnetometer_data_Q( 2);
+COMMON Queue <imu_data_timed_t> imu_data_Q(1);
+COMMON Queue <value_and_timestamp_t> static_pressure_Q(2);
 
 COMMON state_vector_t state_vector;
+COMMON float32_t supply_voltage;
+COMMON float32_t pitot_pressure;
+COMMON float32_t sensor_temperature;
 
 extern "C" void sync_logger (void);
 
@@ -122,6 +128,8 @@ void
 communicator_runnable (void*)
 {
   bool have_first_GNSS_fix = false;
+  imu_data_timed_t imu_data;
+  value_and_timestamp_t new_data;
 
   // wait until configuration file read if one is given
   setup_file_handling_completed.wait ();
@@ -170,7 +178,17 @@ communicator_runnable (void*)
     }
 
   for (int i = 0; i < 100; ++i) // wait 1 s until measurement stable
-    notify_take (true);
+    {
+      bool result = imu_data_Q.receive(imu_data, 15);
+      ASSERT( result);
+      while( static_pressure_Q.receive( new_data, 0)) // flush
+	  ;
+    }
+
+  observations.acc  = imu_data.acc;
+  observations.gyro = imu_data.gyro;
+  observations.mag  = imu_data.mag;
+  observations.timestamp = imu_data.timestamp;
 
   GNSS.clear_sat_fix_type ();
   (void)GNSS_new_data_ready.test_and_reset();
@@ -193,7 +211,32 @@ communicator_runnable (void*)
   // this is the MAIN data acquisition and processing loop **********************************************
   while (true)
     {
-      notify_take (true); // wait for synchronization by IMU @ 100 Hz
+      while(  static_pressure_Q.receive( new_data, 0))
+	{
+	  observations.static_pressure = new_data.value; // get newest ...
+	  flex_file.append_record ( STATIC_PRESSURE, (uint32_t *)&new_data, sizeof( new_data) / sizeof(uint32_t));
+	}
+
+      bool result = imu_data_Q.receive(imu_data, 15);
+      ASSERT( result); // we depend on this timing mechanism !
+
+      flex_file.append_record ( IMU_DATA, (uint32_t *)&imu_data, sizeof( imu_data) / sizeof(uint32_t));
+
+      while(  static_pressure_Q.receive( new_data, 0))
+	{
+	  observations.static_pressure = new_data.value; // get newest ...
+	  flex_file.append_record ( STATIC_PRESSURE, (uint32_t *)&new_data, sizeof( new_data) / sizeof(uint32_t));
+	}
+
+      // pick these values from the global variables
+      observations.supply_voltage = supply_voltage;
+      observations.pitot_pressure = pitot_pressure;
+      observations.static_sensor_temperature = sensor_temperature;
+
+      observations.acc  = imu_data.acc; // todo fixme IMU data again
+      observations.gyro = imu_data.gyro;
+      observations.mag  = imu_data.mag;
+      observations.timestamp = imu_data.timestamp;
 
       if ( GNSS_new_data_ready.test_and_reset()) // triggered after 75ms or 100ms, GNSS-dependent
 	{
@@ -429,9 +472,3 @@ static ROM TaskParameters_t p =
   };
 
 COMMON RestrictedTask communicator_task (p);
-
-void
-sync_communicator (void) // global synchronization service function
-{
-  communicator_task.notify_give ();
-}

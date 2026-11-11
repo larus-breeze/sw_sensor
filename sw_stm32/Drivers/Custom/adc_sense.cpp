@@ -51,7 +51,7 @@ void adc_measurement(void*)
 {
 	for(;;)
 	{
-		observations.supply_voltage = get_supply_voltage();
+		supply_voltage = get_supply_voltage();
 		delay(100);
 
 #if ITM_TRACE
