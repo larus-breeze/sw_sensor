@@ -46,7 +46,7 @@ extern int32_t clock_TOW_offset;
 extern float32_t supply_voltage;
 extern float32_t pitot_pressure;
 extern float32_t sensor_temperature;
-extern measurement_data_timed_t observations;
+extern measurement_data_t observations;
 
 inline int32_t get_TOW( void)
 {

@@ -44,7 +44,7 @@ struct statistics
 
 statistics stat;
 
-void decimate_sensor_observations( const measurement_data_timed_t &m, const state_vector_t &x)
+void decimate_sensor_observations( const measurement_data_t &m, const state_vector_t &x)
 {
   pabs_sum += (uint64_t)( m.static_pressure);
   ++samples;
@@ -69,7 +69,7 @@ void reset_sensor_data( void)
 
 extern uint32_t UNIQUE_ID[4];
 
-void format_sensor_dump( const measurement_data_timed_t &m, const D_GNSS_coordinates_t c, const state_vector_t x, string_buffer_t &NMEA_buf)
+void format_sensor_dump( const measurement_data_t &m, const D_GNSS_coordinates_t c, const state_vector_t x, string_buffer_t &NMEA_buf)
 {
   char *s = NMEA_buf.string;
 

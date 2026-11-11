@@ -47,7 +47,7 @@ COMMON D_GNSS_coordinates_t coordinates;
 COMMON D_GNSS_accuracy_t accuracy;
 #endif
 
-COMMON measurement_data_timed_t observations;
+COMMON measurement_data_t observations;
 COMMON Queue < magnetometer_data_timed_t> external_magnetometer_data_Q( 2);
 COMMON Queue <imu_data_timed_t> imu_data_Q(1);
 COMMON Queue <value_and_timestamp_t> static_pressure_Q(2);
@@ -188,7 +188,6 @@ communicator_runnable (void*)
   observations.acc  = imu_data.acc;
   observations.gyro = imu_data.gyro;
   observations.mag  = imu_data.mag;
-  observations.timestamp = imu_data.timestamp;
 
   GNSS.clear_sat_fix_type ();
   (void)GNSS_new_data_ready.test_and_reset();
@@ -218,7 +217,6 @@ communicator_runnable (void*)
       observations.acc  = imu_data.acc; // todo fixme IMU data again
       observations.gyro = imu_data.gyro;
       observations.mag  = imu_data.mag;
-      observations.timestamp = imu_data.timestamp;
 
       while(  static_pressure_Q.receive( new_data, 0))
 	{
