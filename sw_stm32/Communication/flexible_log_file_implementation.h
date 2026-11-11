@@ -40,6 +40,11 @@ public:
     return flexible_log_file_t::append_record(type, data, data_size_words, FLEXIBLE_LOG_FILE_FORMAT_VERSION);
   }
 
+  template <typename t> bool append_record ( flexible_log_file_record_type type, t &data)
+  {
+    return append_record ( type, (uint32_t *)&data, sizeof( data) / sizeof(uint32_t));
+
+  }
   bool open( char * file_name) override;
   bool flush_buffer( void);
   bool sync_file( void);

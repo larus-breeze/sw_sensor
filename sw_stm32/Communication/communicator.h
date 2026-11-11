@@ -28,6 +28,7 @@
 #include "reminder_flag.h"
 #include "communicator_command.h"
 #include <FreeRTOS_wrapper.h>
+#include <system_support.h>
 
 extern D_GNSS_coordinates_t coordinates;
 #if SUPPORT_D_GNSS_ACCURACY
@@ -46,8 +47,6 @@ extern float32_t supply_voltage;
 extern float32_t pitot_pressure;
 extern float32_t sensor_temperature;
 extern measurement_data_timed_t observations;
-
-uint64_t getTime_usec(void);
 
 inline int32_t get_TOW( void)
 {

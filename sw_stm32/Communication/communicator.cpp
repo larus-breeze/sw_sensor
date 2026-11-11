@@ -211,32 +211,31 @@ communicator_runnable (void*)
   // this is the MAIN data acquisition and processing loop **********************************************
   while (true)
     {
-      while(  static_pressure_Q.receive( new_data, 0))
-	{
-	  observations.static_pressure = new_data.value; // get newest ...
-	  flex_file.append_record ( STATIC_PRESSURE, (uint32_t *)&new_data, sizeof( new_data) / sizeof(uint32_t));
-	}
-
+      // wait for DAQ synchronization from IMU
       bool result = imu_data_Q.receive(imu_data, 15);
       ASSERT( result); // we depend on this timing mechanism !
-
-      flex_file.append_record ( IMU_DATA, (uint32_t *)&imu_data, sizeof( imu_data) / sizeof(uint32_t));
-
-      while(  static_pressure_Q.receive( new_data, 0))
-	{
-	  observations.static_pressure = new_data.value; // get newest ...
-	  flex_file.append_record ( STATIC_PRESSURE, (uint32_t *)&new_data, sizeof( new_data) / sizeof(uint32_t));
-	}
-
-      // pick these values from the global variables
-      observations.supply_voltage = supply_voltage;
-      observations.pitot_pressure = pitot_pressure;
-      observations.static_sensor_temperature = sensor_temperature;
 
       observations.acc  = imu_data.acc; // todo fixme IMU data again
       observations.gyro = imu_data.gyro;
       observations.mag  = imu_data.mag;
       observations.timestamp = imu_data.timestamp;
+
+      while(  static_pressure_Q.receive( new_data, 0))
+	{
+	  observations.static_pressure = new_data.value; // get newest ...
+
+	  pressure_data_timed_t pressures;
+	  pressures.absolute_pressure = new_data.value;
+	  pressures.timestamp = new_data.timestamp;
+	  pressures.dynamic_pressure = pitot_pressure; // just take last measuruemnt
+	  flex_file.append_record ( PRESSURE_DATA, pressures);
+
+	  observations.pitot_pressure = pitot_pressure;
+	}
+
+      // pick these values from the global variables
+      observations.supply_voltage = supply_voltage;
+      observations.static_sensor_temperature = sensor_temperature;
 
       if ( GNSS_new_data_ready.test_and_reset()) // triggered after 75ms or 100ms, GNSS-dependent
 	{
@@ -270,18 +269,16 @@ communicator_runnable (void*)
 	    }
 	}
 
-      organizer.on_new_pressure_data (observations.static_pressure,
-				      observations.pitot_pressure);
-
       {
 	magnetometer_data_timed_t external_magnetometer_data;
 	bool ext_mag_available = external_magnetometer_data_Q.receive(external_magnetometer_data, 0);
-	organizer.update_at_100_Hz (observations, ext_mag_available, external_magnetometer_data.induction);
-
 	if( ext_mag_available)
-	  flex_file.append_record ( MAGNETOMETER_DATA,
-		(uint32_t*) &external_magnetometer_data, sizeof( external_magnetometer_data) / sizeof(uint32_t));
+	  flex_file.append_record ( MAGNETOMETER_DATA, external_magnetometer_data);
+
+	organizer.update_at_100_Hz (observations, ext_mag_available, external_magnetometer_data.induction);
       }
+
+      flex_file.append_record ( IMU_DATA, imu_data); // this is used to trigger the 100Hz computations in the SIL
 
       // service external commands if any ***************************************************************
       communicator_command_t command;
@@ -317,6 +314,11 @@ communicator_runnable (void*)
 
 	  if (landing_detected_here)
 	      perform_after_landing_actions.set ();
+
+	  supplementary_data_t supp_data;
+	  supp_data.sensor_temperature = sensor_temperature;
+	  supp_data.supply_voltage = supply_voltage;
+	  flex_file.append_record ( PRESSURE_DATA, supp_data);
 
 	  trigger_CAN (); // we have new information, deliver it NOW !
 	}
@@ -380,7 +382,7 @@ communicator_runnable (void*)
 		  {
 		    uint32_t file_format_version =
 			flexible_log_file_implementation_t::FLEXIBLE_LOG_FILE_FORMAT_VERSION;
-		    flex_file.append_record ( FILE_FORMAT_VERSION, &file_format_version, 1);
+		    flex_file.append_record ( FILE_FORMAT_VERSION, file_format_version);
 
 		    // write hardware, firmware id and FLASH SHA256
 #define DESCRIPTION_SIZE_BYTES (32+sizeof( uint32_t)*4+32)
@@ -390,7 +392,7 @@ communicator_runnable (void*)
 		    extern  uint32_t UNIQUE_ID[4];
 		    memcpy( description+32, UNIQUE_ID, sizeof( uint32_t)*4); // hw ID
 		    memcpy( description+32+16, firmware_SHA256_digest, 32); // flash program SHA256 digest
-		    flex_file.append_record ( LARUS_DESCRIPTION, (uint32_t *)description, DESCRIPTION_SIZE_BYTES / sizeof( uint32_t));
+		    flex_file.append_record ( LARUS_DESCRIPTION, description);
 		  }
 
 		  // write all valid EEPROM content packed as one flexible file record
@@ -403,19 +405,17 @@ communicator_runnable (void*)
 		    flex_file.append_record ( EEPROM_FILE, flash_data_copy, flash_data_file.get_size()/sizeof(uint32_t));
 		  }
 
-		  flex_file.append_record (SENSOR_STATUS, &system_state, 1);
+		  flex_file.append_record (SENSOR_STATUS, system_state);
 		  old_system_state = system_state;
 	      }
 	  else
 	    {
 	      if (system_state != old_system_state)
 		{
-		  flex_file.append_record (SENSOR_STATUS, &system_state, 1);
+		  flex_file.append_record (SENSOR_STATUS, system_state);
 		  old_system_state = system_state;
 		}
 	    }
-
-	  flex_file.append_record ( BASIC_SENSOR_DATA, (uint32_t*) &observations, sizeof(observations) / sizeof(uint32_t));
 
 	  if ( new_GNSS_data_received.test_and_reset())
 	    {
