@@ -236,6 +236,10 @@ communicator_runnable (void*)
       // pick these values from the global variables
       observations.supply_voltage = supply_voltage;
       observations.static_sensor_temperature = sensor_temperature;
+      supplementary_data_t supplementary_data;
+      supplementary_data.sensor_temperature = sensor_temperature;
+      supplementary_data.supply_voltage = supply_voltage;
+      flex_file.append_record ( SUPPLEMENTARY_DATA, supplementary_data);
 
       if ( GNSS_new_data_ready.test_and_reset()) // triggered after 75ms or 100ms, GNSS-dependent
 	{
@@ -314,11 +318,6 @@ communicator_runnable (void*)
 
 	  if (landing_detected_here)
 	      perform_after_landing_actions.set ();
-
-	  supplementary_data_t supp_data;
-	  supp_data.sensor_temperature = sensor_temperature;
-	  supp_data.supply_voltage = supply_voltage;
-	  flex_file.append_record ( PRESSURE_DATA, supp_data);
 
 	  trigger_CAN (); // we have new information, deliver it NOW !
 	}
