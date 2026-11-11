@@ -98,7 +98,6 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	// we compare this old timestamp to the present time.
 	// GNSS_PACKET_DELAY_MS reflects the estimated propagation time
 	// of the data to arrive here.
-	set_TOW( pvt.iTOW + GNSS_PACKET_DELAY_MS);
 
 	/* Pack date and time into a DWORD variable */
 	FAT_time = ((pvt.year - 1980) << 25) + (pvt.month << 21) + (pvt.day << 16)
@@ -130,6 +129,14 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 	coordinates.second = pvt.second;
 
 	coordinates.nano   = pvt.nano;
+
+	int32_t UTC_TOW = (pvt.day * 24 + pvt.hour) * 3600;
+	UTC_TOW += pvt.minute * 60 + pvt.second;
+	UTC_TOW *= 1000; // -> milliseconds
+	UTC_TOW += pvt.nano / 1000000;
+
+	set_TOW( UTC_TOW + GNSS_PACKET_DELAY_MS);
+
 	coordinates.speed_acc = pvt.sAcc * SCALE_MM;
 
 	GNSS_data_guard.release();
