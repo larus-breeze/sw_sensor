@@ -445,9 +445,17 @@ communicator_runnable (void*)
 	    }
 
 	  { // process event if any
-	    uint32_t event;
-	    if( flight_event_queue.receive( event, 0))
-	      flex_file.append_record ( FLIGHT_EVENT, &event, 1);
+	    struct
+	    {
+	      uint32_t event;
+	      uint32_t time_tow;
+	    } event_info;
+
+	    if( flight_event_queue.receive( event_info.event, 0))
+	      {
+		event_info.time_tow = get_TOW();
+		flex_file.append_record ( FLIGHT_EVENT, (uint32_t *)&event_info, sizeof( event_info));
+	      }
 	  }
 
 	} // log file write loop ****************************************************************************
