@@ -427,6 +427,11 @@ responder bound to the old one stops working. On a network shared by
 several sensors, only one can hold that name at a time - client OS
 support for mDNS (`.local` resolution) varies.
 
+As a client, the sensor sends the AP SSID with `-` for `_` as its DHCP
+hostname (`Larus_8948` -> `Larus-8948`, `setupWifi()`), so the router's
+device list names each sensor the way its WiFi label does, instead of
+the ESP32 core's default `esp32-<MAC>`.
+
 ### Access point auto-off
 
 Optional power saving (web UI "Access point auto-off" section,

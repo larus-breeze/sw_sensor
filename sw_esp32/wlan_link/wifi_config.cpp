@@ -191,6 +191,19 @@ void setupWifi (const char *apSsid, const char *apPassword)
 
   loadStaConfig ();
 
+  // DHCP hostname for WiFi client mode, as shown by the router: the AP
+  // SSID with '-' for '_' ("Larus_8948" -> "Larus-8948"), since '_' isn't
+  // valid in hostnames. Without this the core's default "esp32-<MAC>" is
+  // used. Must be set before the first WiFi.mode() call - the core applies
+  // it whenever the station interface is (re)started.
+  static char dhcpHostname[WIFI_CONFIG_SSID_MAX_LEN];
+  strncpy (dhcpHostname, storedApSsid, sizeof(dhcpHostname) - 1);
+  dhcpHostname[sizeof(dhcpHostname) - 1] = 0;
+  for (char *c = dhcpHostname; *c; ++c)
+    if (*c == '_')
+      *c = '-';
+  WiFi.setHostname (dhcpHostname);
+
   WiFi.onEvent (onWifiEvent);
 
   // Access point first, always - reachable immediately, and stays that way
