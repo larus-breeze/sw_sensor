@@ -29,6 +29,7 @@ enum wifi_config_mode_t
 {
   WIFI_CONFIG_MODE_AP,  //!< running the sensor's own access point (default / fallback)
   WIFI_CONFIG_MODE_STA, //!< successfully joined the configured network as a client
+  WIFI_CONFIG_MODE_OFF, //!< WiFi switched off for good (until restart) - Bluetooth takes over
 };
 
 //!< brings up WiFi: starts the access point (apSsid/apPassword, as before),
@@ -41,7 +42,10 @@ void setupWifi (const char *apSsid, const char *apPassword);
 //!< call from loop(): monitors the station connection (falls back to the
 //!< access point if it's lost) and, while in access point mode with a
 //!< client network configured, periodically retries joining it in the
-//!< background.
+//!< background. Once the access point has had no connected station for
+//!< 5 minutes (counted from boot or from the last client leaving), WiFi is
+//!< switched off for good and the mode becomes WIFI_CONFIG_MODE_OFF - the
+//!< caller then starts the Bluetooth bridge (see uart_bridge.h).
 void handleWifiLoop (void);
 
 //!< persists new station credentials (pass ssid="" to disable/forget the
@@ -49,13 +53,6 @@ void handleWifiLoop (void);
 //!< already have responded to the HTTP request before calling this, since
 //!< it never returns.
 void saveWifiConfigAndRestart (const char *ssid, const char *password);
-
-//!< persists and immediately applies access point auto-off: when enabled,
-//!< the AP is switched off (radio off, to save power) once it has had no
-//!< connected client for 5 minutes. Only applies in access point mode,
-//!< never while joined to a network in station mode.
-void saveApAutoOff (bool enabled);
-bool wifiConfigApAutoOff (void);
 
 wifi_config_mode_t wifiConfigCurrentMode (void);
 bool wifiConfigStaConfigured (void);

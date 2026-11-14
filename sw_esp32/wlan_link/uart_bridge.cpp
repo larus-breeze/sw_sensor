@@ -1,9 +1,8 @@
 /** *****************************************************************************
  * @file    uart_bridge.cpp
- * @brief   3x UART <-> WiFi TCP bridge
+ * @brief   3x UART <-> WiFi TCP / Bluetooth Classic bridge
  *
- * Bluetooth Classic support (BluetoothSerial) is temporarily removed - see
- * the doc comment in uart_bridge.h. Assumes WiFi (access point and/or
+ * See the doc comment in uart_bridge.h. Assumes WiFi (access point and/or
  * station, see wifi_config.h) has already been brought up by
  * setupWifi() before setupUartBridge() runs.
  *
@@ -12,6 +11,7 @@
 
 #include "uart_bridge.h"
 #include <WiFi.h>
+#include <BluetoothSerial.h>
 
 #define NUM_COM   3
 
@@ -64,6 +64,9 @@ static uint16_t uartToNetLen[NUM_COM];
 
 static uint8_t netToUartBuf[BUFFER_SIZE];
 
+static BluetoothSerial SerialBT;
+static bool btActive = false;
+
 void setupUartBridge (void)
 {
   COM[0]->begin (UART_BAUD0, SERIAL_PARAM0, SERIAL0_RXPIN, SERIAL0_TXPIN);
@@ -80,8 +83,63 @@ void setupUartBridge (void)
   tcpServer[2]->setNoDelay (true);
 }
 
+void startBluetoothBridge (const char *deviceName)
+{
+  for (int num = 0; num < NUM_COM; ++num)
+    for (int slot = 0; slot < MAX_NMEA_CLIENTS; ++slot)
+      if (tcpClient[num][slot])
+        tcpClient[num][slot].stop ();
+
+  // set even on failure - no retry each loop(), and the UART -> RS232
+  // echo below keeps working either way
+  btActive = true;
+  bool ok = SerialBT.begin (deviceName);
+  Serial.print ("Bluetooth: ");
+  Serial.print (ok ? "started as " : "failed to start as ");
+  Serial.println (deviceName);
+}
+
+bool bluetoothBridgeActive (void)
+{
+  return btActive;
+}
+
+//!< Same data paths as the pre-WLAN-link sketch: Bluetooth -> UARTs, and
+//!< every UART -> Bluetooth.
+static void handleBluetoothBridge (void)
+{
+  if (SerialBT.hasClient ())
+    {
+      uint16_t n = 0;
+      while (SerialBT.available () && (n < BUFFER_SIZE - 1))
+        netToUartBuf[n++] = SerialBT.read ();
+      // not to COM[0], the debug console - see the RS232 echo comment below
+      COM[1]->write (netToUartBuf, n);
+      COM[2]->write (netToUartBuf, n);
+    }
+
+  for (int num = 0; num < NUM_COM; ++num)
+    {
+      if (! COM[num]->available ())
+        continue;
+      uartToNetLen[num] = 0;
+      while (COM[num]->available () && (uartToNetLen[num] < BUFFER_SIZE - 1))
+        uartToNetBuf[num][uartToNetLen[num]++] = COM[num]->read ();
+
+      if (SerialBT.hasClient ())
+        SerialBT.write (uartToNetBuf[num], uartToNetLen[num]);
+      COM[1]->write (uartToNetBuf[num], uartToNetLen[num]); // echo to RS232 output
+    }
+}
+
 void handleUartBridge (void)
 {
+  if (btActive)
+    {
+      handleBluetoothBridge ();
+      return;
+    }
+
   // accept new TCP clients, replacing any disconnected slot
   for (int num = 0; num < NUM_COM; ++num)
     {

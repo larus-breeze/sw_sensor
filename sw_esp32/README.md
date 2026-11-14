@@ -19,7 +19,7 @@ The sketch is split across multiple files in `wlan_link/`
   automatic fallback to the access point
 - `web_server.{h,cpp}` — the update/log-file web UI (STM32 update, ESP32
   self-update, log file browser, SD card format, WiFi client mode config)
-- `uart_bridge.{h,cpp}` — the UART/WiFi TCP bridge
+- `uart_bridge.{h,cpp}` — the UART/WiFi TCP and Bluetooth bridge
 
 ## WiFi client mode
 
@@ -39,14 +39,14 @@ serial console at boot, or the joined network's router/DHCP lease list, to
 find it. "Forget network" clears the saved credentials and returns to pure
 access point mode after a reboot.
 
-## Access point auto-off
+## Bluetooth after 5 minutes without WiFi client
 
-The web UI's "Access point auto-off" section can switch the access point
-off after 5 minutes without any connected device, to save power. It
-doesn't apply while joined to a network in WiFi client mode. Once off, the
-access point only comes back after the sensor is restarted (or, with a
-client network configured, after that network was joined and then lost
-again).
+If no device has been connected to the access point for 5 minutes (from
+boot, or from the last device leaving), WiFi is switched off and NMEA data
+is bridged over Bluetooth Classic (serial port profile) instead, with the
+access point SSID as device name - as before the WiFi/SPI link existed.
+This doesn't apply while joined to a network in WiFi client mode. WiFi only
+comes back after a restart of the sensor.
 
 ## Flashing the ESP32 firmware
 - Flash the *.ino file with arduino studio via the esp32 usb connector
@@ -54,7 +54,8 @@ again).
     - Select a **ESP32 Dev Module** board.
     - The Sensor uses a 8MByte ESP32 chip — set **Flash Size: 8MB (64Mb)**.
     - Set **Partition Scheme: Minimal SPIFFS (1.9MB APP with OTA/190KB
-      SPIFFS)**. The compiled sketch (WiFi AP + web server + mbedTLS) needs
+      SPIFFS)**. The compiled sketch (WiFi AP + web server + mbedTLS +
+      Bluetooth Classic, ~1.77 MB) needs
       more than the default "4MB with spiffs" scheme's 1.25 MB app
       partition gives ("text section exceeds available space in board").
       OTA updatability matters here, so this keeps the OTA_0/OTA_1

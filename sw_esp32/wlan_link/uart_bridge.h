@@ -1,14 +1,12 @@
 /** *****************************************************************************
  * @file    uart_bridge.h
- * @brief   3x UART <-> WiFi TCP bridge
+ * @brief   3x UART <-> WiFi TCP / Bluetooth Classic bridge
  *
- * Carries over the existing sketch's UART/TCP bridging (3 UART ports:
- * USB/programmer, RS232, STM32 telemetry). Bluetooth Classic support
- * (BluetoothSerial) is temporarily removed - it pushed the compiled sketch
- * past the app-partition budget of every OTA-capable partition scheme,
- * and OTA updatability was judged more important for now. See
- * documentation/wlan_link.md, "ESP32 connectivity: WiFi + Bluetooth
- * coexistence".
+ * Carries over the original sketch's UART bridging (3 UART ports:
+ * USB/programmer, RS232, STM32 telemetry): over WiFi TCP while WiFi is up,
+ * over Bluetooth Classic (SPP) once WiFi has been switched off after the
+ * idle timeout (see wifi_config.h). See documentation/wlan_link.md,
+ * "WiFi to Bluetooth handover".
  *
  * @license This project is released under the GNU Public License GPL-3.0
  **************************************************************************/
@@ -18,5 +16,10 @@
 
 void setupUartBridge (void);
 void handleUartBridge (void); // call from loop()
+
+//!< switches the bridge from WiFi TCP to Bluetooth Classic SPP, advertised
+//!< as deviceName. Call once, after WiFi has been switched off.
+void startBluetoothBridge (const char *deviceName);
+bool bluetoothBridgeActive (void);
 
 #endif /* UART_BRIDGE_H_ */

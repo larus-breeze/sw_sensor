@@ -427,22 +427,30 @@ responder bound to the old one stops working. On a network shared by
 several sensors, only one can hold that name at a time - client OS
 support for mDNS (`.local` resolution) varies.
 
-### Access point auto-off
+### WiFi to Bluetooth handover
 
-Optional power saving (web UI "Access point auto-off" section,
-`POST /wifi/ap_auto_off`, `enabled` = 0/1, persisted in NVS as
-`apautooff`, applied immediately without a restart): in access point
+Restores the pre-WLAN-link default of Bluetooth for NMEA: in access point
 mode, once `WiFi.softAPgetStationNum()` has been 0 for 5 minutes
-(`AP_AUTO_OFF_IDLE_MS`), the radio
-is switched off (`WIFI_OFF`). Any associated station keeps the AP alive,
-whether or not it talks to the web server or the TCP bridges. Never
-applies while joined to a client network. With a client network
-configured, background retries continue STA-only (no AP) while the AP is
-off; a successful join proceeds as usual, and losing that network later
-brings the AP back up. Otherwise the AP only returns after a restart.
-The periodic background retry of a configured-but-absent client network
-restarts the AP each time, but deliberately doesn't reset the idle timer
-(it used to, which kept the AP from ever switching off in that case).
+(`AP_IDLE_TO_BLUETOOTH_MS`, `wifi_config.cpp`; counted from boot or from
+the last station leaving), WiFi is switched off (`WIFI_OFF`, mode
+`WIFI_CONFIG_MODE_OFF`) and the UART bridge continues over Bluetooth
+Classic SPP (`BluetoothSerial`, `uart_bridge.cpp`), advertised under the
+AP SSID. Any associated station keeps WiFi alive, whether or not it talks
+to the web server or the TCP bridges. Never applies while joined to a
+client network. Final until restart: no background client-network
+retries while Bluetooth is active. The periodic retry of a
+configured-but-absent client network deliberately doesn't reset the idle
+timer.
+
+Bluetooth data paths match the old sketch: received data goes to the
+RS232 and STM32 UARTs (not the debug console), data from every UART goes
+to the Bluetooth client. This replaces the former optional "Access point
+auto-off" (radio off after the same idle time; `apautooff` NVS key is now
+ignored).
+
+Size: with `BluetoothSerial` the app is ~1.77 MB of the 1.9 MB
+`min_spiffs` OTA slot (esp32 core 3.3.12). `BluetoothSerial` is deprecated
+in the esp32 core and won't be enabled by default from core 4.0.
 
 ## AP identity: SSID and password
 
