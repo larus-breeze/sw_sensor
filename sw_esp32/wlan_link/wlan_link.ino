@@ -3,10 +3,8 @@
 // management (upload/list/download/delete/format, relayed over SPI2 to the
 // STM32 - see documentation/wlan_link.md in the sw_sensor
 // repository), plus the 3x UART <-> WiFi TCP bridge, running concurrently
-// with the WiFi AP.
-//
-// Bluetooth Classic support is temporarily removed (see uart_bridge.h) so
-// the sketch fits an OTA-capable partition scheme; WiFi-only for now.
+// with the WiFi AP. After 5 minutes without a connected WiFi client, WiFi
+// is switched off and the UART bridge continues over Bluetooth Classic.
 //
 // UNTESTED ON HARDWARE. See the design doc above for what has and hasn't
 // been validated.
@@ -19,6 +17,9 @@
 #include "web_server.h"
 #include "wlan_link_client.h"
 #include "uart_bridge.h"
+
+//!< AP SSID, reused as the Bluetooth device name
+static char ssid[AP_IDENTITY_SSID_MAX_LEN];
 
 void setup ()
 {
@@ -51,7 +52,6 @@ void setup ()
   // (STM32 side, wlan_link_handler.cpp) for the matching STM32-side fix.
   wlanLink.begin ();
 
-  char ssid[AP_IDENTITY_SSID_MAX_LEN];
   char password[AP_IDENTITY_PASSWORD_MAX_LEN];
   computeApIdentity (ssid, sizeof(ssid), password, sizeof(password));
 
@@ -69,6 +69,8 @@ void setup ()
 void loop ()
 {
   handleWifiLoop ();
+  if ((wifiConfigCurrentMode () == WIFI_CONFIG_MODE_OFF) && ! bluetoothBridgeActive ())
+    startBluetoothBridge (ssid);
   handleWebServerClient ();
   handleUartBridge ();
 }

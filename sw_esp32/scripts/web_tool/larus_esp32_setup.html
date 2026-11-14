@@ -454,7 +454,7 @@ function buildLabelCanvas(ssid, password, ip) {
   let tx = qrPx + 2 * margin, ty = margin;
   const line = (txt, size, dy) => { g.font = `${size}px ${LABEL_FONT}`; g.fillText(txt, tx, ty); ty += dy; };
   line("Larus Sensor WiFi", 20, 32);
-  line(`SSID: ${ssid}`, 16, 24);
+  line(`SSID / Bluetooth name: ${ssid}`, 16, 24);
   line(`Password: ${password}`, 16, 24);
   // Not part of the QR payload (the WIFI: format has no field for it).
   line(`Web UI: http://${ip}`, 16, 32);
