@@ -54,6 +54,11 @@ void handleWifiLoop (void);
 //!< it never returns.
 void saveWifiConfigAndRestart (const char *ssid, const char *password);
 
+//!< persists and immediately applies "WiFi always on": when enabled, WiFi
+//!< is never switched off in favour of Bluetooth.
+void saveWifiAlwaysOn (bool enabled);
+bool wifiConfigAlwaysOn (void);
+
 wifi_config_mode_t wifiConfigCurrentMode (void);
 bool wifiConfigStaConfigured (void);
 String wifiConfigStaSsid (void); //!< configured SSID, or "" - never the password

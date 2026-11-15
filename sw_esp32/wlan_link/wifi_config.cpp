@@ -16,6 +16,7 @@ extern "C" {
 #define NVS_NAMESPACE   "wificfg"
 #define NVS_KEY_SSID    "ssid"
 #define NVS_KEY_PASSWORD "password"
+#define NVS_KEY_ALWAYS_ON "wifialwayson"
 
 //!< how long setupWifi() blocks waiting for the initial connection attempt
 //!< to the configured network - the access point is already up throughout
@@ -52,6 +53,7 @@ static bool retryInProgress = false;
 static unsigned long retryStartedMs = 0;
 
 static unsigned long apIdleSinceMs = 0;  //!< last time the AP had a client (or was (re)started)
+static bool wifiAlwaysOn = false;        //!< never hand over to Bluetooth
 
 static void loadStaConfig (void)
 {
@@ -59,6 +61,7 @@ static void loadStaConfig (void)
   preferences.begin (NVS_NAMESPACE, true); // read-only
   String ssid = preferences.getString (NVS_KEY_SSID, "");
   String password = preferences.getString (NVS_KEY_PASSWORD, "");
+  wifiAlwaysOn = preferences.getBool (NVS_KEY_ALWAYS_ON, false);
   preferences.end ();
 
   strncpy (staSsid, ssid.c_str (), sizeof(staSsid) - 1);
@@ -176,7 +179,7 @@ static void handleApIdleTimeout (unsigned long now)
       apIdleSinceMs = now;
       return;
     }
-  if (retryInProgress)
+  if (retryInProgress || wifiAlwaysOn)
     return;
   if (now - apIdleSinceMs >= AP_IDLE_TO_BLUETOOTH_MS)
     switchWifiOff ();
@@ -314,6 +317,22 @@ void saveWifiConfigAndRestart (const char *ssid, const char *password)
   preferences.putString (NVS_KEY_PASSWORD, password);
   preferences.end ();
   ESP.restart ();
+}
+
+void saveWifiAlwaysOn (bool enabled)
+{
+  Preferences preferences;
+  preferences.begin (NVS_NAMESPACE, false);
+  preferences.putBool (NVS_KEY_ALWAYS_ON, enabled);
+  preferences.end ();
+
+  wifiAlwaysOn = enabled;
+  apIdleSinceMs = millis (); // on disabling, the 5 minutes count from now
+}
+
+bool wifiConfigAlwaysOn (void)
+{
+  return wifiAlwaysOn;
 }
 
 wifi_config_mode_t wifiConfigCurrentMode (void)

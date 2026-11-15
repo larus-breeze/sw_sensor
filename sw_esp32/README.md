@@ -46,7 +46,8 @@ boot, or from the last device leaving), WiFi is switched off and NMEA data
 is bridged over Bluetooth Classic (serial port profile) instead, with the
 access point SSID as device name - as before the WiFi/SPI link existed.
 This doesn't apply while joined to a network in WiFi client mode. WiFi only
-comes back after a restart of the sensor.
+comes back after a restart of the sensor. The web UI's "Keep WiFi on"
+option disables the switch to Bluetooth.
 
 ## Flashing the ESP32 firmware
 - Flash the *.ino file with arduino studio via the esp32 usb connector

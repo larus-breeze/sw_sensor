@@ -448,6 +448,11 @@ statically allocated, so they can't fail to be created), so a
 peer that stops reading only loses Bluetooth data and never delays the
 RS232 echo.
 
+Optional "Keep WiFi on" (web UI "Bluetooth" section, `POST
+/wifi/always_on`, `enabled` = 0/1, persisted in NVS as `wifialwayson`,
+default off, applied immediately without a restart) disables the
+handover.
+
 Bluetooth data paths match the old sketch: received data goes to the
 RS232 and STM32 UARTs (not the debug console), data from every UART goes
 to the Bluetooth client. This replaces the former optional "Access point

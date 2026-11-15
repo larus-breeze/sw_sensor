@@ -161,6 +161,11 @@ point.</p>
 <h2>Bluetooth</h2>
 <p>Sensor switches to Bluetooth serial after 5 minutes without a connected
 WiFi device.</p>
+<form id="wifiAlwaysOnForm">
+  <label><input type="checkbox" id="wifiAlwaysOn"> Keep WiFi on (never switch to Bluetooth)</label>
+  <button type="submit">Save</button>
+</form>
+<div id="wifiAlwaysOnStatus"></div>
 
 <h2>Logging</h2>
 <p>Logging must be stopped to access log files on the SD card.</p>
@@ -296,6 +301,12 @@ async function refreshStatus() {
     if (! wifiSsidField.dataset.prefilled) {
       wifiSsidField.value = s.wifiStaSsid;
       wifiSsidField.dataset.prefilled = '1';
+    }
+    // prefill once, same reasoning as wifiSsidField above
+    const wifiAlwaysOnField = document.getElementById('wifiAlwaysOn');
+    if (! wifiAlwaysOnField.dataset.prefilled) {
+      wifiAlwaysOnField.checked = s.wifiAlwaysOn;
+      wifiAlwaysOnField.dataset.prefilled = '1';
     }
     document.getElementById('sdCardStatus').textContent = formatSdCardStatus(s);
     document.getElementById('airborneStatus').textContent = s.linkOk ? (s.airborne ? 'yes' : 'no') : 'unreachable';
@@ -852,6 +863,22 @@ document.getElementById('wifiForgetButton').addEventListener('click', async () =
   await saveWifiConfig('', '');
 });
 
+document.getElementById('wifiAlwaysOnForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const statusEl = document.getElementById('wifiAlwaysOnStatus');
+  const enabled = document.getElementById('wifiAlwaysOn').checked;
+  try {
+    const body = new URLSearchParams({enabled: enabled ? '1' : '0'});
+    const r = await fetch('/wifi/always_on', { method: 'POST', body });
+    statusEl.textContent = r.ok ?
+      (enabled ? 'Saved - WiFi stays on.' :
+                 'Saved - switches to Bluetooth after 5 min without a connected device.') :
+      'Save failed: ' + await r.text();
+  } catch (e) {
+    statusEl.textContent = 'Save failed: ' + e;
+  }
+});
+
 refreshStatus();
 refreshFiles();
 // setInterval(refreshStatus, 5000);
@@ -929,6 +956,7 @@ static void handleStatus (void)
   json += ",\"wifiMode\":\"" + String (wifiConfigCurrentMode () == WIFI_CONFIG_MODE_STA ? "sta" : "ap") + "\"";
   json += ",\"wifiStaConfigured\":" + String (wifiConfigStaConfigured () ? "true" : "false");
   json += ",\"wifiStaSsid\":\"" + wifiConfigStaSsid () + "\"";
+  json += ",\"wifiAlwaysOn\":" + String (wifiConfigAlwaysOn () ? "true" : "false");
   json += ",\"wifiIp\":\"" +
           (wifiConfigCurrentMode () == WIFI_CONFIG_MODE_STA ? WiFi.localIP () : WiFi.softAPIP ()).toString () + "\"";
   json += "}";
@@ -1421,6 +1449,19 @@ static void handleWifiConfigSave (void)
   saveWifiConfigAndRestart (ssid.c_str (), password.c_str ()); // never returns
 }
 
+//!< POST /wifi/always_on: enabled=1/0. Applied immediately, no restart.
+static void handleWifiAlwaysOnSave (void)
+{
+  String arg = server.arg ("enabled");
+  if (arg != "0" && arg != "1")
+    {
+      server.send (400, "text/plain", "enabled must be 0 or 1");
+      return;
+    }
+  saveWifiAlwaysOn (arg == "1");
+  server.send (200, "text/plain", "ok");
+}
+
 void setupWebServer (void)
 {
   // WiFi (access point and/or station) is already up by this point - see
@@ -1437,6 +1478,7 @@ void setupWebServer (void)
   server.on ("/update", HTTP_POST, handleFirmwareUploadComplete, handleFirmwareUploadChunk);
   server.on ("/update_esp32", HTTP_POST, handleEsp32UpdateComplete, handleEsp32UpdateChunk);
   server.on ("/wifi/config", HTTP_POST, handleWifiConfigSave);
+  server.on ("/wifi/always_on", HTTP_POST, handleWifiAlwaysOnSave);
 
   server.begin ();
 }
