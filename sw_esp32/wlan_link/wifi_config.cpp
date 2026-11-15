@@ -319,15 +319,19 @@ void saveWifiConfigAndRestart (const char *ssid, const char *password)
   ESP.restart ();
 }
 
-void saveWifiAlwaysOn (bool enabled)
+bool saveWifiAlwaysOn (bool enabled)
 {
   Preferences preferences;
-  preferences.begin (NVS_NAMESPACE, false);
-  preferences.putBool (NVS_KEY_ALWAYS_ON, enabled);
+  if (! preferences.begin (NVS_NAMESPACE, false))
+    return false;
+  bool stored = preferences.putBool (NVS_KEY_ALWAYS_ON, enabled) > 0;
   preferences.end ();
+  if (! stored)
+    return false;
 
   wifiAlwaysOn = enabled;
   apIdleSinceMs = millis (); // on disabling, the 5 minutes count from now
+  return true;
 }
 
 bool wifiConfigAlwaysOn (void)

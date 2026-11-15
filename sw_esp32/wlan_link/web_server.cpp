@@ -1458,7 +1458,11 @@ static void handleWifiAlwaysOnSave (void)
       server.send (400, "text/plain", "enabled must be 0 or 1");
       return;
     }
-  saveWifiAlwaysOn (arg == "1");
+  if (! saveWifiAlwaysOn (arg == "1"))
+    {
+      server.send (500, "text/plain", "could not save setting");
+      return;
+    }
   server.send (200, "text/plain", "ok");
 }
 
