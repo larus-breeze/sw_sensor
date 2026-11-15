@@ -28,12 +28,20 @@ settings), and reports memory usage per region and compiler warnings:
 
     python3 scripts/ci_build.py [--config Release] [--json summary.json]
 
-The GitHub workflow `.github/workflows/firmware-build.yml` runs it for every
-pull request with the toolchain of the current releases and with the next
-one, and compares memory usage with the PR's base. It is a check, not a
-release build: ST's "GNU Tools for STM32" in STM32CubeIDE differ slightly
-from the Arm GNU Toolchain (for 0.7.6: identical RAM sections, flash about
-0.6% smaller), so release images still come from `build_firmware.py`.
+The GitHub workflow `.github/workflows/firmware-build.yml` builds every
+pull request and every push to `master`, and compares memory usage with the
+PR's base. In larus-breeze/sw_sensor it builds with STM32CubeIDE
+(`build_firmware.py`) once the repository variable `CUBEIDE_CI` is `true`;
+forks and pull requests from forks use `ci_build.py`. ST's "GNU Tools for
+STM32" in STM32CubeIDE differ slightly from the Arm GNU Toolchain (for 0.7.6:
+identical RAM sections, flash about 0.6% smaller), so these images are named
+`-armgnu`. `ci_summary.py` writes the memory and warning summary for both.
+
+Each run uploads test images named after the commit (`GIT_COMMIT_HASH`):
+`larus_sensor_stm32-<sha>.bin` (SD card or web UI), `.elf`, and
+`larus_sensor_esp32-<sha>.bin` with its two initial-flash images. They are
+not releases. A fork can test the STM32CubeIDE build with its own copy of
+the image: set `CUBEIDE_CI` to `true` and `CUBEIDE_IMAGE` to the image.
 
 ## Building the firmware
 - Either build it in STM32CubeIDE itself (Project -> Build Project, with the
