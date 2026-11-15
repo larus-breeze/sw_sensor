@@ -496,14 +496,11 @@ static uint32_t firmware_image_sw_version (const uint8_t *header)
   return header[27] | (header[26] << 8) | (header[25] << 16) | (header[24] << 24);
 }
 
-//!< Delete all firmware images for this sensor that are not newer than
-//!< the running firmware. The version is re-checked per file: this runs
-//!< without fatfs_lock(), so a WLAN upload may add a newer image meanwhile.
-//!< Only called after a complete scan found nothing newer, i.e. after the
-//!< update has actually been installed - deleting right after staging
-//!< would lose the image if the copy routine fails, as the staging area is
-//!< erased on every boot. See documentation/wlan_link.md.
-static void delete_installed_firmware_images (void)
+//!< Caller must hold fatfs_lock(). Deletes all firmware images for this
+//!< sensor that are not newer than the running firmware. The version is
+//!< re-checked per file: a WLAN upload may have stored a newer image since
+//!< read_software_update() scanned the card.
+static void delete_installed_firmware_images_locked (void)
 {
   FIL the_file;
   FILINFO fno;
@@ -540,6 +537,27 @@ static void delete_installed_firmware_images (void)
       if (f_unlink ((char*) &fno.fname[0]) != FR_OK)
 	return; // e.g. read-only file - give up instead of looping forever
     }
+}
+
+//!< create-git-info-header.py's GIT_TAG_DEC when no version tag was found
+#define GIT_TAG_DEC_UNKNOWN 0xffffffffu
+
+//!< Only called after a complete scan found nothing newer, i.e. after the
+//!< update has actually been installed - deleting right after staging
+//!< would lose the image if the copy routine fails, as the staging area is
+//!< erased on every boot. See documentation/wlan_link.md.
+static void delete_installed_firmware_images (void)
+{
+  // Unknown running version: every image compares as "not newer".
+  if (GIT_TAG_DEC == GIT_TAG_DEC_UNKNOWN)
+    return;
+
+  // A WLAN upload holds the lock for its whole session. Skip instead of
+  // waiting - the next boot repeats the cleanup.
+  if (! fatfs_lock (pdMS_TO_TICKS (FATFS_ACCESS_WLAN_TIMEOUT_MS)))
+    return;
+  delete_installed_firmware_images_locked ();
+  fatfs_unlock ();
 }
 
 //!< find software image file and load it if applicable
