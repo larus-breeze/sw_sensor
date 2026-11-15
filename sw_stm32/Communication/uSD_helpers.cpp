@@ -475,6 +475,65 @@ bool write_EEPROM_dump( const char * file_path)
   return fresult;
 }
 
+//!< true if the header block holds a firmware image for this sensor
+//!< (pack.py magic number + hardware version)
+static bool is_sensor_firmware_image (const uint8_t *header)
+{
+  uint32_t file_hw_version = header[23] | (header[22] << 8)
+      | (header[21] << 16) | (header[20] << 24);
+  uint64_t file_magic_number = 0;
+  for (int i = 7; i >= 0; i--)
+    {
+      file_magic_number <<= 8;
+      file_magic_number |= (uint64_t) header[i];
+    }
+  return (file_hw_version == 0x01010100)
+      && (file_magic_number == 0x1c8073ab20853579);
+}
+
+//!< Delete all firmware images for this sensor from the SD card.
+//!< Only called once none of them is newer than the running firmware,
+//!< i.e. after the update has actually been installed - deleting right
+//!< after staging would lose the image if the copy routine fails, as the
+//!< staging area is erased on every boot. See documentation/wlan_link.md.
+static void delete_installed_firmware_images (void)
+{
+  FIL the_file;
+  FILINFO fno;
+  DIR dj;
+  UINT bytes_read;
+
+  // Restart the scan after each delete instead of unlinking while the
+  // directory is being iterated. Non-images are skipped by the scan, so
+  // this terminates once no image is left (or a delete fails).
+  for (;;)
+    {
+      bool image_found = false;
+      FRESULT fresult = f_findfirst (&dj, &fno, "", "????*.bin");
+      while ((fresult == FR_OK) && (fno.fname[0] != 0))
+	{
+	  if (f_open (&the_file, (char*) &fno.fname[0], FA_READ) == FR_OK)
+	    {
+	      fresult = f_read (&the_file, mem_buffer, 32, &bytes_read);
+	      f_close (&the_file);
+	      if ((fresult == FR_OK) && (bytes_read == 32)
+		  && is_sensor_firmware_image (mem_buffer))
+		{
+		  image_found = true;
+		  break;
+		}
+	    }
+	  fresult = f_findnext (&dj, &fno);
+	}
+      f_closedir (&dj);
+
+      if (! image_found)
+	return;
+      if (f_unlink ((char*) &fno.fname[0]) != FR_OK)
+	return; // e.g. read-only file - give up instead of looping forever
+    }
+}
+
 //!< find software image file and load it if applicable
 bool read_software_update (void)
 {
@@ -514,17 +573,7 @@ bool read_software_update (void)
 	}
       f_close (&the_file);
 
-      uint32_t file_hw_version = mem_buffer[23] | (mem_buffer[22] << 8)
-	  | (mem_buffer[21] << 16) | (mem_buffer[20] << 24);
-      uint64_t file_magic_number = 0;
-      for (int i = 7; i >= 0; i--)
-	{
-	  file_magic_number <<= 8;
-	  file_magic_number |= (uint64_t) mem_buffer[i];
-	}
-
-      if ((file_hw_version == 0x01010100)
-	  && (file_magic_number == 0x1c8073ab20853579))
+      if (is_sensor_firmware_image (mem_buffer))
 	{
 	  uint32_t file_sw_version = mem_buffer[27] | (mem_buffer[26] << 8)
 	      | (mem_buffer[25] << 16) | (mem_buffer[24] << 24);
@@ -547,7 +596,12 @@ bool read_software_update (void)
 
 #if DISALLOW_DOWNGRADE
   if (highest_sw_version_found <= GIT_TAG_DEC)
-      return false; //The firmware image with the highest version is it nothing new. Finishing here.
+    {
+      // Nothing new: the update (if any) is installed, the images are obsolete.
+      if (highest_sw_version_found != 0)
+	delete_installed_firmware_images ();
+      return false;
+    }
 
 #endif
 
