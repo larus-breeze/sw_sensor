@@ -442,6 +442,11 @@ retries while Bluetooth is active. The periodic retry of a
 configured-but-absent client network deliberately doesn't reset the idle
 timer.
 
+A failed Bluetooth start is retried every 30 s. UART -> Bluetooth data
+goes through a ring buffer drained by its own task (`btTxTask`), so a
+peer that stops reading only loses Bluetooth data and never delays the
+RS232 echo.
+
 Bluetooth data paths match the old sketch: received data goes to the
 RS232 and STM32 UARTs (not the debug console), data from every UART goes
 to the Bluetooth client. This replaces the former optional "Access point

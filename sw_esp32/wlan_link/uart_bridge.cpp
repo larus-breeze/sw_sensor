@@ -12,6 +12,7 @@
 #include "uart_bridge.h"
 #include <WiFi.h>
 #include <BluetoothSerial.h>
+#include <freertos/ringbuf.h>
 
 #define NUM_COM   3
 
@@ -64,8 +65,17 @@ static uint16_t uartToNetLen[NUM_COM];
 
 static uint8_t netToUartBuf[BUFFER_SIZE];
 
+//!< retry interval after a failed SerialBT.begin()
+#define BT_START_RETRY_MS     30000u
+//!< UART -> Bluetooth buffer, drained by btTxTask
+#define BT_TX_RINGBUF_SIZE     4096
+
 static BluetoothSerial SerialBT;
-static bool btActive = false;
+static bool btRequested = false;    //!< startBluetoothBridge() was called
+static volatile bool btRunning = false; //!< SerialBT.begin() succeeded
+static unsigned long btLastStartAttemptMs = 0;
+static char btDeviceName[33];
+static RingbufHandle_t btTxRingbuf = nullptr;
 
 void setupUartBridge (void)
 {
@@ -83,6 +93,34 @@ void setupUartBridge (void)
   tcpServer[2]->setNoDelay (true);
 }
 
+static void tryStartBluetooth (void)
+{
+  btLastStartAttemptMs = millis ();
+  btRunning = SerialBT.begin (btDeviceName);
+  if (! btRunning)
+    SerialBT.end (); // release a half-initialized stack before the next attempt
+  Serial.print ("Bluetooth: ");
+  Serial.print (btRunning ? "started as " : "failed to start as ");
+  Serial.println (btDeviceName);
+}
+
+//!< SerialBT.write() blocks up to ~1s per packet while a peer doesn't drain
+//!< its data - done here instead of in loop(), so a stalled peer only
+//!< drops Bluetooth data and never delays the UART/RS232 forwarding.
+static void btTxTask (void *)
+{
+  for (;;)
+    {
+      size_t len = 0;
+      uint8_t *data = (uint8_t *) xRingbufferReceiveUpTo (btTxRingbuf, &len, portMAX_DELAY, BUFFER_SIZE);
+      if (data == nullptr)
+        continue;
+      if (btRunning && SerialBT.hasClient ())
+        SerialBT.write (data, len);
+      vRingbufferReturnItem (btTxRingbuf, data);
+    }
+}
+
 void startBluetoothBridge (const char *deviceName)
 {
   for (int num = 0; num < NUM_COM; ++num)
@@ -90,25 +128,30 @@ void startBluetoothBridge (const char *deviceName)
       if (tcpClient[num][slot])
         tcpClient[num][slot].stop ();
 
-  // set even on failure - no retry each loop(), and the UART -> RS232
-  // echo below keeps working either way
-  btActive = true;
-  bool ok = SerialBT.begin (deviceName);
-  Serial.print ("Bluetooth: ");
-  Serial.print (ok ? "started as " : "failed to start as ");
-  Serial.println (deviceName);
+  strncpy (btDeviceName, deviceName, sizeof(btDeviceName) - 1);
+  btDeviceName[sizeof(btDeviceName) - 1] = 0;
+  btRequested = true;
+
+  btTxRingbuf = xRingbufferCreate (BT_TX_RINGBUF_SIZE, RINGBUF_TYPE_BYTEBUF);
+  if (btTxRingbuf != nullptr)
+    xTaskCreate (btTxTask, "bt_tx", 3072, nullptr, 1, nullptr);
+
+  tryStartBluetooth ();
 }
 
 bool bluetoothBridgeActive (void)
 {
-  return btActive;
+  return btRequested;
 }
 
 //!< Same data paths as the pre-WLAN-link sketch: Bluetooth -> UARTs, and
 //!< every UART -> Bluetooth.
 static void handleBluetoothBridge (void)
 {
-  if (SerialBT.hasClient ())
+  if (! btRunning && (millis () - btLastStartAttemptMs >= BT_START_RETRY_MS))
+    tryStartBluetooth ();
+
+  if (btRunning && SerialBT.hasClient ())
     {
       uint16_t n = 0;
       while (SerialBT.available () && (n < BUFFER_SIZE - 1))
@@ -126,20 +169,20 @@ static void handleBluetoothBridge (void)
       while (COM[num]->available () && (uartToNetLen[num] < BUFFER_SIZE - 1))
         uartToNetBuf[num][uartToNetLen[num]++] = COM[num]->read ();
 
-      if (SerialBT.hasClient ())
-        SerialBT.write (uartToNetBuf[num], uartToNetLen[num]);
       COM[1]->write (uartToNetBuf[num], uartToNetLen[num]); // echo to RS232 output
+      // non-blocking: if btTxTask is behind (stalled peer), drop this chunk
+      if (btRunning && (btTxRingbuf != nullptr) && SerialBT.hasClient ())
+        xRingbufferSend (btTxRingbuf, uartToNetBuf[num], uartToNetLen[num], 0);
     }
 }
 
 void handleUartBridge (void)
 {
-  if (btActive)
+  if (btRequested)
     {
       handleBluetoothBridge ();
       return;
     }
-
   // accept new TCP clients, replacing any disconnected slot
   for (int num = 0; num < NUM_COM; ++num)
     {

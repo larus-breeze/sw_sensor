@@ -169,13 +169,15 @@ static void switchWifiOff (void)
 //!< WiFi alive.
 static void handleApIdleTimeout (unsigned long now)
 {
-  if (retryInProgress)
-    return;
+  // recorded during a STA retry too - the failed-retry path restores
+  // apIdleSinceMs, which must include clients seen during the retry
   if (WiFi.softAPgetStationNum () > 0)
     {
       apIdleSinceMs = now;
       return;
     }
+  if (retryInProgress)
+    return;
   if (now - apIdleSinceMs >= AP_IDLE_TO_BLUETOOTH_MS)
     switchWifiOff ();
 }
