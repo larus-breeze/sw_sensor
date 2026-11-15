@@ -16,7 +16,7 @@ extern "C" {
 #define NVS_NAMESPACE   "wificfg"
 #define NVS_KEY_SSID    "ssid"
 #define NVS_KEY_PASSWORD "password"
-#define NVS_KEY_AP_AUTO_OFF "apautooff"
+#define NVS_KEY_ALWAYS_ON "wifialwayson"
 
 //!< how long setupWifi() blocks waiting for the initial connection attempt
 //!< to the configured network - the access point is already up throughout
@@ -36,8 +36,9 @@ extern "C" {
 //!< WiFi stack's own auto-reconnect would otherwise recover from on its own
 #define STA_LOST_GRACE_MS            10000u
 
-//!< access point auto-off: idle time without any associated station
-#define AP_AUTO_OFF_IDLE_MS          (5UL * 60UL * 1000UL)
+//!< idle time without any associated station before WiFi is switched off
+//!< in favour of Bluetooth
+#define AP_IDLE_TO_BLUETOOTH_MS      (5UL * 60UL * 1000UL)
 
 static char storedApSsid[WIFI_CONFIG_SSID_MAX_LEN];
 static char storedApPassword[WIFI_CONFIG_PASSWORD_MAX_LEN];
@@ -51,9 +52,8 @@ static unsigned long lastRetryAttemptMs = 0;
 static bool retryInProgress = false;
 static unsigned long retryStartedMs = 0;
 
-static bool apAutoOff = false;           //!< switch the AP off after AP_AUTO_OFF_IDLE_MS without a client
-static bool apSwitchedOff = false;       //!< AP mode, but radio off after the idle timeout
 static unsigned long apIdleSinceMs = 0;  //!< last time the AP had a client (or was (re)started)
+static bool wifiAlwaysOn = false;        //!< never hand over to Bluetooth
 
 static void loadStaConfig (void)
 {
@@ -61,7 +61,7 @@ static void loadStaConfig (void)
   preferences.begin (NVS_NAMESPACE, true); // read-only
   String ssid = preferences.getString (NVS_KEY_SSID, "");
   String password = preferences.getString (NVS_KEY_PASSWORD, "");
-  apAutoOff = preferences.getBool (NVS_KEY_AP_AUTO_OFF, false);
+  wifiAlwaysOn = preferences.getBool (NVS_KEY_ALWAYS_ON, false);
   preferences.end ();
 
   strncpy (staSsid, ssid.c_str (), sizeof(staSsid) - 1);
@@ -144,7 +144,6 @@ static void startAccessPoint (void)
   WiFi.setTxPower (WIFI_POWER_13dBm);
 
   currentMode = WIFI_CONFIG_MODE_AP;
-  apSwitchedOff = false;
   apIdleSinceMs = millis ();
   staLostSinceMs = 0;
   // next background retry is due one full interval from *now*, not
@@ -156,30 +155,34 @@ static void startAccessPoint (void)
   Serial.println ("WiFi: access point mode");
 }
 
-static void switchApOff (void)
+//!< Final until restart: no background STA retries either, so the radio
+//!< is left entirely to Bluetooth Classic.
+static void switchWifiOff (void)
 {
   MDNS.end ();
   WiFi.softAPdisconnect (true);
+  WiFi.disconnect (true);
   WiFi.mode (WIFI_OFF);
-  apSwitchedOff = true;
-  lastRetryAttemptMs = millis (); // background STA retries (if configured) continue, STA-only
-  Serial.println ("WiFi: access point switched off - no client for the configured time");
+  currentMode = WIFI_CONFIG_MODE_OFF;
+  Serial.println ("WiFi: switched off - no client for 5 minutes, Bluetooth takes over");
 }
 
 //!< Station count (not the web server's TCP clients) is what matters: any
 //!< associated device - web UI, NMEA/UART TCP bridge, or just idle - keeps
-//!< the AP alive.
-static void handleApAutoOff (unsigned long now)
+//!< WiFi alive.
+static void handleApIdleTimeout (unsigned long now)
 {
-  if (apSwitchedOff || retryInProgress || ! apAutoOff)
-    return;
+  // recorded during a STA retry too - the failed-retry path restores
+  // apIdleSinceMs, which must include clients seen during the retry
   if (WiFi.softAPgetStationNum () > 0)
     {
       apIdleSinceMs = now;
       return;
     }
-  if (now - apIdleSinceMs >= AP_AUTO_OFF_IDLE_MS)
-    switchApOff ();
+  if (retryInProgress || wifiAlwaysOn)
+    return;
+  if (now - apIdleSinceMs >= AP_IDLE_TO_BLUETOOTH_MS)
+    switchWifiOff ();
 }
 
 void setupWifi (const char *apSsid, const char *apPassword)
@@ -224,13 +227,19 @@ void setupWifi (const char *apSsid, const char *apPassword)
   else
     {
       Serial.println ("WiFi: could not join configured network, staying in access point mode");
+      // the idle time to Bluetooth counts from boot, not from here
+      unsigned long idleSinceMs = apIdleSinceMs;
       startAccessPoint (); // drop the STA attempt, re-affirm pure AP mode
+      apIdleSinceMs = idleSinceMs;
     }
 }
 
 void handleWifiLoop (void)
 {
   unsigned long now = millis ();
+
+  if (currentMode == WIFI_CONFIG_MODE_OFF)
+    return;
 
   if (currentMode == WIFI_CONFIG_MODE_STA)
     {
@@ -253,7 +262,9 @@ void handleWifiLoop (void)
     }
 
   // currentMode == WIFI_CONFIG_MODE_AP
-  handleApAutoOff (now);
+  handleApIdleTimeout (now);
+  if (currentMode == WIFI_CONFIG_MODE_OFF)
+    return;
 
   // Periodically retry the configured network in the background, without
   // dropping the access point unless the retry actually succeeds.
@@ -267,9 +278,7 @@ void handleWifiLoop (void)
           retryInProgress = false;
           currentMode = WIFI_CONFIG_MODE_STA;
           staLostSinceMs = 0;
-          if (! apSwitchedOff)
-            WiFi.softAPdisconnect (true);
-          apSwitchedOff = false;
+          WiFi.softAPdisconnect (true);
           WiFi.mode (WIFI_STA);
           restoreFullTxPowerForStation ();
           restartMdns ();
@@ -280,21 +289,12 @@ void handleWifiLoop (void)
       if (now - retryStartedMs >= STA_RETRY_CONNECT_TIMEOUT_MS)
         {
           retryInProgress = false;
-          if (apSwitchedOff)
-            {
-              WiFi.disconnect ();
-              WiFi.mode (WIFI_OFF);
-              lastRetryAttemptMs = now;
-            }
-          else
-            {
-              // A failed STA probe isn't AP activity - keep the idle timer,
-              // or a configured-but-absent network (retried every
-              // STA_RETRY_INTERVAL_MS) keeps the AP from ever switching off.
-              unsigned long idleSinceMs = apIdleSinceMs;
-              startAccessPoint (); // undo the WIFI_AP_STA probe, resume pure AP
-              apIdleSinceMs = idleSinceMs;
-            }
+          // A failed STA probe isn't AP activity - keep the idle timer, or
+          // a configured-but-absent network (retried every
+          // STA_RETRY_INTERVAL_MS) keeps WiFi from ever switching off.
+          unsigned long idleSinceMs = apIdleSinceMs;
+          startAccessPoint (); // undo the WIFI_AP_STA probe, resume pure AP
+          apIdleSinceMs = idleSinceMs;
         }
       return;
     }
@@ -303,9 +303,8 @@ void handleWifiLoop (void)
     {
       retryInProgress = true;
       retryStartedMs = now;
-      // access point (unless auto-switched off) keeps serving existing
-      // clients during the probe
-      WiFi.mode (apSwitchedOff ? WIFI_STA : WIFI_AP_STA);
+      // access point keeps serving existing clients during the probe
+      WiFi.mode (WIFI_AP_STA);
       WiFi.begin (staSsid, staPassword);
     }
 }
@@ -320,20 +319,24 @@ void saveWifiConfigAndRestart (const char *ssid, const char *password)
   ESP.restart ();
 }
 
-void saveApAutoOff (bool enabled)
+bool saveWifiAlwaysOn (bool enabled)
 {
   Preferences preferences;
-  preferences.begin (NVS_NAMESPACE, false);
-  preferences.putBool (NVS_KEY_AP_AUTO_OFF, enabled);
+  if (! preferences.begin (NVS_NAMESPACE, false))
+    return false;
+  bool stored = preferences.putBool (NVS_KEY_ALWAYS_ON, enabled) > 0;
   preferences.end ();
+  if (! stored)
+    return false;
 
-  apAutoOff = enabled;
-  apIdleSinceMs = millis (); // idle time counts from now
+  wifiAlwaysOn = enabled;
+  apIdleSinceMs = millis (); // on disabling, the 5 minutes count from now
+  return true;
 }
 
-bool wifiConfigApAutoOff (void)
+bool wifiConfigAlwaysOn (void)
 {
-  return apAutoOff;
+  return wifiAlwaysOn;
 }
 
 wifi_config_mode_t wifiConfigCurrentMode (void)

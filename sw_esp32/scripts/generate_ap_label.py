@@ -149,7 +149,7 @@ def build_label_image(ssid, password, ip):
     text_y = margin
     draw.text((text_x, text_y), "Larus Sensor WiFi", font=title_font, fill="black")
     text_y += 32
-    draw.text((text_x, text_y), f"SSID: {ssid}", font=text_font, fill="black")
+    draw.text((text_x, text_y), f"SSID / Bluetooth name: {ssid}", font=text_font, fill="black")
     text_y += 24
     draw.text((text_x, text_y), f"Password: {password}", font=text_font, fill="black")
     text_y += 24

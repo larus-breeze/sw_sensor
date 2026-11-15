@@ -158,14 +158,14 @@ point.</p>
 </form>
 <div id="wifiConfigStatus"></div>
 
-<h2>Access point auto-off</h2>
-<p>Switch off the access point after 5 minutes without any connected
-client. Once switched off, a sensor restart is required.</p>
-<form id="apAutoOffForm">
-  <label><input type="checkbox" id="apAutoOffEnabled"> Enabled</label>
+<h2>Bluetooth</h2>
+<p>Sensor switches to Bluetooth serial after 5 minutes without a connected
+WiFi device.</p>
+<form id="wifiAlwaysOnForm">
+  <label><input type="checkbox" id="wifiAlwaysOn"> Keep WiFi on (never switch to Bluetooth)</label>
   <button type="submit">Save</button>
 </form>
-<div id="apAutoOffStatus"></div>
+<div id="wifiAlwaysOnStatus"></div>
 
 <h2>Logging</h2>
 <p>Logging must be stopped to access log files on the SD card.</p>
@@ -303,10 +303,10 @@ async function refreshStatus() {
       wifiSsidField.dataset.prefilled = '1';
     }
     // prefill once, same reasoning as wifiSsidField above
-    const apAutoOffEnabled = document.getElementById('apAutoOffEnabled');
-    if (! apAutoOffEnabled.dataset.prefilled) {
-      apAutoOffEnabled.checked = s.apAutoOff;
-      apAutoOffEnabled.dataset.prefilled = '1';
+    const wifiAlwaysOnField = document.getElementById('wifiAlwaysOn');
+    if (! wifiAlwaysOnField.dataset.prefilled) {
+      wifiAlwaysOnField.checked = s.wifiAlwaysOn;
+      wifiAlwaysOnField.dataset.prefilled = '1';
     }
     document.getElementById('sdCardStatus').textContent = formatSdCardStatus(s);
     document.getElementById('airborneStatus').textContent = s.linkOk ? (s.airborne ? 'yes' : 'no') : 'unreachable';
@@ -863,19 +863,19 @@ document.getElementById('wifiForgetButton').addEventListener('click', async () =
   await saveWifiConfig('', '');
 });
 
-document.getElementById('apAutoOffForm').addEventListener('submit', async (e) => {
+document.getElementById('wifiAlwaysOnForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const apAutoOffStatus = document.getElementById('apAutoOffStatus');
-  const enabled = document.getElementById('apAutoOffEnabled').checked;
+  const statusEl = document.getElementById('wifiAlwaysOnStatus');
+  const enabled = document.getElementById('wifiAlwaysOn').checked;
   try {
     const body = new URLSearchParams({enabled: enabled ? '1' : '0'});
-    const r = await fetch('/wifi/ap_auto_off', { method: 'POST', body });
-    apAutoOffStatus.textContent = r.ok ?
-      (enabled ? 'Saved - access point switches off after 5 min without a connected device.' :
-                 'Saved - access point auto-off disabled.') :
+    const r = await fetch('/wifi/always_on', { method: 'POST', body });
+    statusEl.textContent = r.ok ?
+      (enabled ? 'Saved - WiFi stays on.' :
+                 'Saved - switches to Bluetooth after 5 min without a connected device.') :
       'Save failed: ' + await r.text();
   } catch (e) {
-    apAutoOffStatus.textContent = 'Save failed: ' + e;
+    statusEl.textContent = 'Save failed: ' + e;
   }
 });
 
@@ -956,7 +956,7 @@ static void handleStatus (void)
   json += ",\"wifiMode\":\"" + String (wifiConfigCurrentMode () == WIFI_CONFIG_MODE_STA ? "sta" : "ap") + "\"";
   json += ",\"wifiStaConfigured\":" + String (wifiConfigStaConfigured () ? "true" : "false");
   json += ",\"wifiStaSsid\":\"" + wifiConfigStaSsid () + "\"";
-  json += ",\"apAutoOff\":" + String (wifiConfigApAutoOff () ? "true" : "false");
+  json += ",\"wifiAlwaysOn\":" + String (wifiConfigAlwaysOn () ? "true" : "false");
   json += ",\"wifiIp\":\"" +
           (wifiConfigCurrentMode () == WIFI_CONFIG_MODE_STA ? WiFi.localIP () : WiFi.softAPIP ()).toString () + "\"";
   json += "}";
@@ -1449,8 +1449,8 @@ static void handleWifiConfigSave (void)
   saveWifiConfigAndRestart (ssid.c_str (), password.c_str ()); // never returns
 }
 
-//!< POST /wifi/ap_auto_off: enabled=1/0. Applied immediately, no restart.
-static void handleApAutoOffSave (void)
+//!< POST /wifi/always_on: enabled=1/0. Applied immediately, no restart.
+static void handleWifiAlwaysOnSave (void)
 {
   String arg = server.arg ("enabled");
   if (arg != "0" && arg != "1")
@@ -1458,7 +1458,11 @@ static void handleApAutoOffSave (void)
       server.send (400, "text/plain", "enabled must be 0 or 1");
       return;
     }
-  saveApAutoOff (arg == "1");
+  if (! saveWifiAlwaysOn (arg == "1"))
+    {
+      server.send (500, "text/plain", "could not save setting");
+      return;
+    }
   server.send (200, "text/plain", "ok");
 }
 
@@ -1478,7 +1482,7 @@ void setupWebServer (void)
   server.on ("/update", HTTP_POST, handleFirmwareUploadComplete, handleFirmwareUploadChunk);
   server.on ("/update_esp32", HTTP_POST, handleEsp32UpdateComplete, handleEsp32UpdateChunk);
   server.on ("/wifi/config", HTTP_POST, handleWifiConfigSave);
-  server.on ("/wifi/ap_auto_off", HTTP_POST, handleApAutoOffSave);
+  server.on ("/wifi/always_on", HTTP_POST, handleWifiAlwaysOnSave);
 
   server.begin ();
 }

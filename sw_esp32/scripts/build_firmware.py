@@ -44,13 +44,10 @@ SKETCH_NAME = SKETCH_DIR.name
 DEFAULT_CORE_FQBN = "esp32:esp32:esp32"
 DEFAULT_FLASH_SIZE = "8M"
 # "default" (Default 4MB with spiffs, 1.25 MB app partition) is too small -
-# the compiled sketch was ~1.58 MB with Bluetooth Classic included, which
-# overflowed it ("text section exceeds available space in board"). OTA
-# updatability matters here (unlike a one-off "no OTA" scheme), so instead
-# of dropping OTA support, Bluetooth Classic (BluetoothSerial) was removed
-# from uart_bridge.cpp - WiFi-only for now, see its doc comment - to fit
-# "min_spiffs" (Minimal SPIFFS: 1.9 MB app partition per OTA slot,
-# 190 KB SPIFFS), which keeps the OTA_0/OTA_1 partition pair.
+# the compiled sketch is ~1.77 MB with Bluetooth Classic (esp32 core
+# 3.3.12) ("text section exceeds available space in board"). OTA
+# updatability matters here, so "min_spiffs" (Minimal SPIFFS: 1.9 MB app
+# partition per OTA slot, 190 KB SPIFFS) keeps the OTA_0/OTA_1 pair.
 DEFAULT_PARTITION_SCHEME = "min_spiffs"
 
 OUTPUT_NAME_TEMPLATE = "larus_sensor_esp32_v{}.bin"

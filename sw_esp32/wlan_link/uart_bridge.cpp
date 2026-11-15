@@ -1,9 +1,8 @@
 /** *****************************************************************************
  * @file    uart_bridge.cpp
- * @brief   3x UART <-> WiFi TCP bridge
+ * @brief   3x UART <-> WiFi TCP / Bluetooth Classic bridge
  *
- * Bluetooth Classic support (BluetoothSerial) is temporarily removed - see
- * the doc comment in uart_bridge.h. Assumes WiFi (access point and/or
+ * See the doc comment in uart_bridge.h. Assumes WiFi (access point and/or
  * station, see wifi_config.h) has already been brought up by
  * setupWifi() before setupUartBridge() runs.
  *
@@ -12,6 +11,8 @@
 
 #include "uart_bridge.h"
 #include <WiFi.h>
+#include <BluetoothSerial.h>
+#include <freertos/ringbuf.h>
 
 #define NUM_COM   3
 
@@ -64,6 +65,26 @@ static uint16_t uartToNetLen[NUM_COM];
 
 static uint8_t netToUartBuf[BUFFER_SIZE];
 
+//!< retry interval after a failed SerialBT.begin()
+#define BT_START_RETRY_MS     30000u
+//!< UART -> Bluetooth buffer, drained by btTxTask
+#define BT_TX_RINGBUF_SIZE     4096
+#define BT_TX_TASK_STACK_SIZE  3072
+
+static BluetoothSerial SerialBT;
+static bool btRequested = false;    //!< startBluetoothBridge() was called
+static volatile bool btRunning = false; //!< SerialBT.begin() succeeded
+static unsigned long btLastStartAttemptMs = 0;
+static char btDeviceName[33];
+
+// Static, so creating them can't fail at runtime (heap exhaustion or
+// fragmentation) - only SerialBT.begin() needs a retry.
+static uint8_t btTxRingbufStorage[BT_TX_RINGBUF_SIZE];
+static StaticRingbuffer_t btTxRingbufStruct;
+static RingbufHandle_t btTxRingbuf = nullptr;
+static StackType_t btTxTaskStack[BT_TX_TASK_STACK_SIZE];
+static StaticTask_t btTxTaskTcb;
+
 void setupUartBridge (void)
 {
   COM[0]->begin (UART_BAUD0, SERIAL_PARAM0, SERIAL0_RXPIN, SERIAL0_TXPIN);
@@ -80,8 +101,97 @@ void setupUartBridge (void)
   tcpServer[2]->setNoDelay (true);
 }
 
+//!< SerialBT.write() blocks up to ~1s per packet while a peer doesn't drain
+//!< its data - done here instead of in loop(), so a stalled peer only
+//!< drops Bluetooth data and never delays the UART/RS232 forwarding.
+static void btTxTask (void *)
+{
+  for (;;)
+    {
+      size_t len = 0;
+      uint8_t *data = (uint8_t *) xRingbufferReceiveUpTo (btTxRingbuf, &len, portMAX_DELAY, BUFFER_SIZE);
+      if (data == nullptr)
+        continue;
+      if (btRunning && SerialBT.hasClient ())
+        SerialBT.write (data, len);
+      vRingbufferReturnItem (btTxRingbuf, data);
+    }
+}
+
+static void tryStartBluetooth (void)
+{
+  btLastStartAttemptMs = millis ();
+  btRunning = SerialBT.begin (btDeviceName);
+  if (! btRunning)
+    SerialBT.end (); // release a half-initialized stack before the next attempt
+  Serial.print ("Bluetooth: ");
+  Serial.print (btRunning ? "started as " : "failed to start as ");
+  Serial.println (btDeviceName);
+}
+
+void startBluetoothBridge (const char *deviceName)
+{
+  for (int num = 0; num < NUM_COM; ++num)
+    for (int slot = 0; slot < MAX_NMEA_CLIENTS; ++slot)
+      if (tcpClient[num][slot])
+        tcpClient[num][slot].stop ();
+
+  strncpy (btDeviceName, deviceName, sizeof(btDeviceName) - 1);
+  btDeviceName[sizeof(btDeviceName) - 1] = 0;
+  btRequested = true;
+
+  btTxRingbuf = xRingbufferCreateStatic (BT_TX_RINGBUF_SIZE, RINGBUF_TYPE_BYTEBUF,
+                                         btTxRingbufStorage, &btTxRingbufStruct);
+  xTaskCreateStatic (btTxTask, "bt_tx", BT_TX_TASK_STACK_SIZE, nullptr, 1,
+                     btTxTaskStack, &btTxTaskTcb);
+
+  tryStartBluetooth ();
+}
+
+bool bluetoothBridgeActive (void)
+{
+  return btRequested;
+}
+
+//!< Same data paths as the pre-WLAN-link sketch: Bluetooth -> UARTs, and
+//!< every UART -> Bluetooth.
+static void handleBluetoothBridge (void)
+{
+  if (! btRunning && (millis () - btLastStartAttemptMs >= BT_START_RETRY_MS))
+    tryStartBluetooth ();
+
+  if (btRunning && SerialBT.hasClient ())
+    {
+      uint16_t n = 0;
+      while (SerialBT.available () && (n < BUFFER_SIZE - 1))
+        netToUartBuf[n++] = SerialBT.read ();
+      // not to COM[0], the debug console - see the RS232 echo comment below
+      COM[1]->write (netToUartBuf, n);
+      COM[2]->write (netToUartBuf, n);
+    }
+
+  for (int num = 0; num < NUM_COM; ++num)
+    {
+      if (! COM[num]->available ())
+        continue;
+      uartToNetLen[num] = 0;
+      while (COM[num]->available () && (uartToNetLen[num] < BUFFER_SIZE - 1))
+        uartToNetBuf[num][uartToNetLen[num]++] = COM[num]->read ();
+
+      COM[1]->write (uartToNetBuf[num], uartToNetLen[num]); // echo to RS232 output
+      // non-blocking: if btTxTask is behind (stalled peer), drop this chunk
+      if (btRunning && SerialBT.hasClient ())
+        xRingbufferSend (btTxRingbuf, uartToNetBuf[num], uartToNetLen[num], 0);
+    }
+}
+
 void handleUartBridge (void)
 {
+  if (btRequested)
+    {
+      handleBluetoothBridge ();
+      return;
+    }
   // accept new TCP clients, replacing any disconnected slot
   for (int num = 0; num < NUM_COM; ++num)
     {
