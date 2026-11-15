@@ -443,7 +443,8 @@ configured-but-absent client network deliberately doesn't reset the idle
 timer.
 
 A failed Bluetooth start is retried every 30 s. UART -> Bluetooth data
-goes through a ring buffer drained by its own task (`btTxTask`), so a
+goes through a ring buffer drained by its own task (`btTxTask`, both
+statically allocated, so they can't fail to be created), so a
 peer that stops reading only loses Bluetooth data and never delays the
 RS232 echo.
 

@@ -69,14 +69,21 @@ static uint8_t netToUartBuf[BUFFER_SIZE];
 #define BT_START_RETRY_MS     30000u
 //!< UART -> Bluetooth buffer, drained by btTxTask
 #define BT_TX_RINGBUF_SIZE     4096
+#define BT_TX_TASK_STACK_SIZE  3072
 
 static BluetoothSerial SerialBT;
 static bool btRequested = false;    //!< startBluetoothBridge() was called
 static volatile bool btRunning = false; //!< SerialBT.begin() succeeded
 static unsigned long btLastStartAttemptMs = 0;
 static char btDeviceName[33];
+
+// Static, so creating them can't fail at runtime (heap exhaustion or
+// fragmentation) - only SerialBT.begin() needs a retry.
+static uint8_t btTxRingbufStorage[BT_TX_RINGBUF_SIZE];
+static StaticRingbuffer_t btTxRingbufStruct;
 static RingbufHandle_t btTxRingbuf = nullptr;
-static TaskHandle_t btTxTaskHandle = nullptr;
+static StackType_t btTxTaskStack[BT_TX_TASK_STACK_SIZE];
+static StaticTask_t btTxTaskTcb;
 
 void setupUartBridge (void)
 {
@@ -111,34 +118,15 @@ static void btTxTask (void *)
     }
 }
 
-//!< Brings up whatever is still missing (TX ring buffer, TX task, SPP
-//!< stack); called again every BT_START_RETRY_MS until all of it runs.
 static void tryStartBluetooth (void)
 {
   btLastStartAttemptMs = millis ();
-
-  if (btTxRingbuf == nullptr)
-    btTxRingbuf = xRingbufferCreate (BT_TX_RINGBUF_SIZE, RINGBUF_TYPE_BYTEBUF);
-  if ((btTxRingbuf != nullptr) && (btTxTaskHandle == nullptr))
-    if (xTaskCreate (btTxTask, "bt_tx", 3072, nullptr, 1, &btTxTaskHandle) != pdPASS)
-      btTxTaskHandle = nullptr;
-
+  btRunning = SerialBT.begin (btDeviceName);
   if (! btRunning)
-    {
-      btRunning = SerialBT.begin (btDeviceName);
-      if (! btRunning)
-        SerialBT.end (); // release a half-initialized stack before the next attempt
-    }
-
+    SerialBT.end (); // release a half-initialized stack before the next attempt
   Serial.print ("Bluetooth: ");
   Serial.print (btRunning ? "started as " : "failed to start as ");
-  Serial.print (btDeviceName);
-  Serial.println (btTxTaskHandle != nullptr ? "" : " (no TX task, UART -> Bluetooth unavailable)");
-}
-
-static bool bluetoothFullyUp (void)
-{
-  return btRunning && (btTxTaskHandle != nullptr);
+  Serial.println (btDeviceName);
 }
 
 void startBluetoothBridge (const char *deviceName)
@@ -151,6 +139,12 @@ void startBluetoothBridge (const char *deviceName)
   strncpy (btDeviceName, deviceName, sizeof(btDeviceName) - 1);
   btDeviceName[sizeof(btDeviceName) - 1] = 0;
   btRequested = true;
+
+  btTxRingbuf = xRingbufferCreateStatic (BT_TX_RINGBUF_SIZE, RINGBUF_TYPE_BYTEBUF,
+                                         btTxRingbufStorage, &btTxRingbufStruct);
+  xTaskCreateStatic (btTxTask, "bt_tx", BT_TX_TASK_STACK_SIZE, nullptr, 1,
+                     btTxTaskStack, &btTxTaskTcb);
+
   tryStartBluetooth ();
 }
 
@@ -163,7 +157,7 @@ bool bluetoothBridgeActive (void)
 //!< every UART -> Bluetooth.
 static void handleBluetoothBridge (void)
 {
-  if (! bluetoothFullyUp () && (millis () - btLastStartAttemptMs >= BT_START_RETRY_MS))
+  if (! btRunning && (millis () - btLastStartAttemptMs >= BT_START_RETRY_MS))
     tryStartBluetooth ();
 
   if (btRunning && SerialBT.hasClient ())
@@ -186,7 +180,7 @@ static void handleBluetoothBridge (void)
 
       COM[1]->write (uartToNetBuf[num], uartToNetLen[num]); // echo to RS232 output
       // non-blocking: if btTxTask is behind (stalled peer), drop this chunk
-      if (bluetoothFullyUp () && SerialBT.hasClient ())
+      if (btRunning && SerialBT.hasClient ())
         xRingbufferSend (btTxRingbuf, uartToNetBuf[num], uartToNetLen[num], 0);
     }
 }
