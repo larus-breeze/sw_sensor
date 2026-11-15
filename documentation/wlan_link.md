@@ -53,10 +53,11 @@ app being installed. The SPI protocol below adds its own end-to-end CRC
 check too, so a bad transfer is caught immediately rather than only on the
 next boot.
 
-Once no image on the SD card is newer than the running firmware (i.e. on
-the first boot after a successful install), `read_software_update()`
-deletes all images for this sensor (magic number + hardware version
-match). Not done right after staging: the staging area is erased on every
+Once a complete directory scan finds no image newer than the running
+firmware (i.e. on the first boot after a successful install),
+`read_software_update()` deletes all images for this sensor (magic number +
+hardware version match) whose version is not newer than the running one -
+re-checked per file, as a WLAN upload may add a newer image meanwhile. Not done right after staging: the staging area is erased on every
 boot, so the `.bin` is the only copy left if the copy routine fails.
 
 ## Design decisions

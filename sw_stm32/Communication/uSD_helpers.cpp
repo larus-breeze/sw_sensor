@@ -491,11 +491,18 @@ static bool is_sensor_firmware_image (const uint8_t *header)
       && (file_magic_number == 0x1c8073ab20853579);
 }
 
-//!< Delete all firmware images for this sensor from the SD card.
-//!< Only called once none of them is newer than the running firmware,
-//!< i.e. after the update has actually been installed - deleting right
-//!< after staging would lose the image if the copy routine fails, as the
-//!< staging area is erased on every boot. See documentation/wlan_link.md.
+static uint32_t firmware_image_sw_version (const uint8_t *header)
+{
+  return header[27] | (header[26] << 8) | (header[25] << 16) | (header[24] << 24);
+}
+
+//!< Delete all firmware images for this sensor that are not newer than
+//!< the running firmware. The version is re-checked per file: this runs
+//!< without fatfs_lock(), so a WLAN upload may add a newer image meanwhile.
+//!< Only called after a complete scan found nothing newer, i.e. after the
+//!< update has actually been installed - deleting right after staging
+//!< would lose the image if the copy routine fails, as the staging area is
+//!< erased on every boot. See documentation/wlan_link.md.
 static void delete_installed_firmware_images (void)
 {
   FIL the_file;
@@ -517,7 +524,8 @@ static void delete_installed_firmware_images (void)
 	      fresult = f_read (&the_file, mem_buffer, 32, &bytes_read);
 	      f_close (&the_file);
 	      if ((fresult == FR_OK) && (bytes_read == 32)
-		  && is_sensor_firmware_image (mem_buffer))
+		  && is_sensor_firmware_image (mem_buffer)
+		  && (firmware_image_sw_version (mem_buffer) <= GIT_TAG_DEC))
 		{
 		  image_found = true;
 		  break;
@@ -544,6 +552,7 @@ bool read_software_update (void)
   DIR dj;
 
   uint32_t highest_sw_version_found = 0;
+  bool scan_complete = false;
   char highest_sw_version_fname[_MAX_LFN + 1];
 
   uint32_t flash_address = 0x60000;
@@ -575,8 +584,7 @@ bool read_software_update (void)
 
       if (is_sensor_firmware_image (mem_buffer))
 	{
-	  uint32_t file_sw_version = mem_buffer[27] | (mem_buffer[26] << 8)
-	      | (mem_buffer[25] << 16) | (mem_buffer[24] << 24);
+	  uint32_t file_sw_version = firmware_image_sw_version (mem_buffer);
 	  if (file_sw_version > highest_sw_version_found)
 	    {
 
@@ -590,15 +598,21 @@ bool read_software_update (void)
 	}
 
       fresult = f_findnext (&dj, &fno);
-      if ((fresult != FR_OK) || (fno.fname[0] == 0))
-	break; // now more files found, break loop-
+      if (fresult != FR_OK)
+	break; // enumeration error - highest_sw_version_found may be incomplete
+      if (fno.fname[0] == 0)
+	{
+	  scan_complete = true;
+	  break; // no more files found
+	}
     }
 
 #if DISALLOW_DOWNGRADE
   if (highest_sw_version_found <= GIT_TAG_DEC)
     {
       // Nothing new: the update (if any) is installed, the images are obsolete.
-      if (highest_sw_version_found != 0)
+      // After an enumeration error a newer image may have gone unseen - keep all.
+      if (scan_complete && (highest_sw_version_found != 0))
 	delete_installed_firmware_images ();
       return false;
     }
