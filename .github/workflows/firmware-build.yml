@@ -7,6 +7,7 @@ name: Firmware build
 # forks) with the Arm GNU Toolchain (ci_build.py, settings from .cproject),
 # file names marked "-armgnu". The images are named after the commit, like
 # GIT_COMMIT_HASH in the firmware. Release images come from release-build.yml.
+# The job "Host tests" runs the CTests in sw_stm32/tests/ on the host.
 
 on:
   push:
@@ -155,6 +156,30 @@ jobs:
             sw_stm32/Release/compile.log
             summary.json
             base.json
+
+  host-tests:
+    name: Host tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true # the tests use headers and sources from lib/
+
+      # Every directory sw_stm32/tests/<name>/ with a CMakeLists.txt is a
+      # host test that builds firmware sources against simulated hardware.
+      - name: Build and run
+        run: |
+          status=0
+          for dir in sw_stm32/tests/*/; do
+            [ -f "$dir/CMakeLists.txt" ] || continue
+            name=$(basename "$dir")
+            echo "::group::$name"
+            cmake -S "$dir" -B "build/tests/$name" &&
+              cmake --build "build/tests/$name" &&
+              ctest --test-dir "build/tests/$name" --output-on-failure --verbose || status=1
+            echo "::endgroup::"
+          done
+          exit $status
 
   esp32:
     name: ESP32 (esp32:esp32 ${{ matrix.core }})
