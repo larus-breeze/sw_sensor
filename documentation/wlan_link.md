@@ -53,6 +53,15 @@ app being installed. The SPI protocol below adds its own end-to-end CRC
 check too, so a bad transfer is caught immediately rather than only on the
 next boot.
 
+Once a complete directory scan finds no image newer than the running
+firmware (i.e. on the first boot after a successful install),
+`read_software_update()` deletes all images for this sensor (magic number +
+hardware version match) whose version is not newer than the running one -
+re-checked per file, as a WLAN upload may add a newer image meanwhile.
+The cleanup holds `fatfs_lock()` (bounded wait, skipped if busy) and is
+skipped on builds without a version tag (`GIT_TAG_DEC` = `0xffffffff`). Not done right after staging: the staging area is erased on every
+boot, so the `.bin` is the only copy left if the copy routine fails.
+
 ## Design decisions
 
 * **Reboot after a WLAN-delivered update**: the codebase's existing idiom
