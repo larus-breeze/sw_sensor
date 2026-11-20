@@ -116,7 +116,7 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 
 	coordinates.latitude = (double) (pvt.latitude) * ANGLE_SCALE;
 	coordinates.longitude = (double) (pvt.longitude) * ANGLE_SCALE;
-	coordinates.GNSS_MSL_altitude = (double)(pvt.height) * SCALE_MM;
+	coordinates.GNSS_MSL_altitude = pvt.height * SCALE_MM;
 	coordinates.geo_sep_dm 	= (pvt.height_ellip - pvt.height) * SCALE_CM;
 	coordinates.pDOP = pvt.pDOP;
 
