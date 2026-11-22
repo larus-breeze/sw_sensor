@@ -67,6 +67,7 @@ typedef enum
   WLAN_FRAME_FORMAT_REQUEST          = 0x16, //!< ESP32->STM32, payload: confirmation token (4B)
   WLAN_FRAME_STOP_LOGGING_REQUEST    = 0x17, //!< ESP32->STM32, no payload - see "Logging pause"
   WLAN_FRAME_START_LOGGING_REQUEST   = 0x18, //!< ESP32->STM32, no payload - see "Logging pause"
+  WLAN_FRAME_MICROPHONE_REQUEST      = 0x19, //!< ESP32->STM32, no payload - see "Microphone levels"
 
   WLAN_FRAME_ACK                     = 0x81, //!< STM32->ESP32, payload: sequence number acknowledged (4B)
   WLAN_FRAME_NACK                    = 0x82, //!< STM32->ESP32, payload: sequence number (4B) + reason (1B)
@@ -146,6 +147,25 @@ typedef struct
   uint8_t  gnss_second;
   uint8_t  logging_stopped_sd_full; //!< 0/1 - a new *.lrsx was refused for lack of free space. Appended last: older ESP32 builds reject the longer payload, see documentation/wlan_link.md
 } wlan_link_status_payload_t;
+
+//!< payload of the DATA frame answering a MICROPHONE_REQUEST, the
+//!< latest 250 ms record (microphone_record_t, LRSX MICROPHONE_DATA)
+#define WLAN_LINK_MICROPHONE_BANDS 21
+typedef struct
+{
+  uint8_t  available;         //!< 0: firmware without microphone support, or no record yet
+  uint8_t  state;             //!< 0 firmware without microphone, 1 detecting, 2 present, 3 absent (none detected at start-up)
+  uint8_t  reserved[2];
+  uint32_t record_count;      //!< +1 per record (4 Hz) - tells a new record from a repeated one
+  uint32_t ENL;               //!< IGC ENL 0..999, 1 s window
+  uint32_t status;            //!< bit 0 no signal, bits 16..31 lost DMA blocks
+  float    ENL_band_dBFS;     //!< all levels: 250 ms RMS, dBFS
+  float    broadband_dBFS;
+  float    peak_dBFS;         //!< largest raw sample in 250 ms, 0 = clipping
+  float    band_dBFS[WLAN_LINK_MICROPHONE_BANDS]; //!< third-octave bands 25 Hz .. 2.5 kHz
+} wlan_link_microphone_payload_t;
+
+static_assert (sizeof(wlan_link_microphone_payload_t) == 112, "microphone payload must be 112 bytes on the wire");
 
 typedef struct
 {

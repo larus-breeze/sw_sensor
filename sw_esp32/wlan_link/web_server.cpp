@@ -142,6 +142,7 @@ progress { width: 100%; }
        UART's TCP bridge (uart_bridge.cpp) - static, update here if it
        changes. -->
   <tr><td>NMEA data (TCP)</td><td id="nmeaEndpoint">-</td></tr>
+  <tr><td>Microphone</td><td><a href="/audio">Audio levels</a></td></tr>
 </table>
 
 <h2>WiFi client mode</h2>
@@ -887,6 +888,254 @@ refreshFiles();
 </html>
 )rawliteral";
 
+// Test page for the microphone / ENL prototype, see documentation/microphone_ENL.md.
+// Self-contained: the sensor's access point has no internet.
+static const char AUDIO_HTML[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Larus Audio Levels</title>
+<style>
+:root { --fg: #222; --muted: #666; --grid: #ddd; --track: #eee; --bar: #2a6fb0; --warn: #d9a400; --err: #c02020; --ok: #2c8a3c; --bg: #fff; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg: #e6e6e6; --muted: #9a9a9a; --grid: #3a3a3a; --track: #2a2a2a; --bar: #5b9be0; --bg: #161616; }
+}
+body { font-family: sans-serif; max-width: 640px; margin: 1em auto; padding: 0 1em; color: var(--fg); background: var(--bg); }
+h1 { font-size: 1.3em; margin-bottom: 0.2em; }
+h2 { font-size: 1.05em; margin: 1.4em 0 0.4em; }
+a { color: var(--bar); }
+.status { padding: 0.5em 0.8em; border-radius: 6px; border: 1px solid var(--grid); margin: 0.8em 0; }
+.status.ok { border-color: var(--ok); }
+.status.warn { border-color: var(--warn); background: rgba(217,164,0,0.12); }
+.status.err { border-color: var(--err); background: rgba(192,32,32,0.12); }
+.enl { display: flex; align-items: baseline; gap: 0.6em; }
+.enl-value { font-size: 3em; font-weight: bold; font-variant-numeric: tabular-nums; min-width: 3ch; }
+.enl-label { color: var(--muted); }
+.meter { position: relative; height: 1.4em; background: var(--track); border-radius: 4px; overflow: hidden; }
+.meter-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--bar); transition: width 0.2s; }
+.mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--fg); opacity: 0.5; }
+.mark-labels { position: relative; height: 1.2em; font-size: 0.75em; color: var(--muted); }
+.mark-labels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+table { width: 100%; border-collapse: collapse; }
+td { padding: 0.25em 0.3em; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+td.name { width: 7.5em; white-space: nowrap; }
+td.val { width: 5.5em; text-align: right; white-space: nowrap; }
+td.bar .meter { height: 0.9em; }
+.peak { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--err); }
+.spectrum { display: flex; align-items: stretch; gap: 2px; height: 160px; border-bottom: 1px solid var(--grid); cursor: pointer; }
+.band { position: relative; flex: 1; background: var(--track); min-width: 0; }
+.band.enl { background: rgba(217,164,0,0.18); }
+.band-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: var(--bar); transition: height 0.2s; }
+.band-peak { position: absolute; left: 0; right: 0; height: 2px; background: var(--err); }
+.spectrum-labels { display: flex; gap: 2px; font-size: 0.7em; color: var(--muted); }
+.spectrum-labels span { flex: 1; text-align: center; overflow: visible; white-space: nowrap; }
+canvas { width: 100%; height: 160px; display: block; }
+.legend { font-size: 0.8em; color: var(--muted); }
+.legend b { display: inline-block; width: 1em; height: 0.25em; vertical-align: middle; margin: 0 0.3em 0 0.8em; }
+.small { font-size: 0.85em; color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>Audio levels</h1>
+<div class="small"><a href="/">&larr; Larus Sensor</a> &middot; ICS-43434, 8 kHz, new values every 250 ms</div>
+
+<div id="status" class="status">Waiting for data...</div>
+
+<h2>ENL (IGC engine noise level)</h2>
+<div class="enl"><span id="enlValue" class="enl-value">-</span><span class="enl-label">of 999, 1 s window</span></div>
+<div class="meter" id="enlMeter"><div class="meter-fill" id="enlFill"></div>
+  <div class="mark" style="left:30%"></div><div class="mark" style="left:50%"></div><div class="mark" style="left:70%"></div>
+</div>
+<div class="mark-labels"><span style="left:30%">300 noisy cockpit</span><span style="left:50%">500 fix</span><span style="left:70%">700 engine</span></div>
+
+<h2>Levels (dBFS, 250 ms)</h2>
+<table id="levels"></table>
+<h2>Third-octave spectrum (dBFS, 250 ms RMS)</h2>
+<div class="spectrum" id="spectrum"></div>
+<div class="spectrum-labels" id="spectrumLabels"></div>
+<div class="small">Scale -110 to -10 dBFS (94 dB SPL = -26 dBFS). Red marks: peak hold, reset by clicking the levels or the spectrum.
+Shaded: ENL range 100..200 Hz.</div>
+
+<h2>History (60 s)</h2>
+<canvas id="history" width="600" height="160"></canvas>
+<div class="legend"><b id="lgEnl"></b>ENL (0..999)<b id="lgBb"></b>broadband dBFS (-100..0)</div>
+<div class="small" id="info"></div>
+
+<script>
+const BANDS = ["25", "31.5", "40", "50", "63", "80", "100", "125", "160", "200", "250", "315", "400", "500", "630",
+               "800", "1k", "1.25k", "1.6k", "2k", "2.5k"];
+const ROWS = [["enlBand", "ENL band"], ["broadband", "Broadband"], ["peak", "Peak"]];
+const SPECTRUM_MIN = -110, SPECTRUM_MAX = -10;
+const HISTORY = 240; // 60 s at 4 Hz
+const history = [];
+const peak = {};
+let lastCount = -1, lastRecordTime = 0, recordsSeen = 0, firstRecordTime = 0;
+
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const pct = db => Math.max(0, Math.min(100, db + 100));
+
+const table = document.getElementById("levels");
+for (const [key, name] of ROWS) {
+  const tr = document.createElement("tr");
+  tr.innerHTML = '<td class="name">' + name + '</td><td class="bar"><div class="meter"><div class="meter-fill" id="f_' + key +
+    '"></div><div class="peak" id="p_' + key + '"></div></div></td><td class="val" id="v_' + key + '">-</td>';
+  table.appendChild(tr);
+}
+const spectrum = document.getElementById("spectrum");
+const spectrumLabels = document.getElementById("spectrumLabels");
+BANDS.forEach((b, i) => {
+  const col = document.createElement("div");
+  col.className = "band" + (i >= 6 && i <= 9 ? " enl" : "");
+  col.title = b + " Hz";
+  col.innerHTML = '<div class="band-fill" id="bf_' + i + '"></div><div class="band-peak" id="bp_' + i + '"></div>';
+  spectrum.appendChild(col);
+  const label = document.createElement("span");
+  label.textContent = i % 3 === 1 ? b : "";
+  spectrumLabels.appendChild(label);
+});
+const resetPeaks = () => { for (const k in peak) delete peak[k]; };
+table.addEventListener("click", resetPeaks);
+spectrum.addEventListener("click", resetPeaks);
+
+function setBand(i, db) {
+  const h = v => Math.max(0, Math.min(100, (v - SPECTRUM_MIN) * 100 / (SPECTRUM_MAX - SPECTRUM_MIN)));
+  document.getElementById("bf_" + i).style.height = h(db) + "%";
+  const key = "band" + i;
+  if (!(key in peak) || db > peak[key]) peak[key] = db;
+  document.getElementById("bp_" + i).style.bottom = "calc(" + h(peak[key]) + "% - 1px)";
+  document.getElementById("spectrum").children[i].title = BANDS[i] + " Hz: " + db.toFixed(1) + " dBFS";
+}
+
+function setStatus(cls, text) {
+  const el = document.getElementById("status");
+  el.className = "status " + cls;
+  el.textContent = text;
+}
+
+function setLevel(key, db) {
+  document.getElementById("f_" + key).style.width = pct(db) + "%";
+  document.getElementById("v_" + key).textContent = db.toFixed(1);
+  if (!(key in peak) || db > peak[key]) peak[key] = db;
+  document.getElementById("p_" + key).style.left = "calc(" + pct(peak[key]) + "% - 1px)";
+}
+
+function drawHistory() {
+  const c = document.getElementById("history");
+  const w = c.clientWidth, h = c.clientHeight, dpr = window.devicePixelRatio || 1;
+  if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const g = c.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  g.strokeStyle = css("--grid"); g.lineWidth = 1;
+  for (const f of [0.3, 0.5, 0.7]) { const y = Math.round(h - f * h) + 0.5; g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+  const x = i => w - (history.length - 1 - i) * w / (HISTORY - 1);
+  const line = (color, value) => {
+    g.strokeStyle = color; g.lineWidth = 2; g.beginPath();
+    history.forEach((r, i) => { const y = h - value(r) * h; i ? g.lineTo(x(i), y) : g.moveTo(x(i), y); });
+    g.stroke();
+  };
+  line(css("--muted"), r => pct(r.broadband) / 100);
+  line(css("--bar"), r => r.enl / 999);
+}
+
+function update(d) {
+  if (!d.linkOk) { setStatus("err", "No connection to the sensor (STM32) - retrying..."); return; }
+  if (!d.supported) { setStatus("err", "The STM32 firmware has no microphone support (older version)."); return; }
+  if (d.state === "absent") { setStatus("warn", "No microphone detected at start-up: no ENL is recorded. Hardware without microphone, or check the wiring and restart the sensor."); return; }
+  if (d.state === "detecting") { setStatus("warn", "Detecting the microphone (first seconds after start-up)..."); return; }
+  if (d.state === "none") { setStatus("err", "The STM32 firmware is built without microphone support."); return; }
+  if (!d.available) { setStatus("warn", "No data yet."); return; }
+  if (d.count === lastCount) return;
+  lastCount = d.count;
+  const now = Date.now();
+  if (!firstRecordTime) firstRecordTime = now;
+  recordsSeen++;
+  lastRecordTime = now;
+
+  if (d.noSignal) setStatus("err", "No signal: samples constant - microphone missing or wiring fault (ENL 000).");
+  else setStatus("ok", "Microphone OK" + (d.lostBlocks ? " - " + d.lostBlocks + " DMA blocks lost since start" : ""));
+
+  document.getElementById("enlValue").textContent = String(d.enl).padStart(3, "0");
+  document.getElementById("enlFill").style.width = (d.enl / 9.99) + "%";
+  setLevel("enlBand", d.enlBand);
+  setLevel("broadband", d.broadband);
+  setLevel("peak", d.peak);
+  d.bands.forEach((v, i) => setBand(i, v));
+
+  history.push({ enl: d.enl, broadband: d.broadband });
+  if (history.length > HISTORY) history.shift();
+  drawHistory();
+
+  const rate = recordsSeen > 1 ? (recordsSeen - 1) * 1000 / (now - firstRecordTime) : 0;
+  document.getElementById("info").textContent = "Record #" + d.count + (rate ? ", received " + rate.toFixed(1) + " records/s" : "");
+}
+
+async function poll() {
+  try {
+    const r = await fetch("/microphone", { cache: "no-store" });
+    update(await r.json());
+  } catch (e) {
+    setStatus("err", "No connection to the WiFi module - retrying...");
+  }
+  if (lastRecordTime && Date.now() - lastRecordTime > 3000 && lastCount >= 0)
+    setStatus("warn", "No new values for " + Math.round((Date.now() - lastRecordTime) / 1000) + " s.");
+  setTimeout(poll, 250);
+}
+
+document.getElementById("lgEnl").style.background = css("--bar");
+document.getElementById("lgBb").style.background = css("--muted");
+window.addEventListener("resize", drawHistory);
+poll();
+</script>
+</body>
+</html>
+)rawliteral";
+
+static void handleAudioPage (void)
+{
+  server.send_P (200, "text/html", AUDIO_HTML);
+}
+
+static void handleMicrophone (void)
+{
+  wlan_link_microphone_payload_t mic;
+  bool supported = false;
+  bool ok = wlanLink.microphoneRequest (mic, supported);
+
+  String json = "{\"linkOk\":" + String (ok ? "true" : "false");
+  json += ",\"supported\":" + String (supported ? "true" : "false");
+  json += ",\"available\":" + String (mic.available ? "true" : "false");
+  // older STM32 builds send 0 in this byte, so 0 with data means present
+  static const char *const MIC_STATE[] = { "none", "detecting", "present", "absent" };
+  const char *state = (mic.state < 4) ? MIC_STATE[mic.state] : "none";
+  if ((mic.state == 0) && mic.available)
+    state = "present";
+  json += ",\"state\":\"" + String (supported ? state : "none") + "\"";
+  if (ok && supported && mic.available)
+    {
+      json += ",\"count\":" + String (mic.record_count);
+      json += ",\"enl\":" + String (mic.ENL);
+      json += ",\"noSignal\":" + String ((mic.status & 1) ? "true" : "false");
+      json += ",\"lostBlocks\":" + String (mic.status >> 16);
+      json += ",\"enlBand\":" + String (mic.ENL_band_dBFS, 1);
+      json += ",\"broadband\":" + String (mic.broadband_dBFS, 1);
+      json += ",\"peak\":" + String (mic.peak_dBFS, 1);
+      json += ",\"bands\":[";
+      for (unsigned i = 0; i < WLAN_LINK_MICROPHONE_BANDS; ++i)
+        {
+          if (i)
+            json += ",";
+          json += String (mic.band_dBFS[i], 1);
+        }
+      json += "]";
+    }
+  json += "}";
+  server.sendHeader ("Cache-Control", "no-store");
+  server.send (200, "application/json", json);
+}
+
 static void handleRoot (void)
 {
   // Temporary diagnostic for the Android "page never loads" investigation
@@ -1473,6 +1722,8 @@ void setupWebServer (void)
 
   server.on ("/", HTTP_GET, handleRoot);
   server.on ("/status", HTTP_GET, handleStatus);
+  server.on ("/audio", HTTP_GET, handleAudioPage);
+  server.on ("/microphone", HTTP_GET, handleMicrophone);
   server.on ("/files", HTTP_GET, handleFilesList);
   server.on ("/files/download", HTTP_GET, handleFileDownload);
   server.on ("/files/delete", HTTP_POST, handleFileDelete);

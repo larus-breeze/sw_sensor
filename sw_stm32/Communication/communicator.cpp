@@ -40,6 +40,7 @@
 #include "EEPROM_data_file_implementation.h"
 #include "communicator.h"
 #include "flexible_log_file_implementation.h"
+#include "microphone_driver.h"
 
 COMMON D_GNSS_coordinates_t coordinates;
 #if SUPPORT_D_GNSS_ACCURACY
@@ -400,6 +401,14 @@ communicator_runnable (void*)
 		  break;
 		}
 	    }
+
+#if RUN_MICROPHONE
+	  {
+	    microphone_record_t record;
+	    while( microphone_record_queue.receive( record, 0))
+	      flex_file.append_record ( MICROPHONE_DATA, (uint32_t*) &record, sizeof(record) / sizeof(uint32_t));
+	  }
+#endif
 
 	  { // process event if any
 	    uint32_t event;

@@ -117,6 +117,7 @@ Offset  Field           Size    Note
 | 0x14  | DOWNLOAD_END          | ESP32 -> STM32| none (releases the STM32-side file handle) |
 | 0x15  | DELETE_REQUEST        | ESP32 -> STM32| filename (up to 32 B, NUL-padded) |
 | 0x16  | FORMAT_REQUEST        | ESP32 -> STM32| confirmation token (4 B) |
+| 0x19  | MICROPHONE_REQUEST    | ESP32 -> STM32| none, see "Microphone levels" |
 | 0x81  | ACK                   | STM32 -> ESP32| sequence number being acknowledged (4 B) |
 | 0x82  | NACK                  | STM32 -> ESP32| sequence number + reason code (5 B) |
 | 0x83  | DATA                  | STM32 -> ESP32| payload depends on the request being answered |
@@ -407,6 +408,19 @@ connected" was confirmed, or with mobile data switched off.
 `http://larus.local` additionally needs mDNS (`.local`) support on the
 phone, which not every Android version/browser has - `http://192.168.4.1`
 always works once the WiFi network is used.
+
+## Microphone levels
+
+Test page `/audio` of the web UI for the microphone/ENL prototype
+(documentation/microphone_ENL.md). It polls `/microphone` (JSON) every
+250 ms; each poll is one `MICROPHONE_REQUEST`, answered with the latest
+250 ms record (`wlan_link_microphone_payload_t`: ENL, status, ENL band,
+broadband, peak and third-octave band levels). `available` is 0 when the firmware has
+no microphone (`RUN_MICROPHONE` 0) or no record yet; `state` tells which
+(0 not built, 1 detecting, 2 present, 3 none detected at start-up, see
+documentation/microphone_ENL.md); `record_count` tells
+a new record from a repeated one. An older STM32 build NACKs the frame
+(`NOT_IMPLEMENTED`), which the page reports as "no microphone support".
 
 ## WiFi client mode
 

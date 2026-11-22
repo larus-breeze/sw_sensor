@@ -51,6 +51,7 @@ enum wlan_link_frame_type_t : uint8_t
   WLAN_FRAME_FORMAT_REQUEST          = 0x16,
   WLAN_FRAME_STOP_LOGGING_REQUEST    = 0x17,
   WLAN_FRAME_START_LOGGING_REQUEST   = 0x18,
+  WLAN_FRAME_MICROPHONE_REQUEST      = 0x19,
 
   WLAN_FRAME_ACK                     = 0x81,
   WLAN_FRAME_NACK                    = 0x82,
@@ -127,6 +128,24 @@ typedef struct
   uint8_t  gnss_second;
   uint8_t  logging_stopped_sd_full; // appended last - older STM32 builds omit it, see statusRequest()
 } wlan_link_status_payload_t;
+
+// answer to MICROPHONE_REQUEST, see the STM32-side header
+#define WLAN_LINK_MICROPHONE_BANDS 21
+typedef struct
+{
+  uint8_t  available;
+  uint8_t  state;             //!< 0 firmware without microphone, 1 detecting, 2 present, 3 absent (none detected at start-up)
+  uint8_t  reserved[2];
+  uint32_t record_count;
+  uint32_t ENL;
+  uint32_t status;
+  float    ENL_band_dBFS;
+  float    broadband_dBFS;
+  float    peak_dBFS;         //!< largest raw sample in 250 ms, 0 = clipping
+  float    band_dBFS[WLAN_LINK_MICROPHONE_BANDS]; //!< third-octave bands 25 Hz .. 2.5 kHz
+} wlan_link_microphone_payload_t;
+
+static_assert (sizeof(wlan_link_microphone_payload_t) == 112, "microphone payload must be 112 bytes on the wire");
 
 typedef struct
 {

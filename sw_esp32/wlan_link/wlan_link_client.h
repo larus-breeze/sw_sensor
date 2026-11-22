@@ -80,6 +80,9 @@ public:
 
   bool stopLogging (void);  //!< always ACKs on the STM32 side - see "Logging pause"
   bool startLogging (void);
+  //!< latest microphone record; supportedOut=false for an STM32 build without
+  //!< MICROPHONE_REQUEST (NACK). false: link failure
+  bool microphoneRequest (wlan_link_microphone_payload_t &out, bool &supportedOut);
 
 private:
   spi_device_handle_t spiDevice;

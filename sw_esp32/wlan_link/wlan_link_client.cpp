@@ -839,3 +839,21 @@ bool WlanLinkClient::startLogging (void)
     return false;
   return respHeader.frame_type == WLAN_FRAME_ACK;
 }
+
+bool WlanLinkClient::microphoneRequest (wlan_link_microphone_payload_t &out, bool &supportedOut)
+{
+  uint8_t __attribute__((aligned(4))) respBuf[sizeof(wlan_link_microphone_payload_t) + 4]; // +4: see statusRequest(); aligned(4): see headerBuf's doc comment in exchangeOnce()
+  wlan_link_frame_header_t respHeader;
+  memset (&out, 0, sizeof(out));
+  supportedOut = false;
+  if (! exchangeWithRetry (WLAN_FRAME_MICROPHONE_REQUEST, nextSequenceNo++, nullptr, 0, nullptr,
+                            respBuf, sizeof(respBuf), 4, respHeader, WLAN_LINK_READY_TIMEOUT_MS, true))
+    return false;
+  if (respHeader.frame_type == WLAN_FRAME_NACK)
+    return true; // older STM32 firmware
+  if (! ((respHeader.frame_type == WLAN_FRAME_DATA) && (respHeader.payload_length == sizeof(out))))
+    return false;
+  memcpy (&out, respBuf, sizeof(out));
+  supportedOut = true;
+  return true;
+}

@@ -43,7 +43,7 @@
 #define RUN_MS5611_MODULE 		1
 #define RUN_PITOT_MODULE 		1
 
-#define RUN_MICROPHONE			0
+#define RUN_MICROPHONE			1 // ICS-43434 on I2S3, ENL, see documentation/microphone_ENL.md
 
 #define RUN_CAN_TESTER			0
 
@@ -70,6 +70,8 @@
 #define NMEA_LISTEN_PRIORITY		STANDARD_TASK_PRIORITY + 4
 #define BLUETOOTH_PRIORITY		STANDARD_TASK_PRIORITY + 4
 #define CAN_PRIORITY			STANDARD_TASK_PRIORITY + 4
+// above the watchdog task: keep its load low, see documentation/microphone_ENL.md
+#define MICROPHONE_PRIORITY		STANDARD_TASK_PRIORITY + 4
 #define LOGGER_PRIORITY			STANDARD_TASK_PRIORITY + 3
 #define WLAN_LINK_PRIORITY		STANDARD_TASK_PRIORITY + 3
 
