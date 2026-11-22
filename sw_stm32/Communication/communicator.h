@@ -37,6 +37,8 @@ extern D_GNSS_accuracy_t accuracy;
 extern Queue < magnetometer_data_timed_t> external_magnetometer_data_Q;
 extern Queue <imu_data_timed_t> imu_data_Q;
 extern Queue <value_and_timestamp_t> static_pressure_Q;
+extern reminder_flag GNSS_new_data_ready;
+extern Mutex GNSS_data_guard;
 
 extern state_vector_t state_vector;
 

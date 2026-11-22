@@ -51,6 +51,8 @@ COMMON measurement_data_t observations;
 COMMON Queue < magnetometer_data_timed_t> external_magnetometer_data_Q( 2);
 COMMON Queue <imu_data_timed_t> imu_data_Q(1);
 COMMON Queue <value_and_timestamp_t> static_pressure_Q(2);
+COMMON reminder_flag GNSS_new_data_ready;
+COMMON Mutex GNSS_data_guard;
 
 COMMON state_vector_t state_vector;
 COMMON float32_t supply_voltage;
@@ -127,8 +129,8 @@ static ROM TaskParameters_t usart_3_task_param =
 void
 communicator_runnable (void*)
 {
-  bool have_first_GNSS_fix = false;
   imu_data_timed_t imu_data;
+  input_data_t new_input;
   value_and_timestamp_t new_data;
 
   // wait until configuration file read if one is given
@@ -136,12 +138,12 @@ communicator_runnable (void*)
 
   report_horizon_avalability();
 
-  organizer_t organizer;
-  organizer.initialize_before_measurement ();
+  organizer_t organizer( coordinates, observations);
+  organizer.initialize_before_measurement();
 
   GNSS_configration_t GNSS_configuration =
       (GNSS_configration_t) round ( configuration (GNSS_CONFIGURATION));
-  organizer.set_GNSS_type (GNSS_configuration); // required for speed accuracy monitoring limit value
+  // todo fixme  organizer.set_GNSS_type (GNSS_configuration); // required for speed accuracy monitoring limit value
 
   switch (GNSS_configuration)
     {
@@ -196,8 +198,6 @@ communicator_runnable (void*)
   // now we can switch to our original priority
   communicator_task.set_priority ( COMMUNICATOR_PRIORITY); // lift priority
 
-  organizer.initialize_after_first_measurement (coordinates, observations);
-
   NMEA_task.resume ();
   CAN_task.resume ();
 
@@ -211,8 +211,13 @@ communicator_runnable (void*)
   while (true)
     {
       // wait for DAQ synchronization from IMU
-      bool result = imu_data_Q.receive(imu_data, 15);
+      bool result = imu_data_Q.receive( imu_data, 15);
       ASSERT( result); // we depend on this timing mechanism !
+
+      new_input.type = IMU_DATA;
+      new_input.data = &imu_data;
+      organizer.on_new_information( new_input);
+      flex_file.append_record ( IMU_DATA, imu_data); // this is used to trigger the 100Hz computations
 
       observations.acc  = imu_data.acc; // todo fixme IMU data again
       observations.gyro = imu_data.gyro;
@@ -221,14 +226,13 @@ communicator_runnable (void*)
       while(  static_pressure_Q.receive( new_data, 0))
 	{
 	  observations.static_pressure = new_data.value; // get newest ...
+	  observations.pitot_pressure = pitot_pressure;
 
 	  pressure_data_timed_t pressures;
 	  pressures.absolute_pressure = new_data.value;
+	  pressures.dynamic_pressure = pitot_pressure;
 	  pressures.timestamp = new_data.timestamp;
-	  pressures.dynamic_pressure = pitot_pressure; // just take last measuruemnt
 	  flex_file.append_record ( PRESSURE_DATA, pressures);
-
-	  observations.pitot_pressure = pitot_pressure;
 	}
 
       // pick these values from the global variables
@@ -244,19 +248,18 @@ communicator_runnable (void*)
 	  new_GNSS_data_received.set();
 	  update_system_state_set (GNSS_AVAILABLE);
 
-	  organizer.update_GNSS_data (coordinates);
+	  new_input.type = GNSS_DATA;
+	  new_input.data = &coordinates;
+
+	  bool success = GNSS_data_guard.lock( 2);
+	  ASSERT( success);
+	  organizer.on_new_information( new_input);
+	  GNSS_data_guard.release();
 
 	  if (GNSS_configuration > GNSS_M9N)
 	    update_system_state_set (D_GNSS_AVAILABLE);
 
-	  if ((have_first_GNSS_fix == false)
-	      && ((coordinates.sat_fix_type & 0x03) != SAT_FIX_NONE))
-	    {
-	      have_first_GNSS_fix = true;
-	      organizer.update_magnetic_induction_data (coordinates.latitude,
-							coordinates.longitude);
-	      report_horizon_avalability();
-	    }
+	  report_horizon_avalability();
 
 	  GNSS_watchdog = 0;
 	}
@@ -275,12 +278,13 @@ communicator_runnable (void*)
 	magnetometer_data_timed_t external_magnetometer_data;
 	bool ext_mag_available = external_magnetometer_data_Q.receive(external_magnetometer_data, 0);
 	if( ext_mag_available)
-	  flex_file.append_record ( MAGNETOMETER_DATA, external_magnetometer_data);
-
-	organizer.update_at_100_Hz (observations, ext_mag_available, external_magnetometer_data.induction);
+	  {
+	    new_input.type = MAGNETOMETER_DATA;
+	    new_input.data = &external_magnetometer_data;
+	    organizer.on_new_information( new_input);
+	    flex_file.append_record ( MAGNETOMETER_DATA, external_magnetometer_data);
+	  }
       }
-
-      flex_file.append_record ( IMU_DATA, imu_data); // this is used to trigger the 100Hz computations in the SIL
 
       // service external commands if any ***************************************************************
       communicator_command_t command;
@@ -289,7 +293,8 @@ communicator_runnable (void*)
 	{
 	 signal_logger_event( CAN_COMMAND_RECEIVED | (command << 8));
 
-	 bool significant_configuration_change = organizer.on_command( command, coordinates, observations);
+	 bool significant_configuration_change;
+	 significant_configuration_change = organizer.on_command( command);
 
 	 if( significant_configuration_change)
 	   {
@@ -298,25 +303,11 @@ communicator_runnable (void*)
 	   }
 	}
 
-      bool significant_configuration_change = organizer.manage_attitude_setup_in_progress( coordinates, observations);
-
-      if( significant_configuration_change)
-	{
-	  report_horizon_avalability ();
-	  write_configuration_data_now.set();
-	}
-
       // slow 10Hz update and landing detection *********************************************************
       --synchronizer_10Hz;
       if (synchronizer_10Hz == 0)
 	{
 	  synchronizer_10Hz = 10;
-
-	  bool landing_detected_here = organizer.update_at_10Hz ( coordinates, observations);
-
-	  if (landing_detected_here)
-	      perform_after_landing_actions.set ();
-
 	  trigger_CAN (); // we have new information, deliver it NOW !
 	}
 
@@ -367,7 +358,7 @@ communicator_runnable (void*)
 	  LED_ERROR_Pin,
 	  essential_sensors_available (GNSS_configuration > GNSS_M9N) ? GPIO_PIN_RESET : GPIO_PIN_SET);
 
-      organizer.report_data (state_vector);
+// todo fixme      organizer.report_data (state_vector);
 
       // write log file ********************************************************************************
       if( flex_file.is_open ()) // data logging is active
@@ -458,7 +449,10 @@ communicator_runnable (void*)
 	      }
 	  }
 
-	} // log file write loop ****************************************************************************
+	  if( organizer.landing_has_been_detected())
+	    perform_after_landing_actions.set();
+
+	} // log file write ****************************************************************************
     }     // IMU 100Hz loop
 }         // task runnable
 

@@ -120,7 +120,6 @@ void USART_3_runnable (void *GNSS_type)
 {
   GNSS_configration_t gnss = *(GNSS_configration_t *)GNSS_type;
 
-  TickType_t last_reception_done;
   unsigned buffer_size = 0;
 
   switch( gnss)
@@ -181,8 +180,6 @@ void USART_3_runnable (void *GNSS_type)
       uint32_t pulNotificationValue;
       BaseType_t notify_result = xTaskNotifyWait(
 	  0xffffffff, 0xffffffff, &pulNotificationValue, NEXT_PACKET_DELAY);
-
-      last_reception_done = xTaskGetTickCount();
 
       if (notify_result != pdTRUE)
 	{

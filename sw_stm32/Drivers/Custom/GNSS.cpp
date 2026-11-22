@@ -32,9 +32,7 @@
 #include "signal_flight_event.h"
 #include "communicator.h"
 
-COMMON reminder_flag GNSS_new_data_ready;
 COMMON uint64_t FAT_time; //!< DOS FAT time for file usage
-COMMON Mutex GNSS_data_guard;
 
 #define SCALE_MM 0.001f
 #define SCALE_MM_NEG -0.001f
@@ -43,9 +41,9 @@ COMMON Mutex GNSS_data_guard;
 #define ANGLE_SCALE (double)1e-7
 #define GNSS_PACKET_DELAY_MS 8
 
-void GNSS_data_lock( unsigned function)
+void GNSS_data_lock( unsigned lock_it)
 {
-  if( function)
+  if( lock_it)
     {
       bool success = GNSS_data_guard.lock(2);
       ASSERT( success);
@@ -139,11 +137,11 @@ GNSS_Result GNSS_type::update(const uint8_t * data)
 
 	coordinates.speed_acc = pvt.sAcc * SCALE_MM;
 
-	GNSS_data_guard.release();
-
 	coordinates.velocity[NORTH] = pvt.speed[NORTH] * SCALE_MM;
 	coordinates.velocity[EAST]  = pvt.speed[EAST]  * SCALE_MM;
 	coordinates.velocity[DOWN]  = pvt.speed[DOWN]  * SCALE_MM;
+
+	GNSS_data_guard.release();
 
 	if( (pvt.fix_flags & 1) == 0)
 	  {
