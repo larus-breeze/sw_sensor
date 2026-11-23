@@ -185,6 +185,33 @@ static bool filename_is_safe_relative (const char *name, size_t buffer_size)
   return true;
 }
 
+//!< a file directly in the root directory: also no subdirectory
+static bool filename_is_plain (const char *name, size_t buffer_size)
+{
+  if (! filename_is_safe_relative (name, buffer_size))
+    return false;
+  for (size_t i = 0; i < bounded_strlen (name, buffer_size); ++i)
+    if ((name[i] == '/') || (name[i] == '\\'))
+      return false;
+  return true;
+}
+
+//!< path of a file in logger/ or, for the debug page, in the root directory
+static void make_file_path (char *path, size_t path_size, const char *filename, size_t filename_size, bool root)
+{
+  size_t prefix_len = 0;
+  if (! root)
+    {
+      memcpy (path, "logger/", 7);
+      prefix_len = 7;
+    }
+  size_t name_len = bounded_strlen (filename, filename_size);
+  if (prefix_len + name_len >= path_size)
+    name_len = path_size - 1 - prefix_len;
+  memcpy (path + prefix_len, filename, name_len);
+  path[prefix_len + name_len] = 0;
+}
+
 //!< true if name ends in ".lrsx" (case-insensitive) - used to filter LIST_REQUEST
 static bool filename_has_lrsx_extension (const char *name)
 {
@@ -973,9 +1000,7 @@ static void handle_upload_end (const wlan_link_frame_header_t &header, const uin
   // SD-card-reinsertion (watchdog_handler.cpp) and crash dumps
   // (uSD_helpers.cpp::write_crash_dump()); read_software_update() picks the
   // new file up unconditionally early on the next boot.
-  user_initiated_reset = true;
-  while (true)
-    ; // wake watchdog
+  reset_by_watchdog( "firmware update via WLAN");
 }
 
 static void handle_upload_abort (const wlan_link_frame_header_t &header)
@@ -1015,6 +1040,7 @@ static void end_download_session (void)
 COMMON static DIR list_dir_cache;
 COMMON static uint32_t list_dir_cache_next_index;
 COMMON static bool list_dir_cache_open = false;
+COMMON static bool list_dir_cache_root = false; // which directory the cache is open on
 
 static void invalidate_list_dir_cache (void)
 {
@@ -1025,7 +1051,9 @@ static void invalidate_list_dir_cache (void)
     }
 }
 
-static void handle_list_request (const wlan_link_frame_header_t &header, const uint8_t *payload)
+//!< root: ROOT_LIST_REQUEST, every file in the root directory instead of
+//!< the *.lrsx files in logger/ - see "Debug page", documentation/wlan_link.md
+static void handle_list_request (const wlan_link_frame_header_t &header, const uint8_t *payload, bool root)
 {
   if (! wlan_link_sd_card_available ())
     {
@@ -1044,11 +1072,13 @@ static void handle_list_request (const wlan_link_frame_header_t &header, const u
   wlan_link_list_response_payload_t response;
   memset (&response, 0, sizeof(response));
 
-  bool resuming = list_dir_cache_open && (request->entry_index == list_dir_cache_next_index);
+  bool resuming = list_dir_cache_open && (list_dir_cache_root == root)
+      && (request->entry_index == list_dir_cache_next_index);
   if (! resuming)
     {
       invalidate_list_dir_cache ();
-      list_dir_cache_open = (f_opendir (&list_dir_cache, "logger") == FR_OK);
+      list_dir_cache_open = (f_opendir (&list_dir_cache, root ? "/" : "logger") == FR_OK);
+      list_dir_cache_root = root;
     }
 
   if (list_dir_cache_open)
@@ -1068,7 +1098,13 @@ static void handle_list_request (const wlan_link_frame_header_t &header, const u
 	    }
 	  if ((filinfo.fattrib & AM_DIR) != 0)
 	    continue;
-	  if (! filename_has_lrsx_extension (filinfo.fname))
+	  if (root)
+	    {
+	      // a longer name would not fit the wire format, nor work for download/delete
+	      if (bounded_strlen (filinfo.fname, sizeof(filinfo.fname)) >= sizeof(response.filename))
+		continue;
+	    }
+	  else if (! filename_has_lrsx_extension (filinfo.fname))
 	    continue;
 
 	  if (remaining_to_skip > 0)
@@ -1092,7 +1128,7 @@ static void handle_list_request (const wlan_link_frame_header_t &header, const u
   send_frame (WLAN_FRAME_DATA, header.sequence_no, &response, sizeof(response));
 }
 
-static void handle_download_begin (const wlan_link_frame_header_t &header, const uint8_t *payload)
+static void handle_download_begin (const wlan_link_frame_header_t &header, const uint8_t *payload, bool root)
 {
   if (logging_active) // reading an old file still touches the same non-reentrant FatFs volume - see "Logging pause"
     {
@@ -1106,7 +1142,8 @@ static void handle_download_begin (const wlan_link_frame_header_t &header, const
     }
 
   const wlan_link_download_begin_payload_t *request = (const wlan_link_download_begin_payload_t*) payload;
-  if (! filename_is_safe_relative (request->filename, sizeof(request->filename)))
+  if (! (root ? filename_is_plain (request->filename, sizeof(request->filename))
+	       : filename_is_safe_relative (request->filename, sizeof(request->filename))))
     {
       send_nack (header.sequence_no, WLAN_NACK_BAD_FILENAME);
       return;
@@ -1124,11 +1161,8 @@ static void handle_download_begin (const wlan_link_frame_header_t &header, const
       return;
     }
 
-  char path[8 + WLAN_LINK_MAX_FILENAME + 1] = "logger/";
-  size_t prefix_len = bounded_strlen (path, sizeof(path));
-  size_t name_len = bounded_strlen (request->filename, sizeof(request->filename));
-  memcpy (path + prefix_len, request->filename, name_len);
-  path[prefix_len + name_len] = 0;
+  char path[8 + WLAN_LINK_MAX_FILENAME + 1];
+  make_file_path (path, sizeof(path), request->filename, sizeof(request->filename), root);
 
   FRESULT result = f_open (&download.file, path, FA_READ);
   if (result != FR_OK)
@@ -1327,7 +1361,7 @@ static void handle_start_logging_request (const wlan_link_frame_header_t &header
   send_ack (header.sequence_no);
 }
 
-static void handle_delete_request (const wlan_link_frame_header_t &header, const uint8_t *payload)
+static void handle_delete_request (const wlan_link_frame_header_t &header, const uint8_t *payload, bool root)
 {
   if (logging_active) // Q9: delete shares the update/format logging-active gate
     {
@@ -1341,7 +1375,8 @@ static void handle_delete_request (const wlan_link_frame_header_t &header, const
     }
 
   const wlan_link_filename_payload_t *request = (const wlan_link_filename_payload_t*) payload;
-  if (! filename_is_safe_relative (request->filename, sizeof(request->filename)))
+  if (! (root ? filename_is_plain (request->filename, sizeof(request->filename))
+	       : filename_is_safe_relative (request->filename, sizeof(request->filename))))
     {
       send_nack (header.sequence_no, WLAN_NACK_BAD_FILENAME);
       return;
@@ -1353,14 +1388,11 @@ static void handle_delete_request (const wlan_link_frame_header_t &header, const
       return;
     }
 
-  char path[8 + WLAN_LINK_MAX_FILENAME + 1] = "logger/";
-  size_t prefix_len = bounded_strlen (path, sizeof(path));
-  size_t name_len = bounded_strlen (request->filename, sizeof(request->filename));
-  memcpy (path + prefix_len, request->filename, name_len);
-  path[prefix_len + name_len] = 0;
+  char path[8 + WLAN_LINK_MAX_FILENAME + 1];
+  make_file_path (path, sizeof(path), request->filename, sizeof(request->filename), root);
 
   FRESULT result = f_unlink (path);
-  invalidate_list_dir_cache (); // logger/'s contents just changed - see its doc comment
+  invalidate_list_dir_cache (); // the directory's contents just changed - see its doc comment
   if ((result == FR_OK) && sd_card_has_room_for_logging ())
     logging_stopped_sd_full = false;
   fatfs_unlock ();
@@ -1456,7 +1488,10 @@ static void dispatch_frame (const wlan_link_frame_header_t &header, uint8_t *pay
       handle_status_request (header);
       break;
     case WLAN_FRAME_DELETE_REQUEST:
-      handle_delete_request (header, payload);
+      handle_delete_request (header, payload, false);
+      break;
+    case WLAN_FRAME_ROOT_DELETE_REQUEST:
+      handle_delete_request (header, payload, true);
       break;
     case WLAN_FRAME_FORMAT_REQUEST:
       handle_format_request (header, payload);
@@ -1471,10 +1506,16 @@ static void dispatch_frame (const wlan_link_frame_header_t &header, uint8_t *pay
       handle_microphone_request (header);
       break;
     case WLAN_FRAME_LIST_REQUEST:
-      handle_list_request (header, payload);
+      handle_list_request (header, payload, false);
+      break;
+    case WLAN_FRAME_ROOT_LIST_REQUEST:
+      handle_list_request (header, payload, true);
       break;
     case WLAN_FRAME_DOWNLOAD_BEGIN:
-      handle_download_begin (header, payload);
+      handle_download_begin (header, payload, false);
+      break;
+    case WLAN_FRAME_ROOT_DOWNLOAD_BEGIN:
+      handle_download_begin (header, payload, true);
       break;
     case WLAN_FRAME_DOWNLOAD_CHUNK_REQUEST:
       handle_download_chunk_request (header, payload);

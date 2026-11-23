@@ -85,6 +85,8 @@ bool ensure_EEPROM_parameter_integrity (void) { return true; }
 uint32_t wlan_link_crc32_hw_compute (const uint8_t *, uint32_t) { return 0; }
 bool read_software_update (void) { return false; }
 void write_crash_dump (bool) { abort (); }
+bool crash_report_pending (void) { return false; }
+void write_pending_crash_report (void) {}
 bool write_EEPROM_dump (const char *) { return true; }
 void make_firmware_digest (void) {}
 static unsigned file_number; // stands in for the date and time in the file name

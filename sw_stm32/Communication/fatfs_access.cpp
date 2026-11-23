@@ -25,7 +25,7 @@
 #include "common.h"
 
 // static so only this module touches the raw Mutex - everyone else uses
-// fatfs_lock()/fatfs_unlock()/fatfs_lock_best_effort().
+// fatfs_lock()/fatfs_unlock().
 COMMON static Mutex fatfs_mutex ((char*) "SD_ACCESS");
 
 bool fatfs_lock (unsigned TicksToWait)
@@ -36,17 +36,4 @@ bool fatfs_lock (unsigned TicksToWait)
 void fatfs_unlock (void)
 {
   fatfs_mutex.unlock ();
-}
-
-// Can't wait normally (the crashed task itself might hold it) or skip
-// locking (risks re-entering FatFs mid-mutation) - a bounded attempt is
-// the least-bad compromise. Must exceed WLAN_LINK_HEADER_TIMEOUT_MS so an
-// idle wlan_link_handler_task gets to hand over a session lock it holds
-// (see wlan_link_handler_runnable()), yet stay well inside the WWDG's
-// early-wakeup grace period (watchdog_handler.cpp).
-#define FATFS_ACCESS_CRASH_TIMEOUT_MS  2500u
-
-bool fatfs_lock_best_effort (void)
-{
-  return fatfs_mutex.lock (pdMS_TO_TICKS (FATFS_ACCESS_CRASH_TIMEOUT_MS));
 }

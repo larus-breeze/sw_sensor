@@ -33,6 +33,8 @@
 #include "my_assert.h"
 #include "common.h"
 
+bool crash_report_pending (void); // uSD_helpers.cpp
+
 COMMON volatile uint32_t system_state;
 
 COMMON ADC_HandleTypeDef hadc1;
@@ -99,7 +101,8 @@ extern "C" void MPU_initialization(void)
 #endif
 
 #if configUSE_TRACE_FACILITY == 1
-	vTraceEnable(TRC_START);
+	if ( ! crash_report_pending ()) // otherwise started by write_pending_crash_report()
+	  vTraceEnable(TRC_START);
 #endif
   HAL_Init();
 

@@ -36,7 +36,6 @@
 #define MEASURE_GNSS_REFRESH_TIME	0
 #define ACTIVATE_USB_NMEA		1
 #define CAN_RX_ERROR_REPORT		1
-#define CRASFILE_ON_USER_RESET		1
 
 #define RUN_GNSS			1
 #define RUN_MTi_1_MODULE 		1

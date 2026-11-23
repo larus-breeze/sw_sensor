@@ -228,7 +228,7 @@ bool WlanLinkClient::checkPayloadTrailerCrc32 (const uint8_t *buf, uint32_t payl
 static bool isHighVolumeFrame (uint8_t frameType)
 {
   return (frameType == WLAN_FRAME_UPLOAD_CHUNK) || (frameType == WLAN_FRAME_DOWNLOAD_CHUNK_REQUEST)
-      || (frameType == WLAN_FRAME_LIST_REQUEST);
+      || (frameType == WLAN_FRAME_LIST_REQUEST) || (frameType == WLAN_FRAME_ROOT_LIST_REQUEST);
 }
 
 bool WlanLinkClient::exchangeOnce (uint8_t frameType, uint32_t sequenceNo,
@@ -558,14 +558,14 @@ bool WlanLinkClient::statusRequest (wlan_link_status_payload_t &out)
   return true;
 }
 
-bool WlanLinkClient::listRequest (uint32_t entryIndex, wlan_link_list_response_payload_t &out)
+bool WlanLinkClient::listRequest (uint32_t entryIndex, wlan_link_list_response_payload_t &out, bool root)
 {
   wlan_link_list_request_payload_t req;
   req.entry_index = entryIndex;
 
   uint8_t __attribute__((aligned(4))) respBuf[sizeof(wlan_link_list_response_payload_t) + 4]; // +4: see statusRequest(); aligned(4): see headerBuf's doc comment in exchangeOnce()
   wlan_link_frame_header_t respHeader;
-  if (! exchangeWithRetry (WLAN_FRAME_LIST_REQUEST, nextSequenceNo++, &req, sizeof(req), nullptr,
+  if (! exchangeWithRetry (root ? WLAN_FRAME_ROOT_LIST_REQUEST : WLAN_FRAME_LIST_REQUEST, nextSequenceNo++, &req, sizeof(req), nullptr,
                             respBuf, sizeof(respBuf), 4, respHeader, WLAN_LINK_READY_TIMEOUT_MS, true))
     return false;
   if (! ((respHeader.frame_type == WLAN_FRAME_DATA) && (respHeader.payload_length == sizeof(out))))
@@ -666,7 +666,7 @@ void WlanLinkClient::uploadAbort (void)
   // idle-session-timeout (30s, see wlan_link_handler.cpp) cleans up eventually either way
 }
 
-bool WlanLinkClient::downloadBegin (const char *filename, uint32_t &fileSizeOut, wlan_link_nack_reason_t &nackReasonOut)
+bool WlanLinkClient::downloadBegin (const char *filename, uint32_t &fileSizeOut, wlan_link_nack_reason_t &nackReasonOut, bool root)
 {
   wlan_link_download_begin_payload_t req;
   memset (&req, 0, sizeof(req));
@@ -676,7 +676,7 @@ bool WlanLinkClient::downloadBegin (const char *filename, uint32_t &fileSizeOut,
   uint8_t __attribute__((aligned(4))) respBuf[(sizeof(wlan_link_download_begin_response_payload_t) > sizeof(wlan_link_nack_payload_t)
                   ? sizeof(wlan_link_download_begin_response_payload_t) : sizeof(wlan_link_nack_payload_t)) + 4]; // +4: see statusRequest()
   wlan_link_frame_header_t respHeader;
-  if (! exchangeWithRetry (WLAN_FRAME_DOWNLOAD_BEGIN, nextSequenceNo++, &req, sizeof(req), nullptr,
+  if (! exchangeWithRetry (root ? WLAN_FRAME_ROOT_DOWNLOAD_BEGIN : WLAN_FRAME_DOWNLOAD_BEGIN, nextSequenceNo++, &req, sizeof(req), nullptr,
                             respBuf, sizeof(respBuf), 4, respHeader, WLAN_LINK_READY_TIMEOUT_MS, true))
     return false;
 
@@ -766,7 +766,7 @@ void WlanLinkClient::downloadEnd (void)
                       respBuf, sizeof(respBuf), 4, respHeader, WLAN_LINK_READY_TIMEOUT_MS, true); // best-effort, see uploadAbort()'s comment
 }
 
-bool WlanLinkClient::deleteFile (const char *filename, wlan_link_nack_reason_t &nackReasonOut)
+bool WlanLinkClient::deleteFile (const char *filename, wlan_link_nack_reason_t &nackReasonOut, bool root)
 {
   wlan_link_filename_payload_t req;
   memset (&req, 0, sizeof(req));
@@ -774,7 +774,7 @@ bool WlanLinkClient::deleteFile (const char *filename, wlan_link_nack_reason_t &
 
   uint8_t __attribute__((aligned(4))) respBuf[sizeof(wlan_link_nack_payload_t) + 4]; // +4: see statusRequest(); aligned(4): see headerBuf's doc comment in exchangeOnce()
   wlan_link_frame_header_t respHeader;
-  if (! exchangeWithRetry (WLAN_FRAME_DELETE_REQUEST, nextSequenceNo++, &req, sizeof(req), nullptr,
+  if (! exchangeWithRetry (root ? WLAN_FRAME_ROOT_DELETE_REQUEST : WLAN_FRAME_DELETE_REQUEST, nextSequenceNo++, &req, sizeof(req), nullptr,
                             respBuf, sizeof(respBuf), 4, respHeader, WLAN_LINK_READY_TIMEOUT_MS, true))
     return false;
 

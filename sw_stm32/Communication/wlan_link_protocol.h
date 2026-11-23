@@ -68,6 +68,9 @@ typedef enum
   WLAN_FRAME_STOP_LOGGING_REQUEST    = 0x17, //!< ESP32->STM32, no payload - see "Logging pause"
   WLAN_FRAME_START_LOGGING_REQUEST   = 0x18, //!< ESP32->STM32, no payload - see "Logging pause"
   WLAN_FRAME_MICROPHONE_REQUEST      = 0x19, //!< ESP32->STM32, no payload - see "Microphone levels"
+  WLAN_FRAME_ROOT_LIST_REQUEST       = 0x1A, //!< like LIST_REQUEST, all files in the root directory - see "Debug page"
+  WLAN_FRAME_ROOT_DOWNLOAD_BEGIN     = 0x1B, //!< like DOWNLOAD_BEGIN, a file in the root directory
+  WLAN_FRAME_ROOT_DELETE_REQUEST     = 0x1C, //!< like DELETE_REQUEST, a file in the root directory
 
   WLAN_FRAME_ACK                     = 0x81, //!< STM32->ESP32, payload: sequence number acknowledged (4B)
   WLAN_FRAME_NACK                    = 0x82, //!< STM32->ESP32, payload: sequence number (4B) + reason (1B)

@@ -32,6 +32,28 @@
 /* USER CODE END FirstSection */
 /* Includes ------------------------------------------------------------------*/
 #include "bsp_driver_sd.h"
+#include "FreeRTOS.h"
+#include "task.h"
+
+/* A task preempted between sending the read/write command and reading its
+   response can miss it: once the DMA transfer has finished, the completion
+   interrupt sends CMD12 and clears the command flags, and the HAL then polls
+   for up to SDIO_CMDTIMEOUT (5 s), starving the watchdog. Locking the
+   scheduler for the command phase (some 10 us) closes that window, see
+   documentation/wlan_link.md, "SD card driver". */
+static int sd_command_phase_begin(void)
+{
+  if (xTaskGetSchedulerState() != taskSCHEDULER_RUNNING)
+    return 0;
+  vTaskSuspendAll();
+  return 1;
+}
+
+static void sd_command_phase_end(int locked)
+{
+  if (locked)
+    (void) xTaskResumeAll();
+}
 
 /* Extern variables ---------------------------------------------------------*/
 
@@ -151,10 +173,12 @@ __weak uint8_t BSP_SD_ReadBlocks_DMA(uint32_t *pData, uint32_t ReadAddr, uint32_
   uint8_t sd_state = MSD_OK;
 
   /* Read block(s) in DMA transfer mode */
+  int locked = sd_command_phase_begin();
   if (HAL_SD_ReadBlocks_DMA(&hsd, (uint8_t *)pData, ReadAddr, NumOfBlocks) != HAL_OK)
   {
     sd_state = MSD_ERROR;
   }
+  sd_command_phase_end(locked);
 
   return sd_state;
 }
@@ -174,10 +198,12 @@ __weak uint8_t BSP_SD_WriteBlocks_DMA(uint32_t *pData, uint32_t WriteAddr, uint3
   uint8_t sd_state = MSD_OK;
 
   /* Write block(s) in DMA transfer mode */
+  int locked = sd_command_phase_begin();
   if (HAL_SD_WriteBlocks_DMA(&hsd, (uint8_t *)pData, WriteAddr, NumOfBlocks) != HAL_OK)
   {
     sd_state = MSD_ERROR;
   }
+  sd_command_phase_end(locked);
 
   return sd_state;
 }

@@ -52,6 +52,9 @@ enum wlan_link_frame_type_t : uint8_t
   WLAN_FRAME_STOP_LOGGING_REQUEST    = 0x17,
   WLAN_FRAME_START_LOGGING_REQUEST   = 0x18,
   WLAN_FRAME_MICROPHONE_REQUEST      = 0x19,
+  WLAN_FRAME_ROOT_LIST_REQUEST       = 0x1A,
+  WLAN_FRAME_ROOT_DOWNLOAD_BEGIN     = 0x1B,
+  WLAN_FRAME_ROOT_DELETE_REQUEST     = 0x1C,
 
   WLAN_FRAME_ACK                     = 0x81,
   WLAN_FRAME_NACK                    = 0x82,
