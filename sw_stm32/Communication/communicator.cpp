@@ -143,7 +143,6 @@ communicator_runnable (void*)
 
   GNSS_configuration_t GNSS_configuration =
       (GNSS_configuration_t) round ( configuration (GNSS_CONFIGURATION));
-  // todo fixme  organizer.set_GNSS_type (GNSS_configuration); // required for speed accuracy monitoring limit value
 
   switch (GNSS_configuration)
     {
@@ -192,6 +191,8 @@ communicator_runnable (void*)
 
   GNSS.clear_sat_fix_type ();
   (void)GNSS_new_data_ready.test_and_reset();
+
+  write_configuration_data_now.set(); // initial logging of setup / hw / sw etc.
 
   // the construction-process may be very slow and shall not wake the watchdog
   // now we can switch to our original priority
