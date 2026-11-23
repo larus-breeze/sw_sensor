@@ -258,7 +258,7 @@ GNSS_Result GNSS_type::update_delta_F9x(const uint8_t * data)
 	return res;
 }
 
-GNSS_Result GNSS_type::update_combined ( const uint8_t *data, GNSS_configration_t gnss)
+GNSS_Result GNSS_type::update_combined ( const uint8_t *data, GNSS_configuration_t gnss)
 {
   GNSS_Result res;
 

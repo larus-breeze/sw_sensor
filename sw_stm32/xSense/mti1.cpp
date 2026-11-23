@@ -180,8 +180,8 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == IMU_DRDY)
     {
+	    imu_data.timestamp = get_TOW_privileged();
       MTi_ready.signal_from_ISR ();
-      imu_data.timestamp = get_TOW_privileged();
     }
   else if (GPIO_Pin == WLAN_LINK_HANDSHAKE_Pin)
     wlan_link_cs_edge ();
@@ -296,8 +296,7 @@ restart:
 	goto restart;
 
       readDataFrom_MTI (&IMU_interface, buf);
-      bool result = imu_data_Q.send( imu_data, 3);
-      ASSERT( result); // be sure NOT to have a congestion
+      (void)imu_data_Q.send( imu_data, 3); // send "fire and forget"
     }
 }
 

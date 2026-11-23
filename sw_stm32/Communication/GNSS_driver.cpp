@@ -118,7 +118,7 @@ COMMON uint64_t gnss_min=-1;
 
 void USART_3_runnable (void *GNSS_type)
 {
-  GNSS_configration_t gnss = *(GNSS_configration_t *)GNSS_type;
+  GNSS_configuration_t gnss = *(GNSS_configuration_t *)GNSS_type;
 
   unsigned buffer_size = 0;
 

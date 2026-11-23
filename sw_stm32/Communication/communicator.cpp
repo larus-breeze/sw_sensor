@@ -48,11 +48,11 @@ COMMON D_GNSS_accuracy_t accuracy;
 #endif
 
 COMMON measurement_data_t observations;
-COMMON Queue < magnetometer_data_timed_t> external_magnetometer_data_Q( 2);
-COMMON Queue <imu_data_timed_t> imu_data_Q(1);
-COMMON Queue <value_and_timestamp_t> static_pressure_Q(2);
+COMMON Queue < magnetometer_data_timed_t> external_magnetometer_data_Q( 2,"MAG");
+COMMON Queue <imu_data_timed_t> imu_data_Q(2,"IMU");
+COMMON Queue <value_and_timestamp_t> static_pressure_Q(2,"P_STAT");
 COMMON reminder_flag GNSS_new_data_ready;
-COMMON Mutex GNSS_data_guard;
+COMMON Mutex GNSS_data_guard((char *)"GNSS_GRD");
 
 COMMON state_vector_t state_vector;
 COMMON float32_t supply_voltage;
@@ -76,7 +76,7 @@ COMMON GNSS_type GNSS ( coordinates, accuracy);
 COMMON GNSS_type GNSS ( coordinates);
 #endif
 
-COMMON Queue < communicator_command_t> communicator_command_queue(2);
+COMMON Queue < communicator_command_t> communicator_command_queue(2,"CMD");
 
 extern RestrictedTask NMEA_task;
 extern RestrictedTask communicator_task;
@@ -141,8 +141,8 @@ communicator_runnable (void*)
   organizer_t organizer( coordinates, observations);
   organizer.initialize_before_measurement();
 
-  GNSS_configration_t GNSS_configuration =
-      (GNSS_configration_t) round ( configuration (GNSS_CONFIGURATION));
+  GNSS_configuration_t GNSS_configuration =
+      (GNSS_configuration_t) round ( configuration (GNSS_CONFIGURATION));
   // todo fixme  organizer.set_GNSS_type (GNSS_configuration); // required for speed accuracy monitoring limit value
 
   switch (GNSS_configuration)
@@ -181,8 +181,7 @@ communicator_runnable (void*)
 
   for (int i = 0; i < 100; ++i) // wait 1 s until measurement stable
     {
-      bool result = imu_data_Q.receive(imu_data, 15);
-      ASSERT( result);
+      (void) imu_data_Q.receive(imu_data, 15);
       while( static_pressure_Q.receive( new_data, 0)) // flush
 	  ;
     }
@@ -303,6 +302,8 @@ communicator_runnable (void*)
 	   }
 	}
 
+      organizer.report_data (state_vector);
+
       // slow 10Hz update and landing detection *********************************************************
       --synchronizer_10Hz;
       if (synchronizer_10Hz == 0)
@@ -357,8 +358,6 @@ communicator_runnable (void*)
 	  LED_ERROR_GPIO_Port,
 	  LED_ERROR_Pin,
 	  essential_sensors_available (GNSS_configuration > GNSS_M9N) ? GPIO_PIN_RESET : GPIO_PIN_SET);
-
-// todo fixme      organizer.report_data (state_vector);
 
       // write log file ********************************************************************************
       if( flex_file.is_open ()) // data logging is active
