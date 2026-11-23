@@ -441,7 +441,7 @@ communicator_runnable (void*)
 	    if( flight_event_queue.receive( event_info.event, 0))
 	      {
 		event_info.time_tow = get_TOW();
-		flex_file.append_record ( FLIGHT_EVENT, (uint32_t *)&event_info, sizeof( event_info));
+		flex_file.append_record ( FLIGHT_EVENT, (uint32_t *)&event_info, sizeof( event_info) / sizeof(uint32_t));
 	      }
 	  }
 
