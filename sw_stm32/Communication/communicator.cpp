@@ -193,6 +193,9 @@ communicator_runnable (void*)
   (void)GNSS_new_data_ready.test_and_reset();
 
   write_configuration_data_now.set(); // initial logging of setup / hw / sw etc.
+  uint32_t file_format_version =
+	flexible_log_file_implementation_t::FLEXIBLE_LOG_FILE_FORMAT_VERSION;
+  flex_file.append_record ( FILE_FORMAT_VERSION, file_format_version);
 
   // the construction-process may be very slow and shall not wake the watchdog
   // now we can switch to our original priority
@@ -376,10 +379,6 @@ communicator_runnable (void*)
 	      {
 	      // write all valid EEPROM content packed as one flexible file record
 		  {
-		    uint32_t file_format_version =
-			flexible_log_file_implementation_t::FLEXIBLE_LOG_FILE_FORMAT_VERSION;
-		    flex_file.append_record ( FILE_FORMAT_VERSION, file_format_version);
-
 		    // write hardware, firmware id and FLASH SHA256
 #define DESCRIPTION_SIZE_BYTES (32+sizeof( uint32_t)*4+32)
 		    uint8_t description[DESCRIPTION_SIZE_BYTES];
