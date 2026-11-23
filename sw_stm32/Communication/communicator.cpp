@@ -303,7 +303,15 @@ communicator_runnable (void*)
 	   }
 	}
 
+      // get all output information
       organizer.report_data (state_vector);
+
+      // log changes within the sensor status
+      if ( system_state != old_system_state)
+	    {
+	      flex_file.append_record (SENSOR_STATUS, system_state);
+	      old_system_state = system_state;
+	    }
 
       // slow 10Hz update and landing detection *********************************************************
       --synchronizer_10Hz;
@@ -392,18 +400,7 @@ communicator_runnable (void*)
 		    flash_data_file.import_all_data( permanent_data_file, false);
 		    flex_file.append_record ( EEPROM_FILE, flash_data_copy, flash_data_file.get_size()/sizeof(uint32_t));
 		  }
-
-		  flex_file.append_record (SENSOR_STATUS, system_state);
-		  old_system_state = system_state;
 	      }
-	  else
-	    {
-	      if (system_state != old_system_state)
-		{
-		  flex_file.append_record (SENSOR_STATUS, system_state);
-		  old_system_state = system_state;
-		}
-	    }
 
 	  if ( new_GNSS_data_received.test_and_reset())
 	    {
