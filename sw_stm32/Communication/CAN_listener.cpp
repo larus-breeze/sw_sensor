@@ -224,9 +224,9 @@ void CAN_listener_task_runnable (void*)
 		communicator_command_queue.send (FINE_TUNE_CALIB, 1);
 		break;
 	      case CMD_RESET_SENSOR:
-#if CRASFILE_ON_USER_RESET == 0
-		    user_initiated_reset = true;
-	#endif
+		// intentional: the report written after the reset is a *.REBOOT
+		user_reset_reason = "CAN reset command";
+		user_initiated_reset = true;
 		ASSERT(false); // trigger exception that way
 //		perform_after_landing_actions.set(); // todo patch
 		break;

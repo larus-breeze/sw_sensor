@@ -362,6 +362,13 @@ restart:
 
   sd_card_mounted = true;
 
+  if (crash_report_pending ()) // saved by write_crash_dump() before the last reset
+    {
+      fatfs_lock ();
+      write_pending_crash_report ();
+      fatfs_unlock ();
+    }
+
   // LED on to signal "uSD active"
   HAL_GPIO_WritePin (LED_STATUS1_GPIO_Port, LED_STATUS2_Pin, GPIO_PIN_SET);
 
@@ -371,9 +378,11 @@ restart:
       // watchdog is already armed and the copy routine doesn't feed it.
       // Reset instead; jump_to_pending_flash_update_if_any() picks it up
       // next boot, before the watchdog is armed again.
-      user_initiated_reset = true;
-      while (true)
-	;
+      fatfs_lock ();
+      FIL report_file; // uSD task stack: in RAM, not CCM
+      write_reboot_report ("firmware update from the SD card", report_file);
+      fatfs_unlock ();
+      reset_by_watchdog( "firmware update from the SD card");
       }
 
   // read configuration file if it is present on the SD card
@@ -622,6 +631,15 @@ extern "C" void emergency_write_crashdump( char * file, int line)
 
 COMMON bool watchdog_has_been_triggered = false;
 COMMON bool user_initiated_reset = false;
+COMMON const char * user_reset_reason = 0;
+
+void reset_by_watchdog( const char *reason)
+{
+  user_reset_reason = reason;
+  user_initiated_reset = true;
+  while( true)
+    ; // starve the watchdog task, the WWDG resets the system
+}
 
 //!< helper task to stop everything and launch emergency logging
 void kill_amok_running_task( void *)
@@ -669,6 +687,13 @@ extern "C" void finish_crash_handling( void)
 //!< this function is called if the watchdog has been woken up
 extern "C" void handle_watchdog_trigger( void)
 {
+#if configUSE_TRACE_FACILITY
+  // Freeze the trace ring buffer now: write_crash_dump() only stops it
+  // after the crash handling has run for a while, and by then the events
+  // leading up to the watchdog trigger have been overwritten.
+  vTraceStop();
+#endif
+
   extern void * pxCurrentTCB;
   register_dump.active_TCB = pxCurrentTCB;
 

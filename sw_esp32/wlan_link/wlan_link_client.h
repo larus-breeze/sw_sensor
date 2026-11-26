@@ -63,23 +63,27 @@ public:
   bool waitForLinkReady (uint32_t timeoutMs = WLAN_LINK_READY_TIMEOUT_MS);
 
   bool statusRequest (wlan_link_status_payload_t &out);
-  bool listRequest (uint32_t entryIndex, wlan_link_list_response_payload_t &out);
+  //!< root: every file in the SD card root instead of logger/*.lrsx (debug page)
+  bool listRequest (uint32_t entryIndex, wlan_link_list_response_payload_t &out, bool root = false);
 
   bool uploadBegin (const char *filename, uint32_t totalLength, wlan_link_nack_reason_t &nackReasonOut);
   bool uploadChunk (uint32_t chunkIndex, const uint8_t *data, uint32_t len, wlan_link_nack_reason_t &nackReasonOut);
   bool uploadEnd (uint32_t wholeFileCrc32, wlan_link_nack_reason_t &nackReasonOut);
   void uploadAbort (void);
 
-  bool downloadBegin (const char *filename, uint32_t &fileSizeOut, wlan_link_nack_reason_t &nackReasonOut);
+  bool downloadBegin (const char *filename, uint32_t &fileSizeOut, wlan_link_nack_reason_t &nackReasonOut, bool root = false);
   //!< dataOut must have room for WLAN_LINK_CHUNK_SIZE bytes
   bool downloadChunk (uint32_t chunkIndex, uint8_t *dataOut, uint32_t &validBytesOut, wlan_link_nack_reason_t &nackReasonOut);
   void downloadEnd (void);
 
-  bool deleteFile (const char *filename, wlan_link_nack_reason_t &nackReasonOut);
+  bool deleteFile (const char *filename, wlan_link_nack_reason_t &nackReasonOut, bool root = false);
   bool formatSdCard (wlan_link_nack_reason_t &nackReasonOut);
 
   bool stopLogging (void);  //!< always ACKs on the STM32 side - see "Logging pause"
   bool startLogging (void);
+  //!< latest microphone record; supportedOut=false for an STM32 build without
+  //!< MICROPHONE_REQUEST (NACK). false: link failure
+  bool microphoneRequest (wlan_link_microphone_payload_t &out, bool &supportedOut);
 
 private:
   spi_device_handle_t spiDevice;

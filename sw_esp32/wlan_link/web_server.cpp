@@ -63,7 +63,7 @@ static const char *nackReasonText (wlan_link_nack_reason_t reason)
     case WLAN_NACK_HEADER_CRC:       return "link error (header CRC)";
     case WLAN_NACK_PAYLOAD_CRC:      return "link error (data CRC)";
     case WLAN_NACK_OUT_OF_SEQUENCE:  return "out of sequence";
-    case WLAN_NACK_NO_SD_CARD:       return "no SD card";
+    case WLAN_NACK_NO_SD_CARD:       return "no flash storage";
     case WLAN_NACK_VERSION_REJECTED: return "version rejected";
     case WLAN_NACK_LOGGING_ACTIVE:   return "logging is active - stop logging first";
     case WLAN_NACK_FILE_NOT_FOUND:   return "file not found";
@@ -71,8 +71,8 @@ static const char *nackReasonText (wlan_link_nack_reason_t reason)
     case WLAN_NACK_NOT_IMPLEMENTED:  return "not implemented";
     case WLAN_NACK_INTERNAL_ERROR:   return "internal error on the sensor";
     case WLAN_NACK_BAD_FILENAME:     return "invalid filename";
-    case WLAN_NACK_SD_CARD_BUSY:     return "SD card busy, try again shortly";
-    case WLAN_NACK_SD_CARD_FULL:     return "SD card full - delete old log files first";
+    case WLAN_NACK_SD_CARD_BUSY:     return "flash storage busy, try again shortly";
+    case WLAN_NACK_SD_CARD_FULL:     return "flash storage full - delete old log files first";
     default:                         return NACK_REASON_TEXT_UNKNOWN;
     }
 }
@@ -125,8 +125,8 @@ progress { width: 100%; }
 </div>
 
 <div id="linkErrorBanner" class="banner err">Lost communication with the sensor - retrying...</div>
-<div id="noSdBanner" class="banner err">No SD card detected - insert one to use firmware update or log files.</div>
-<div id="sdFullBanner" class="banner err">Logging stopped - SD card full (less than 5 MB free). Delete old log files or format the card.</div>
+<div id="noSdBanner" class="banner err">No flash storage detected - firmware update and log files are not available.</div>
+<div id="sdFullBanner" class="banner err">Logging stopped - flash storage full (less than 5 MB free). Delete old log files or format the storage.</div>
 <div id="loggingActiveBanner" class="banner warn">Logging is active - stop logging below to manage files.</div>
 <div id="filesTruncatedBanner" class="banner warn">There are more log files than this page can list - showing only the first files found. Delete old ones to see the rest.</div>
 
@@ -134,7 +134,7 @@ progress { width: 100%; }
 <table>
   <tr><td>STM32 firmware</td><td id="stm32Version">-</td></tr>
   <tr><td>ESP32 firmware</td><td id="esp32Version">-</td></tr>
-  <tr><td>SD card</td><td id="sdCardStatus">-</td></tr>
+  <tr><td>Flash storage</td><td id="sdCardStatus">-</td></tr>
   <tr><td>Airborne</td><td id="airborneStatus">-</td></tr>
   <!-- IP is whichever interface is currently active (access point or WiFi
        client, see the WiFi client mode section below) - filled in from
@@ -142,6 +142,7 @@ progress { width: 100%; }
        UART's TCP bridge (uart_bridge.cpp) - static, update here if it
        changes. -->
   <tr><td>NMEA data (TCP)</td><td id="nmeaEndpoint">-</td></tr>
+  <tr><td>Debug</td><td><a href="/debug">Debug data</a></td></tr>
 </table>
 
 <h2>WiFi client mode</h2>
@@ -168,7 +169,7 @@ WiFi device.</p>
 <div id="wifiAlwaysOnStatus"></div>
 
 <h2>Logging</h2>
-<p>Logging must be stopped to access log files on the SD card.</p>
+<p>Logging must be stopped to access log files on the flash storage.</p>
 <button id="stopLoggingButton">Stop logging</button>
 <button id="startLoggingButton" style="display:none">Resume logging</button>
 <span id="loggingStatus"></span>
@@ -233,8 +234,8 @@ WiFi device.</p>
   <button id="filePagerNext">Next &raquo;</button>
 </div>
 
-<h2>SD card</h2>
-<button id="formatButton" class="danger">Format SD card</button>
+<h2>Flash storage</h2>
+<button id="formatButton" class="danger">Format flash storage</button>
 <div id="formatStatus"></div>
 
 <script>
@@ -320,7 +321,7 @@ async function refreshStatus() {
     document.getElementById('loggingStatus').textContent = !s.linkOk ? '' :
       (s.loggingPausedByUser ? 'paused - resumes at takeoff' :
        (s.loggingActive ? 'active' :
-        (s.loggingStoppedSdFull ? 'stopped - SD card full' : 'not active')));
+        (s.loggingStoppedSdFull ? 'stopped - flash storage full' : 'not active')));
     document.getElementById('stopLoggingButton').style.display = (s.linkOk && !s.loggingPausedByUser) ? '' : 'none';
     document.getElementById('startLoggingButton').style.display = (s.linkOk && s.loggingPausedByUser) ? '' : 'none';
     // logging_active, not airborne - see "Logging pause" (documentation/wlan_link.md):
@@ -629,8 +630,8 @@ document.getElementById('formatButton').addEventListener('click', async () => {
     formatStatus.textContent = 'Logging is active - stop logging first.';
     return;
   }
-  if (!confirm('This deletes ALL log files on the SD card. This cannot be undone. Continue?')) return;
-  if (!confirm('Really format the SD card now?')) return;
+  if (!confirm('This deletes ALL log files on the flash storage. This cannot be undone. Continue?')) return;
+  if (!confirm('Really format the flash storage now?')) return;
   formatStatus.textContent = 'Formatting - this can take a while...';
   try {
     const r = await fetch('/format', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: 'confirm=YES_FORMAT' });
@@ -744,7 +745,7 @@ function enoughSdSpaceForUpload(fileSize, status) {
   if (!s || !s.sdTotalBytes) return true;
   const needed = fileSize + UPLOAD_SD_SPACE_MARGIN_BYTES;
   if (s.sdFreeBytes >= needed) return true;
-  status.textContent = 'Not enough free space on the SD card (' + humanSize(s.sdFreeBytes) + ' free, about ' +
+  status.textContent = 'Not enough free space on the flash storage (' + humanSize(s.sdFreeBytes) + ' free, about ' +
     humanSize(needed) + ' needed) - delete old log files first.';
   return false;
 }
@@ -887,6 +888,470 @@ refreshFiles();
 </html>
 )rawliteral";
 
+// Test page for the microphone / ENL prototype, see documentation/microphone_ENL.md.
+// Self-contained: the sensor's access point has no internet.
+static const char AUDIO_HTML[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Larus Audio Levels</title>
+<style>
+:root { --fg: #222; --muted: #666; --grid: #ddd; --track: #eee; --bar: #2a6fb0; --warn: #d9a400; --err: #c02020; --ok: #2c8a3c; --bg: #fff; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg: #e6e6e6; --muted: #9a9a9a; --grid: #3a3a3a; --track: #2a2a2a; --bar: #5b9be0; --bg: #161616; }
+}
+body { font-family: sans-serif; max-width: 640px; margin: 1em auto; padding: 0 1em; color: var(--fg); background: var(--bg); }
+h1 { font-size: 1.3em; margin-bottom: 0.2em; }
+h2 { font-size: 1.05em; margin: 1.4em 0 0.4em; }
+a { color: var(--bar); }
+.status { padding: 0.5em 0.8em; border-radius: 6px; border: 1px solid var(--grid); margin: 0.8em 0; }
+.status.ok { border-color: var(--ok); }
+.status.warn { border-color: var(--warn); background: rgba(217,164,0,0.12); }
+.status.err { border-color: var(--err); background: rgba(192,32,32,0.12); }
+.enl { display: flex; align-items: baseline; gap: 0.6em; }
+.enl-value { font-size: 3em; font-weight: bold; font-variant-numeric: tabular-nums; min-width: 3ch; }
+.enl-label { color: var(--muted); }
+.meter { position: relative; height: 1.4em; background: var(--track); border-radius: 4px; overflow: hidden; }
+.meter-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--bar); transition: width 0.2s; }
+.mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--fg); opacity: 0.5; }
+.mark-labels { position: relative; height: 1.2em; font-size: 0.75em; color: var(--muted); }
+.mark-labels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+table { width: 100%; border-collapse: collapse; }
+td { padding: 0.25em 0.3em; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+td.name { width: 7.5em; white-space: nowrap; }
+td.val { width: 5.5em; text-align: right; white-space: nowrap; }
+td.bar .meter { height: 0.9em; }
+.peak { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--err); }
+.spectrum { display: flex; align-items: stretch; gap: 2px; height: 160px; border-bottom: 1px solid var(--grid); cursor: pointer; }
+.band { position: relative; flex: 1; background: var(--track); min-width: 0; }
+.band.enl { background: rgba(217,164,0,0.18); }
+.band-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: var(--bar); transition: height 0.2s; }
+.band-peak { position: absolute; left: 0; right: 0; height: 2px; background: var(--err); }
+.spectrum-labels { display: flex; gap: 2px; font-size: 0.7em; color: var(--muted); }
+.spectrum-labels span { flex: 1; text-align: center; overflow: visible; white-space: nowrap; }
+canvas { width: 100%; height: 160px; display: block; }
+.legend { font-size: 0.8em; color: var(--muted); }
+.legend b { display: inline-block; width: 1em; height: 0.25em; vertical-align: middle; margin: 0 0.3em 0 0.8em; }
+.small { font-size: 0.85em; color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>Audio levels</h1>
+<div class="small"><a href="/debug">&larr; Debug</a> &middot; ICS-43434, 8 kHz, new values every 250 ms</div>
+
+<div id="status" class="status">Waiting for data...</div>
+
+<h2>ENL (IGC engine noise level)</h2>
+<div class="enl"><span id="enlValue" class="enl-value">-</span><span class="enl-label">of 999, 1 s window</span></div>
+<div class="meter" id="enlMeter"><div class="meter-fill" id="enlFill"></div>
+  <div class="mark" style="left:30%"></div><div class="mark" style="left:50%"></div><div class="mark" style="left:70%"></div>
+</div>
+<div class="mark-labels"><span style="left:30%">300 noisy cockpit</span><span style="left:50%">500 fix</span><span style="left:70%">700 engine</span></div>
+
+<h2>Levels (dBFS, 250 ms)</h2>
+<table id="levels"></table>
+<h2>Third-octave spectrum (dBFS, 250 ms RMS)</h2>
+<div class="spectrum" id="spectrum"></div>
+<div class="spectrum-labels" id="spectrumLabels"></div>
+<div class="small">Scale -110 to -10 dBFS (94 dB SPL = -26 dBFS). Red marks: peak hold, reset by clicking the levels or the spectrum.
+Shaded: ENL range 100..200 Hz.</div>
+
+<h2>History (60 s)</h2>
+<canvas id="history" width="600" height="160"></canvas>
+<div class="legend"><b id="lgEnl"></b>ENL (0..999)<b id="lgBb"></b>broadband dBFS (-100..0)</div>
+<div class="small" id="info"></div>
+
+<script>
+const BANDS = ["25", "31.5", "40", "50", "63", "80", "100", "125", "160", "200", "250", "315", "400", "500", "630",
+               "800", "1k", "1.25k", "1.6k", "2k", "2.5k"];
+const ROWS = [["enlBand", "ENL band"], ["broadband", "Broadband"], ["peak", "Peak"]];
+const SPECTRUM_MIN = -110, SPECTRUM_MAX = -10;
+const HISTORY = 240; // 60 s at 4 Hz
+const history = [];
+const peak = {};
+let lastCount = -1, lastRecordTime = 0, recordsSeen = 0, firstRecordTime = 0;
+
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const pct = db => Math.max(0, Math.min(100, db + 100));
+
+const table = document.getElementById("levels");
+for (const [key, name] of ROWS) {
+  const tr = document.createElement("tr");
+  tr.innerHTML = '<td class="name">' + name + '</td><td class="bar"><div class="meter"><div class="meter-fill" id="f_' + key +
+    '"></div><div class="peak" id="p_' + key + '"></div></div></td><td class="val" id="v_' + key + '">-</td>';
+  table.appendChild(tr);
+}
+const spectrum = document.getElementById("spectrum");
+const spectrumLabels = document.getElementById("spectrumLabels");
+BANDS.forEach((b, i) => {
+  const col = document.createElement("div");
+  col.className = "band" + (i >= 6 && i <= 9 ? " enl" : "");
+  col.title = b + " Hz";
+  col.innerHTML = '<div class="band-fill" id="bf_' + i + '"></div><div class="band-peak" id="bp_' + i + '"></div>';
+  spectrum.appendChild(col);
+  const label = document.createElement("span");
+  label.textContent = i % 3 === 1 ? b : "";
+  spectrumLabels.appendChild(label);
+});
+const resetPeaks = () => { for (const k in peak) delete peak[k]; };
+table.addEventListener("click", resetPeaks);
+spectrum.addEventListener("click", resetPeaks);
+
+function setBand(i, db) {
+  const h = v => Math.max(0, Math.min(100, (v - SPECTRUM_MIN) * 100 / (SPECTRUM_MAX - SPECTRUM_MIN)));
+  document.getElementById("bf_" + i).style.height = h(db) + "%";
+  const key = "band" + i;
+  if (!(key in peak) || db > peak[key]) peak[key] = db;
+  document.getElementById("bp_" + i).style.bottom = "calc(" + h(peak[key]) + "% - 1px)";
+  document.getElementById("spectrum").children[i].title = BANDS[i] + " Hz: " + db.toFixed(1) + " dBFS";
+}
+
+function setStatus(cls, text) {
+  const el = document.getElementById("status");
+  el.className = "status " + cls;
+  el.textContent = text;
+}
+
+function setLevel(key, db) {
+  document.getElementById("f_" + key).style.width = pct(db) + "%";
+  document.getElementById("v_" + key).textContent = db.toFixed(1);
+  if (!(key in peak) || db > peak[key]) peak[key] = db;
+  document.getElementById("p_" + key).style.left = "calc(" + pct(peak[key]) + "% - 1px)";
+}
+
+function drawHistory() {
+  const c = document.getElementById("history");
+  const w = c.clientWidth, h = c.clientHeight, dpr = window.devicePixelRatio || 1;
+  if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const g = c.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  g.strokeStyle = css("--grid"); g.lineWidth = 1;
+  for (const f of [0.3, 0.5, 0.7]) { const y = Math.round(h - f * h) + 0.5; g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+  const x = i => w - (history.length - 1 - i) * w / (HISTORY - 1);
+  const line = (color, value) => {
+    g.strokeStyle = color; g.lineWidth = 2; g.beginPath();
+    history.forEach((r, i) => { const y = h - value(r) * h; i ? g.lineTo(x(i), y) : g.moveTo(x(i), y); });
+    g.stroke();
+  };
+  line(css("--muted"), r => pct(r.broadband) / 100);
+  line(css("--bar"), r => r.enl / 999);
+}
+
+function update(d) {
+  if (!d.linkOk) { setStatus("err", "No connection to the sensor (STM32) - retrying..."); return; }
+  if (!d.supported) { setStatus("err", "The STM32 firmware has no microphone support (older version)."); return; }
+  if (d.state === "absent") { setStatus("warn", "No microphone detected at start-up: no ENL is recorded. Hardware without microphone, or check the wiring and restart the sensor."); return; }
+  if (d.state === "detecting") { setStatus("warn", "Detecting the microphone (first seconds after start-up)..."); return; }
+  if (d.state === "none") { setStatus("err", "The STM32 firmware is built without microphone support."); return; }
+  if (!d.available) { setStatus("warn", "No data yet."); return; }
+  if (d.count === lastCount) return;
+  lastCount = d.count;
+  const now = Date.now();
+  if (!firstRecordTime) firstRecordTime = now;
+  recordsSeen++;
+  lastRecordTime = now;
+
+  if (d.noSignal) setStatus("err", "No signal: samples constant - microphone missing or wiring fault (ENL 000).");
+  else setStatus("ok", "Microphone OK" + (d.lostBlocks ? " - " + d.lostBlocks + " DMA blocks lost after start-up" : ""));
+
+  document.getElementById("enlValue").textContent = String(d.enl).padStart(3, "0");
+  document.getElementById("enlFill").style.width = (d.enl / 9.99) + "%";
+  setLevel("enlBand", d.enlBand);
+  setLevel("broadband", d.broadband);
+  setLevel("peak", d.peak);
+  d.bands.forEach((v, i) => setBand(i, v));
+
+  history.push({ enl: d.enl, broadband: d.broadband });
+  if (history.length > HISTORY) history.shift();
+  drawHistory();
+
+  const rate = recordsSeen > 1 ? (recordsSeen - 1) * 1000 / (now - firstRecordTime) : 0;
+  document.getElementById("info").textContent = "Record #" + d.count + (rate ? ", received " + rate.toFixed(1) + " records/s" : "");
+}
+
+async function poll() {
+  try {
+    const r = await fetch("/microphone", { cache: "no-store" });
+    update(await r.json());
+  } catch (e) {
+    setStatus("err", "No connection to the WiFi module - retrying...");
+  }
+  if (lastRecordTime && Date.now() - lastRecordTime > 3000 && lastCount >= 0)
+    setStatus("warn", "No new values for " + Math.round((Date.now() - lastRecordTime) / 1000) + " s.");
+  setTimeout(poll, 250);
+}
+
+document.getElementById("lgEnl").style.background = css("--bar");
+document.getElementById("lgBb").style.background = css("--muted");
+window.addEventListener("resize", drawHistory);
+poll();
+</script>
+</body>
+</html>
+)rawliteral";
+
+// Debug page: every file in the SD card root (crash dumps, traces,
+// configuration, firmware images), folders are not shown. See
+// documentation/wlan_link.md, "Debug page".
+static const char DEBUG_HTML[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Larus Debug Data</title>
+<style>
+:root { --fg: #222; --muted: #666; --grid: #ddd; --bg: #fff; --link: #2a6fb0; --warn: #d9a400; --err: #c02020; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg: #e6e6e6; --muted: #9a9a9a; --grid: #3a3a3a; --bg: #161616; --link: #5b9be0; }
+}
+body { font-family: sans-serif; max-width: 720px; margin: 1em auto; padding: 0 1em; color: var(--fg); background: var(--bg); }
+h1 { font-size: 1.3em; margin-bottom: 0.2em; }
+h2 { font-size: 1.1em; margin: 1.6em 0 0.3em; }
+a { color: var(--link); }
+.status { padding: 0.5em 0.8em; border-radius: 6px; border: 1px solid var(--grid); margin: 0.8em 0; display: none; }
+.status.warn { border-color: var(--warn); background: rgba(217,164,0,0.12); }
+.status.err { border-color: var(--err); background: rgba(192,32,32,0.12); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 0.6em; align-items: center; margin: 0.8em 0; }
+table { width: 100%; border-collapse: collapse; }
+td, th { text-align: left; padding: 0.3em 0.4em; border-bottom: 1px solid var(--grid); }
+td.size { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.name { overflow-wrap: anywhere; }
+.file-actions { white-space: nowrap; }
+.file-actions button + button { margin-left: 0.8em; }
+button { padding: 0.3em 0.8em; }
+.danger { background: var(--err); color: white; border: none; border-radius: 4px; }
+.small { font-size: 0.85em; color: var(--muted); }
+@media (max-width: 560px) {
+  .mod { display: none; }
+  .file-actions button { padding: 0.3em 0.5em; }
+  .file-actions button + button { margin-left: 0.5em; }
+}
+</style>
+</head>
+<body>
+<h1>Debug data</h1>
+<h2>Files</h2>
+<p class="small">All files in the root directory of the flash storage. Folders (log files in <code>logger/</code>) are not shown. <a href="/">Back</a></p>
+<div id="message" class="status"></div>
+<div id="truncated" class="status warn">There are more files than this page can list - only the first ones are shown, and "Download all" and "Delete all" cover only these. Delete some and refresh to see the rest.</div>
+<div class="toolbar">
+  <button id="refreshButton">Refresh</button>
+  <button id="downloadAllButton">Download all</button>
+  <button id="deleteAllButton" class="danger">Delete all</button>
+  <span id="progress" class="small"></span>
+</div>
+<table>
+  <thead><tr><th>Name</th><th>Size</th><th class="mod">Modified</th><th></th></tr></thead>
+  <tbody id="fileTableBody"><tr><td colspan="4">Loading...</td></tr></tbody>
+</table>
+<h2>Audio levels</h2>
+<p class="small">Live ENL, levels and third-octave spectrum of the microphone: <a href="/audio">Audio levels</a></p>
+<script>
+let files = [];
+let busy = false;
+let blocked = true; // no SD card or logging active
+
+function showMessage(text, kind) {
+  const m = document.getElementById('message');
+  m.textContent = text;
+  m.className = 'status ' + (kind || '');
+  m.style.display = text ? 'block' : 'none';
+}
+
+function humanSize(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1048576).toFixed(1) + ' MB';
+}
+
+// FatFs FILINFO fdate/ftime (DOS encoding)
+function fatDateTime(d, t) {
+  if (!d) return '-';
+  const pad = v => String(v).padStart(2, '0');
+  return (1980 + (d >> 9)) + '-' + pad((d >> 5) & 15) + '-' + pad(d & 31) + ' ' +
+         pad(t >> 11) + ':' + pad((t >> 5) & 63) + ':' + pad((t & 31) * 2);
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function updateButtons() {
+  document.getElementById('refreshButton').disabled = busy;
+  document.getElementById('downloadAllButton').disabled = busy || blocked || !files.length;
+  document.getElementById('deleteAllButton').disabled = busy || blocked || !files.length;
+  document.querySelectorAll('.file-actions button').forEach(b => b.disabled = busy || blocked);
+}
+
+async function checkStatus() {
+  try {
+    const s = await (await fetch('/status', { cache: 'no-store' })).json();
+    if (!s.linkOk) { blocked = true; showMessage('No link to the sensor.', 'err'); }
+    else if (!s.sdCardPresent) { blocked = true; showMessage('No flash storage.', 'err'); }
+    else if (s.loggingActive) { blocked = true; showMessage('Logging is active - stop logging on the main page to use the files.', 'warn'); }
+    else { blocked = false; showMessage(''); }
+  } catch (e) {
+    blocked = true;
+    showMessage('Could not read the sensor status.', 'err');
+  }
+}
+
+async function refreshFiles() {
+  if (busy) return;
+  const body = document.getElementById('fileTableBody');
+  await checkStatus();
+  const truncated = document.getElementById('truncated');
+  if (blocked) {
+    files = [];
+    truncated.style.display = 'none';
+    body.innerHTML = '<tr><td colspan="4">-</td></tr>';
+    updateButtons();
+    return;
+  }
+  body.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+  try {
+    const r = await fetch('/files?root=1', { cache: 'no-store' });
+    if (!r.ok) throw new Error(await r.text());
+    truncated.style.display = r.headers.get('X-Files-Truncated') === 'true' ? 'block' : 'none';
+    files = (await r.json()).sort((a, b) => a.name.localeCompare(b.name));
+  } catch (e) {
+    truncated.style.display = 'none';
+    files = [];
+    showMessage('Could not list the files: ' + e.message, 'err');
+  }
+  body.innerHTML = '';
+  if (!files.length) body.innerHTML = '<tr><td colspan="4">No files</td></tr>';
+  files.forEach((f, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td class="name">' + escapeHtml(f.name) + '</td><td class="size">' + humanSize(f.size) +
+      '</td><td class="mod">' + fatDateTime(f.fatDate, f.fatTime) + '</td><td class="file-actions">' +
+      '<button data-i="' + i + '" data-op="download">Download</button><button data-i="' + i + '" data-op="delete">Delete</button></td>';
+    body.appendChild(tr);
+  });
+  updateButtons();
+}
+
+async function deleteOne(name) {
+  const r = await fetch('/files/delete?root=1', { method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'name=' + encodeURIComponent(name) });
+  if (!r.ok) throw new Error(name + ': ' + await r.text());
+}
+
+// sequential: the sensor holds only one download session at a time
+async function downloadAll() {
+  busy = true; updateButtons();
+  const progress = document.getElementById('progress');
+  try {
+    for (let i = 0; i < files.length; ++i) {
+      const f = files[i];
+      progress.textContent = 'Downloading ' + (i + 1) + '/' + files.length + ': ' + f.name;
+      const r = await fetch('/files/download?root=1&name=' + encodeURIComponent(f.name));
+      if (!r.ok) throw new Error(f.name + ': ' + await r.text());
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = f.name;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+    progress.textContent = 'Downloaded ' + files.length + ' file(s).';
+  } catch (e) {
+    progress.textContent = 'Stopped: ' + e.message;
+  }
+  busy = false; updateButtons();
+}
+
+async function deleteAll() {
+  if (!confirm('Delete all ' + files.length + ' files in the flash storage root?')) return;
+  busy = true; updateButtons();
+  const progress = document.getElementById('progress');
+  let done = 0;
+  try {
+    for (const f of files) {
+      progress.textContent = 'Deleting ' + (done + 1) + '/' + files.length + ': ' + f.name;
+      await deleteOne(f.name);
+      ++done;
+    }
+    progress.textContent = 'Deleted ' + done + ' file(s).';
+  } catch (e) {
+    progress.textContent = 'Stopped after ' + done + ' file(s): ' + e.message;
+  }
+  busy = false;
+  refreshFiles();
+}
+
+document.getElementById('fileTableBody').addEventListener('click', async (ev) => {
+  const b = ev.target.closest('button');
+  if (!b || busy) return;
+  const f = files[+b.dataset.i];
+  if (b.dataset.op === 'download') {
+    window.location.href = '/files/download?root=1&name=' + encodeURIComponent(f.name);
+  } else if (confirm('Delete ' + f.name + '?')) {
+    try { await deleteOne(f.name); } catch (e) { showMessage('Delete failed: ' + e.message, 'err'); }
+    refreshFiles();
+  }
+});
+document.getElementById('refreshButton').addEventListener('click', refreshFiles);
+document.getElementById('downloadAllButton').addEventListener('click', downloadAll);
+document.getElementById('deleteAllButton').addEventListener('click', deleteAll);
+refreshFiles();
+</script>
+</body>
+</html>
+)rawliteral";
+
+static void handleDebugPage (void)
+{
+  server.send_P (200, "text/html", DEBUG_HTML);
+}
+
+static void handleAudioPage (void)
+{
+  server.send_P (200, "text/html", AUDIO_HTML);
+}
+
+static void handleMicrophone (void)
+{
+  wlan_link_microphone_payload_t mic;
+  bool supported = false;
+  bool ok = wlanLink.microphoneRequest (mic, supported);
+
+  String json = "{\"linkOk\":" + String (ok ? "true" : "false");
+  json += ",\"supported\":" + String (supported ? "true" : "false");
+  json += ",\"available\":" + String (mic.available ? "true" : "false");
+  // older STM32 builds send 0 in this byte, so 0 with data means present
+  static const char *const MIC_STATE[] = { "none", "detecting", "present", "absent" };
+  const char *state = (mic.state < 4) ? MIC_STATE[mic.state] : "none";
+  if ((mic.state == 0) && mic.available)
+    state = "present";
+  json += ",\"state\":\"" + String (supported ? state : "none") + "\"";
+  if (ok && supported && mic.available)
+    {
+      json += ",\"count\":" + String (mic.record_count);
+      json += ",\"enl\":" + String (mic.ENL);
+      json += ",\"noSignal\":" + String ((mic.status & 1) ? "true" : "false");
+      json += ",\"lostBlocks\":" + String (mic.status >> 16);
+      json += ",\"enlBand\":" + String (mic.ENL_band_dBFS, 1);
+      json += ",\"broadband\":" + String (mic.broadband_dBFS, 1);
+      json += ",\"peak\":" + String (mic.peak_dBFS, 1);
+      json += ",\"bands\":[";
+      for (unsigned i = 0; i < WLAN_LINK_MICROPHONE_BANDS; ++i)
+        {
+          if (i)
+            json += ",";
+          json += String (mic.band_dBFS[i], 1);
+        }
+      json += "]";
+    }
+  json += "}";
+  server.sendHeader ("Cache-Control", "no-store");
+  server.send (200, "application/json", json);
+}
+
 static void handleRoot (void)
 {
   // Temporary diagnostic for the Android "page never loads" investigation
@@ -964,8 +1429,15 @@ static void handleStatus (void)
   server.send (200, "application/json", json);
 }
 
+//!< ?root=1: the debug page's view of the SD card root instead of logger/
+static bool rootDirRequested (void)
+{
+  return server.hasArg ("root") && (server.arg ("root") == "1");
+}
+
 static void handleFilesList (void)
 {
+  bool root = rootDirRequested ();
   String json = "[";
   bool first = true;
   uint32_t entryCount = 0;
@@ -980,8 +1452,16 @@ static void handleFilesList (void)
   for (uint32_t index = 0; index < WLAN_LINK_MAX_LISTED_FILES; ++index)
     {
       wlan_link_list_response_payload_t entry;
-      if (! wlanLink.listRequest (index, entry))
-        break; // link problem - return what we have so far
+      if (! wlanLink.listRequest (index, entry, root))
+        {
+          if (root && (index == 0))
+            {
+              // also what an STM32 build without ROOT_LIST_REQUEST answers (NACK)
+              server.send (502, "text/plain", "listing failed - STM32 firmware too old, or no link");
+              return;
+            }
+          break; // link problem - return what we have so far
+        }
       if (! entry.has_entry)
         break; // end of the list
       ++entryCount;
@@ -1039,13 +1519,13 @@ static void handleFilesList (void)
 //!< lets the caller abort the download) if the file size changed underneath
 //!< us or the catch-up itself fails - both mean something more fundamental
 //!< than a transient link hiccup.
-static bool resyncDownloadSession (const char *filename, uint32_t expectedFileSize, uint32_t resumeAtChunkIndex)
+static bool resyncDownloadSession (const char *filename, uint32_t expectedFileSize, uint32_t resumeAtChunkIndex, bool root)
 {
   wlanLink.downloadEnd ();
 
   uint32_t freshFileSize = 0;
   wlan_link_nack_reason_t nackReason = WLAN_NACK_INTERNAL_ERROR;
-  if (! wlanLink.downloadBegin (filename, freshFileSize, nackReason))
+  if (! wlanLink.downloadBegin (filename, freshFileSize, nackReason, root))
     return false;
   if (freshFileSize != expectedFileSize)
     return false; // file changed on the SD card mid-download - give up rather than serve a mismatched stream
@@ -1076,10 +1556,11 @@ static void handleFileDownload (void)
       return;
     }
   String name = server.arg ("name");
+  bool root = rootDirRequested ();
 
   uint32_t fileSize = 0;
   wlan_link_nack_reason_t nackReason = WLAN_NACK_INTERNAL_ERROR;
-  if (! wlanLink.downloadBegin (name.c_str (), fileSize, nackReason))
+  if (! wlanLink.downloadBegin (name.c_str (), fileSize, nackReason, root))
     {
       server.send (502, "text/plain", nackReasonText (nackReason));
       return;
@@ -1147,7 +1628,7 @@ static void handleFileDownload (void)
           // the STM32 session and walk it back up to chunkIndex instead of
           // giving up on the whole download.
           ++resyncAttempts;
-          if (resyncDownloadSession (name.c_str (), fileSize, chunkIndex))
+          if (resyncDownloadSession (name.c_str (), fileSize, chunkIndex, root))
             continue; // re-attempt this same chunkIndex now that the STM32 is caught up
         }
 
@@ -1216,7 +1697,7 @@ static void handleFileDelete (void)
   String name = server.arg ("name");
 
   wlan_link_nack_reason_t nackReason = WLAN_NACK_INTERNAL_ERROR;
-  if (wlanLink.deleteFile (name.c_str (), nackReason))
+  if (wlanLink.deleteFile (name.c_str (), nackReason, rootDirRequested ()))
     server.send (200, "text/plain", "deleted");
   else
     server.send (502, "text/plain", nackReasonText (nackReason));
@@ -1473,6 +1954,9 @@ void setupWebServer (void)
 
   server.on ("/", HTTP_GET, handleRoot);
   server.on ("/status", HTTP_GET, handleStatus);
+  server.on ("/audio", HTTP_GET, handleAudioPage);
+  server.on ("/debug", HTTP_GET, handleDebugPage);
+  server.on ("/microphone", HTTP_GET, handleMicrophone);
   server.on ("/files", HTTP_GET, handleFilesList);
   server.on ("/files/download", HTTP_GET, handleFileDownload);
   server.on ("/files/delete", HTTP_POST, handleFileDelete);

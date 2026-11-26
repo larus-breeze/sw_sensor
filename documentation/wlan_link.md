@@ -117,6 +117,10 @@ Offset  Field           Size    Note
 | 0x14  | DOWNLOAD_END          | ESP32 -> STM32| none (releases the STM32-side file handle) |
 | 0x15  | DELETE_REQUEST        | ESP32 -> STM32| filename (up to 32 B, NUL-padded) |
 | 0x16  | FORMAT_REQUEST        | ESP32 -> STM32| confirmation token (4 B) |
+| 0x19  | MICROPHONE_REQUEST    | ESP32 -> STM32| none, see "Microphone levels" |
+| 0x1A  | ROOT_LIST_REQUEST     | ESP32 -> STM32| entry index (4B), as LIST_REQUEST, see "Debug page" |
+| 0x1B  | ROOT_DOWNLOAD_BEGIN   | ESP32 -> STM32| filename (48B), as DOWNLOAD_BEGIN |
+| 0x1C  | ROOT_DELETE_REQUEST   | ESP32 -> STM32| filename (48B), as DELETE_REQUEST |
 | 0x81  | ACK                   | STM32 -> ESP32| sequence number being acknowledged (4 B) |
 | 0x82  | NACK                  | STM32 -> ESP32| sequence number + reason code (5 B) |
 | 0x83  | DATA                  | STM32 -> ESP32| payload depends on the request being answered |
@@ -365,8 +369,9 @@ gated only on "not airborne" since it never touches the SD card), both
 grouped under one "Larus Sensor" device group in anticipation of other
 CAN-connected Larus devices eventually joining the same update mechanism;
 log files section (list sorted by modification date descending, with
-Download/Delete/Download-all, "Format SD card" with its own
-confirmation).
+Download/Delete/Download-all, "Format flash storage" with its own
+confirmation). The page says "flash storage" rather than "SD card":
+future hardware may have a soldered flash chip instead of the card.
 
 ### Android: web UI not reachable after an automatic connection
 
@@ -407,6 +412,36 @@ connected" was confirmed, or with mobile data switched off.
 `http://larus.local` additionally needs mDNS (`.local`) support on the
 phone, which not every Android version/browser has - `http://192.168.4.1`
 always works once the WiFi network is used.
+
+## Microphone levels
+
+Test page `/audio` of the web UI for the microphone/ENL prototype
+(documentation/microphone_ENL.md), linked from the debug page. It polls `/microphone` (JSON) every
+250 ms; each poll is one `MICROPHONE_REQUEST`, answered with the latest
+250 ms record (`wlan_link_microphone_payload_t`: ENL, status, ENL band,
+broadband, peak and third-octave band levels). `available` is 0 when the firmware has
+no microphone (`RUN_MICROPHONE` 0) or no record yet; `state` tells which
+(0 not built, 1 detecting, 2 present, 3 none detected at start-up, see
+documentation/microphone_ENL.md); `record_count` tells
+a new record from a repeated one. An older STM32 build NACKs the frame
+(`NOT_IMPLEMENTED`), which the page reports as "no microphone support".
+
+## Debug page
+
+`http://larus.local/debug` (linked as "Debug data" from the Info table
+of the main page; below the file list it links the microphone page
+`/audio` under "Audio levels")
+lists every file in the root directory of the SD card: crash and reboot
+reports (`*.CRASHDUMP`, `*.REBOOT`, `*.fNN`, trace `*.bin`), the
+configuration file and
+firmware images. Folders are skipped. Each file can be downloaded or
+deleted, and there is "Download all" and "Delete all". It uses `/files`,
+`/files/download` and `/files/delete` with `root=1`, which the ESP32 maps
+to `ROOT_LIST_REQUEST`, `ROOT_DOWNLOAD_BEGIN` and `ROOT_DELETE_REQUEST`.
+These take plain file names only (no `/`); names longer than the 47
+characters of the wire format are not listed. Like the log files, the
+page needs logging stopped. An older STM32 build NACKs the new frames, and
+the page reports that the listing failed.
 
 ## WiFi client mode
 
@@ -512,18 +547,52 @@ both `uSD_handler_task` (flight logging) and `wlan_link_handler_task`
   the lock privately and is the only way to reach FatFs:
   `fatfs_lock()`/`fatfs_unlock()` (unbounded wait for `uSD_handler_task`;
   500ms timeout -> `WLAN_NACK_SD_CARD_BUSY` for `wlan_link_handler_task`,
-  held for a whole session, not per-chunk), and `fatfs_lock_best_effort()`
-  (bounded 2.5s, used only by `write_crash_dump()`, which can't wait
-  unboundedly if the lock's holder is the task that just crashed).
-* Crash dumps vs. WLAN sessions: an upload/download session holds the lock
-  for its whole duration, so `write_crash_dump()` used to time out and
-  race the download prefetch task on FatFs/SDIO — the `*.RESET` /
-  `*.CRASHDUMP` file was then silently missing. `wlan_link_handler_task`
-  now checks `crashfile` once per request (at most every
-  `WLAN_LINK_HEADER_TIMEOUT_MS`), ends any session — releasing the lock —
-  and suspends itself; the 2.5s crash-dump timeout covers that interval.
-  If the WLAN task itself is the one that crashed, the dump falls back to
-  the old unlocked best-effort write.
+  held for a whole session, not per-chunk).
+* Crash dumps: `write_crash_dump()` no longer touches the SD card. It saves
+  the crash information (cause, task, registers, state) in NoInit CCM RAM
+  (`noinit_crash_report`, `STM32F407VGTX_FLASH.ld`) and resets at once. A
+  WLAN session holds the FatFs lock for its whole duration, and writing
+  the dump next to it left empty `*.RESET`/`*.CRASHDUMP` files. After the
+  warm reset, `uSD_handler_task` writes the files right after mounting the
+  card (`write_pending_crash_report()`), together with the trace buffer
+  `myTraceBuffer`, which lives in the same NoInit section. Tracing stays
+  stopped from the crash until then and restarts afterwards. A report
+  carries a firmware ID and a checksum, so random RAM content after a power-on
+  reset or a report from another firmware build is ignored.
+  The files are named after the GNSS time of the crash. Without a fix
+  (a crash shortly after a reset) the time is estimated from the previous
+  report plus the uptime, and the report says so (`Time:` line); with no
+  previous report it is `000000_000000`. A later report with the same time
+  overwrites the earlier one.
+  Intentional resets (firmware update via WLAN or from the SD card, SD
+  card inserted, CAN reset command) go through `reset_by_watchdog()` or set
+  `user_reset_reason` and are written as `*.REBOOT` with a `Reboot:` line
+  naming the reason. `*.CRASHDUMP` is only written for a real fault
+  (exception, failed assertion, watchdog timeout). Firmware before this
+  change named intentional resets `*.CRASHDUMP` and crashes `*.RESET`.
+  A firmware update writes its `*.REBOOT` (text only, no trace) before
+  the reset, as the report in RAM is dropped by the new firmware (other
+  firmware ID). The WLAN path writes it through `upload.file`: a `FIL` on
+  the WLAN task stack would be in CCM RAM, which the SD DMA cannot read
+  (the write hung for 30 s and left an empty file). A report that still waits for the SD card is not
+  overwritten by a later reset: after a crash without a card, the reset
+  on inserting it keeps the crash report.
+
+### SD card driver
+
+`HAL_SD_ReadBlocks_DMA()` starts the DMA and the data path, sends the read
+command and then polls for its response flag. If the calling task is
+preempted for longer than the data transfer (about 1 ms for a 4 KB chunk),
+the DMA completion interrupt runs first: it sends CMD12 and clears all
+command flags, and the HAL polls on for up to `SDIO_CMDTIMEOUT` (5 s) at
+the task's priority. With the download prefetch or WLAN task (above the
+watchdog task) this starved the watchdog and reset the sensor, during long
+downloads and, as the ESP32 retried, in a reset loop. Higher-priority
+tasks such as the microphone task made the preemption more likely.
+`bsp_driver_sd.c` therefore suspends the scheduler for the command phase
+of a read (typically 20-50 us, interrupts stay enabled; the worst case is
+in the comment there). Writes need no lock: `HAL_SD_WriteBlocks_DMA()`
+reads the command response before it starts the DMA.
 
 **Simplifying assumption**: the SD card stays inserted for the whole
 session — `wlan_link_handler_task` degrades reasonably if not (checks

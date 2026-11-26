@@ -33,7 +33,7 @@
 COMMON Semaphore watchdog_activator(1,0,(char *)"WATCH_ACTIVATOR");
 
 static COMMON WWDG_HandleTypeDef WwdgHandle;
-extern bool user_initiated_reset;
+#include "watchdog_handler.h"
 
 bool SD_is_plugged_in( void)
 {
@@ -101,11 +101,7 @@ void watchdog_runnable (void*)
       HAL_WWDG_Refresh (&WwdgHandle);
 
       if( (false == sd_was_plugged) && SD_is_plugged_in())
-	{
-	  user_initiated_reset = true;
-	  while( true)
-	    ; // let the watchdog reset the system
-	}
+	reset_by_watchdog( "SD card inserted");
       sd_was_plugged = SD_is_plugged_in();
 #endif
     }

@@ -37,11 +37,7 @@
 //!< pdMS_TO_TICKS()); default waits forever. Pair with fatfs_unlock().
 bool fatfs_lock (unsigned TicksToWait = INFINITE_WAIT);
 
-//!< Releases what fatfs_lock()/fatfs_lock_best_effort() acquired.
+//!< Releases what fatfs_lock() acquired.
 void fatfs_unlock (void);
-
-//!< For write_crash_dump() only. Bounded-time attempt; caller proceeds
-//!< with its FatFs calls regardless of the result.
-bool fatfs_lock_best_effort (void);
 
 #endif /* FATFS_ACCESS_H_ */

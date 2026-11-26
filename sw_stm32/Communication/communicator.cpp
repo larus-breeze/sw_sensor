@@ -40,6 +40,7 @@
 #include "EEPROM_data_file_implementation.h"
 #include "communicator.h"
 #include "flexible_log_file_implementation.h"
+#include "microphone_driver.h"
 
 COMMON D_GNSS_coordinates_t coordinates;
 #if SUPPORT_D_GNSS_ACCURACY
@@ -318,7 +319,8 @@ communicator_runnable (void*)
       organizer.report_data (state_vector);
 
       // write log file ********************************************************************************
-      if( flex_file.is_open ()) // data logging is active
+      bool logging = flex_file.is_open ();
+      if( logging) // data logging is active
 	{
 	  bool write_configuration = write_configuration_data_now.test_and_reset();
 	  if( write_configuration) // need to write the EEPROM content
@@ -408,6 +410,15 @@ communicator_runnable (void*)
 	  }
 
 	} // log file write loop ****************************************************************************
+
+#if RUN_MICROPHONE
+      { // drained also without a log file: old records must not end up in the next one
+	microphone_record_t record;
+	while( microphone_record_queue.receive( record, 0))
+	  if( logging) // not before the header records of a file opened meanwhile
+	    flex_file.append_record ( MICROPHONE_DATA, (uint32_t*) &record, sizeof(record) / sizeof(uint32_t));
+      }
+#endif
     }     // IMU 100Hz loop
 }         // task runnable
 

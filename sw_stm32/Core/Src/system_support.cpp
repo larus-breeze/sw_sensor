@@ -26,10 +26,14 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "my_assert.h"
+#include <string.h>
 
 #if configUSE_TRACE_FACILITY == 1
 #include "trcConfig.h"
-PRIVILEGED_DATA RecorderDataType myTraceBuffer;
+// NoInit (STM32F407VGTX_FLASH.ld): keeps the trace of a crash across the
+// reset until write_pending_crash_report() has stored it
+RecorderDataType myTraceBuffer __attribute__((section("noinit_crash_report")));
+bool crash_report_pending (void);
 #endif
 
 extern uint32_t _s_system_ram[]; // provided by linker description file
@@ -54,7 +58,13 @@ extern "C" void initialize_RTOS_memory(void)
 
 #if configUSE_TRACE_FACILITY == 1
   vTraceSetRecorderDataBuffer(&myTraceBuffer);
-  vTraceEnable(TRC_INIT);
+  if (crash_report_pending ())
+    vTraceInitObjectHandleStack (); // recording resumes once the crash trace is stored
+  else
+    {
+      memset (&myTraceBuffer, 0, sizeof(myTraceBuffer));
+      vTraceEnable(TRC_INIT);
+    }
 #endif
 }
 

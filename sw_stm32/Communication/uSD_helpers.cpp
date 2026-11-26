@@ -38,6 +38,11 @@
 #include "uSD_helpers.h"
 #include "fatfs_access.h"
 #include "uSD_handler.h"
+#include "emergency.h"
+#include "watchdog_handler.h"
+#include "git-commit-version.h"
+#include <stddef.h>
+#include <string.h>
 
 COMMON char *crashfile;
 COMMON unsigned crashline;
@@ -77,192 +82,383 @@ char * format_date_time( char * target, const D_GNSS_coordinates_t &coordinates)
 
 extern RestrictedTask uSD_handler_task; // will come downwards ...
 
-//!< write crash dump file and force MPU reset via watchdog
-void write_crash_dump( bool is_crash)
+//!< Crash information that survives the reset: it is written to the SD
+//!< card after the restart, see documentation/wlan_link.md, "Crash dumps".
+//!< Byte arrays, not the original types: a constructor run at start-up
+//!< would overwrite the saved data.
+typedef struct
+{
+  uint32_t magic;
+  uint32_t firmware_id;
+  uint32_t user_initiated; // intentional reset: *.REBOOT, else *.CRASHDUMP
+  char reason[40];         // of an intentional reset
+  uint32_t line;
+  char file[48];
+  char task[configMAX_TASK_NAME_LEN];
+  register_dump_t registers;
+  uint32_t fpu[32];
+  uint32_t system_state;
+  uint32_t coordinates[(sizeof(D_GNSS_coordinates_t) + 3) / 4];
+  uint32_t observations[(sizeof(measurement_data_t) + 3) / 4];
+  uint32_t state_vector[(sizeof(state_vector_t) + 3) / 4];
+  uint32_t time;        // seconds since 1970, names the files
+  uint32_t time_source; // crash_time_source_t
+  uint32_t checksum; // last
+} crash_report_t;
+
+typedef enum { TIME_UNKNOWN, TIME_GNSS, TIME_ESTIMATED } crash_time_source_t;
+
+//!< Time of the last report, to date a crash that follows it before the
+//!< next GNSS fix (e.g. while the report of the first crash is written)
+typedef struct
+{
+  uint32_t magic;
+  uint32_t time;
+  uint32_t reset_count;
+  uint32_t checksum; // last
+} last_crash_time_t;
+
+#define CRASH_REPORT_MAGIC 0x43524153u
+
+// NoInit (STM32F407VGTX_FLASH.ld): not zeroed by the start-up code
+static crash_report_t crash_report __attribute__((section("noinit_crash_report")));
+static last_crash_time_t last_crash_time __attribute__((section("noinit_crash_report")));
+
+static uint32_t fnv1a (const void *data, size_t size, uint32_t hash = 2166136261u)
+{
+  const uint8_t *p = (const uint8_t *) data;
+  while (size--)
+    hash = (hash ^ *p++) * 16777619u;
+  return hash;
+}
+
+// a report from another firmware build has a different layout
+static uint32_t firmware_id (void)
+{
+  return GIT_TAG_DEC ^ fnv1a (GIT_COMMIT_HASH, sizeof(GIT_COMMIT_HASH) - 1);
+}
+
+static uint32_t crash_report_checksum (void)
+{
+  return fnv1a (&crash_report, offsetof(crash_report_t, checksum));
+}
+
+// days since 1970-01-01 (H. Hinnant, "chrono-Compatible Low-Level Date Algorithms")
+static int32_t days_from_civil (int32_t y, uint32_t m, uint32_t d)
+{
+  y -= m <= 2;
+  const int32_t era = (y >= 0 ? y : y - 399) / 400;
+  const uint32_t yoe = (uint32_t) (y - era * 400);
+  const uint32_t doy = (153 * (m > 2 ? m - 3 : m + 9) + 2) / 5 + d - 1;
+  const uint32_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+  return era * 146097 + (int32_t) doe - 719468;
+}
+
+static void civil_from_days (int32_t z, int32_t &y, uint32_t &m, uint32_t &d)
+{
+  z += 719468;
+  const int32_t era = (z >= 0 ? z : z - 146096) / 146097;
+  const uint32_t doe = (uint32_t) (z - era * 146097);
+  const uint32_t yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+  const uint32_t doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+  const uint32_t mp = (5 * doy + 2) / 153;
+  d = doy - (153 * mp + 2) / 5 + 1;
+  m = mp < 10 ? mp + 3 : mp - 9;
+  y = (int32_t) yoe + era * 400 + (m <= 2);
+}
+
+//!< YYMMDD_HHMMSS like format_date_time(), from seconds since 1970
+static char * format_time (char * target, uint32_t time)
+{
+  int32_t y;
+  uint32_t m, d;
+  civil_from_days ((int32_t) (time / 86400), y, m, d);
+  uint32_t s = time % 86400;
+  format_2_digits( target, (uint8_t) (y % 100));
+  format_2_digits( target, (uint8_t) m);
+  format_2_digits( target, (uint8_t) d);
+  *target ++ = '_';
+  format_2_digits( target, (uint8_t) (s / 3600));
+  format_2_digits( target, (uint8_t) (s / 60 % 60));
+  format_2_digits( target, (uint8_t) (s % 60));
+  *target=0;
+  return target;
+}
+
+//!< Report time from GNSS. Without a fix (shortly after a reset) it is
+//!< estimated from the previous report plus the uptime, if that report was
+//!< made in the boot right before this one.
+static uint32_t date_report (uint32_t &time_source)
+{
+  time_source = TIME_UNKNOWN;
+  uint32_t time = 0;
+
+  if ((coordinates.sat_fix_type & SAT_FIX) && (coordinates.year != 0))
+    {
+      time = (uint32_t) days_from_civil (2000 + coordinates.year, coordinates.month, coordinates.day) * 86400
+	  + coordinates.hour * 3600 + coordinates.minute * 60 + coordinates.second;
+      time_source = TIME_GNSS;
+    }
+  else if ((last_crash_time.magic == CRASH_REPORT_MAGIC)
+      && (last_crash_time.checksum == fnv1a (&last_crash_time, offsetof(last_crash_time_t, checksum)))
+      && (reset_count - last_crash_time.reset_count <= 1))
+    {
+      // +1 s: never the same file name as the previous report
+      time = last_crash_time.time + 1 + xTaskGetTickCount () / configTICK_RATE_HZ;
+      time_source = TIME_ESTIMATED;
+    }
+
+  if (time_source != TIME_UNKNOWN)
+    {
+      last_crash_time.magic = CRASH_REPORT_MAGIC;
+      last_crash_time.time = time;
+      last_crash_time.reset_count = reset_count;
+      last_crash_time.checksum = fnv1a (&last_crash_time, offsetof(last_crash_time_t, checksum));
+    }
+  return time;
+}
+
+bool crash_report_pending (void)
+{
+  return (crash_report.magic == CRASH_REPORT_MAGIC)
+      && (crash_report.firmware_id == firmware_id ())
+      && (crash_report.checksum == crash_report_checksum ());
+}
+
+static void save_crash_report (bool user_initiated)
+{
+  crash_report.magic = 0;
+  crash_report.firmware_id = firmware_id ();
+  crash_report.user_initiated = user_initiated;
+  crash_report.line = crashline;
+
+  const char *reason = (user_initiated && user_reset_reason) ? user_reset_reason : "";
+  unsigned i = 0;
+  for (; (i < sizeof(crash_report.reason) - 1) && reason[i]; ++i)
+    crash_report.reason[i] = reason[i];
+  crash_report.reason[i] = 0;
+
+  const char *file = crashfile ? crashfile : "";
+  for (i = 0; (i < sizeof(crash_report.file) - 1) && file[i]; ++i)
+    crash_report.file[i] = file[i];
+  crash_report.file[i] = 0;
+
+  const char *task = register_dump.active_TCB ? pcTaskGetName ((TaskHandle_t) register_dump.active_TCB) : "";
+  for (i = 0; (i < sizeof(crash_report.task) - 1) && task[i]; ++i)
+    crash_report.task[i] = task[i];
+  crash_report.task[i] = 0;
+
+  crash_report.registers = register_dump;
+  memcpy (crash_report.fpu, FPU_register_dump, sizeof(crash_report.fpu));
+  crash_report.system_state = system_state;
+  memcpy (crash_report.coordinates, &coordinates, sizeof(D_GNSS_coordinates_t));
+  memcpy (crash_report.observations, &observations, sizeof(measurement_data_t));
+  memcpy (crash_report.state_vector, &state_vector, sizeof(state_vector_t));
+  crash_report.time = date_report (crash_report.time_source);
+
+  crash_report.magic = CRASH_REPORT_MAGIC;
+  crash_report.checksum = crash_report_checksum ();
+}
+
+COMMON bool reboot_report_written = false; //!< see write_reboot_report()
+
+//!< Saves the crash information and resets. Nothing is written to the SD
+//!< card here: a WLAN session may hold it, see write_pending_crash_report().
+void write_crash_dump( bool user_initiated)
 {
   uSD_handler_task.set_priority(configMAX_PRIORITIES - 1); // set it to highest priority
 
-  FRESULT fresult;
-  FIL fp;
-  char *buffer = (char *)mem_buffer; // use global buffer here
-  char *next = buffer;
-  UINT writtenBytes = 0;
-
   acquire_privileges(); // ... need to access trace data etc
 
-#if configUSE_TRACE_FACILITY // ************************************************
-#include "trcConfig.h"
-  vTraceStop(); // don't trace ourselves ...
+#if configUSE_TRACE_FACILITY
+  vTraceStop(); // keep the events leading up to the crash
 #endif
 
-  // Best-effort only - unbounded could deadlock if the crashed task
-  // itself held the lock. While logging_active this task already holds it.
-  if( ! logging_active)
-    (void) fatfs_lock_best_effort ();
+  // Keep a report that is still waiting for the SD card (e.g. a crash
+  // without a card, followed by "SD card inserted"): the first one counts.
+  // A firmware update has written its *.REBOOT already.
+  if ( ! crash_report_pending () && ! (user_initiated && reboot_report_written))
+    save_crash_report (user_initiated);
 
-  next = format_date_time( buffer, coordinates);
-  append_string (next, is_crash ? ".CRASHDUMP" : ".RESET");
+  delay( 100); // let a running SD transfer finish
+  HAL_SD_DeInit (&hsd);
+  NVIC_SystemReset ();
+}
 
-  fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
-  if (fresult != FR_OK)
-    goto emergency_exit;
-
-  next = buffer;
+//!< Firmware, Time, Reboot (if reason) and Hardware lines
+static void report_header (char *&next, uint32_t time_source, const char *reason)
+{
   append_string( next, (char*)"Firmware: ");
   append_string( next, GIT_TAG_INFO);
   newline( next);
 
-  f_write (&fp, buffer, next-buffer, &writtenBytes);
+  static const char * const time_text[] = { "unknown", "GNSS", "estimated (previous crash + uptime)" };
+  append_string( next, (char*)"Time:     ");
+  append_string( next, time_text[time_source <= TIME_ESTIMATED ? time_source : TIME_UNKNOWN]);
+  newline( next);
 
-  next = buffer;
+  if (reason)
+    {
+      append_string( next, (char*)"Reboot:   ");
+      append_string( next, reason[0] ? (char*)reason : (char*)"unknown");
+      newline( next);
+    }
+
   append_string( next, (char*)"Hardware: ");
   utox( next, UNIQUE_ID[0], 8);
   newline( next);
+}
 
-  f_write (&fp, buffer, next-buffer, &writtenBytes);
+//!< Writes a *.REBOOT report right away, for a reset into a new firmware:
+//!< the report saved in RAM would not survive it (other firmware_id).
+//!< Caller holds fatfs_lock() and privileges, the card is mounted.
+//!< file must not be in CCM RAM, see uSD_helpers.h.
+void write_reboot_report (const char *reason, FIL &fp)
+{
+  uint32_t time_source;
+  uint32_t time = date_report (time_source);
 
-  next = buffer;
-  append_string( next, crashfile);
-  append_string( next, (char*)" Line: ");
-  next = my_itoa( next, crashline);
-  newline( next);
+  char buffer[192]; // not mem_buffer: that is the log file buffer. Never
+		    // DMAed: f_write() copies it into the sector buffer in fp
+  char *next = format_time( buffer, time);
+  append_string( next, (char*)".REBOOT");
 
-  f_write (&fp, buffer, next-buffer, &writtenBytes);
-
-  next = buffer;
-  append_string( next, (char*)"Task:     ");
-  append_string( next, pcTaskGetName( (TaskHandle_t)(register_dump.active_TCB)));
-  newline( next);
-
-  f_write (&fp, buffer, next-buffer, &writtenBytes);
-
-  next = buffer;
-  append_string( next, (char*)"IPSR:     ");
-  utox( next, register_dump.IPSR);
-  newline( next);
-
-  f_write (&fp, buffer, next-buffer, &writtenBytes);
-
-  next = buffer;
-  append_string( next, (char*)"PC:       ");
-  utox( next, register_dump.stacked_pc);
-  newline( next);
-  append_string( next, (char*)"LR:       ");
-  utox( next, register_dump.stacked_lr);
-  newline( next);
-
-  f_write (&fp, buffer, next-buffer, &writtenBytes);
-
-  next = buffer;
-  append_string( next, (char*)"BusFA:    ");
-  utox(  next, register_dump.Bus_Fault_Address);
-  newline( next);
-
-  f_write (&fp, buffer, next-buffer, &writtenBytes);
-
-  next = buffer;
-  append_string( next, (char*)"MemA:     ");
-  utox( next, register_dump.Bad_Memory_Address);
-  newline( next);
-
-  append_string( next, (char*)"MemFS:    ");
-  utox( next, register_dump.Memory_Fault_status);
-  newline( next);
-
-  f_write (&fp, buffer, next-buffer, &writtenBytes);
-
-  next = buffer;
-  append_string( next, (char*)"FPU_S:    ");
-  utox( next, register_dump.FPU_StatusControlRegister);
-  newline( next);
-
-  append_string( next, (char*)"UsgFS:    ");
-  utox( next, register_dump.Usage_Fault_Status_Register);
-  newline( next);
-
-  f_write (&fp, buffer, next-buffer, &writtenBytes);
-
-  next = buffer;
-  append_string( next, (char*)"HardFS:   ");
-  utox( next, register_dump.Hard_Fault_Status);
-  newline( next);
-
-  f_write (&fp, buffer, next-buffer, &writtenBytes);
-
-  for( unsigned i=0; i<32; ++i)
+  if (f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
     {
-
-    // only if the dump is populated
-      if( FPU_register_dump[i] != 0x00)
-	{
-	  next = buffer;
-	  append_string( next, (char*)"FPU dump:");
-	  newline( next);
-
-	  for( unsigned i=0; i<32; ++i)
-	    {
-	      utox( next, FPU_register_dump[i]);
-	      newline( next);
-	    }
-	  f_write (&fp, buffer, next-buffer, &writtenBytes);
-	  break;
-	}
+      next = buffer;
+      report_header (next, time_source, reason);
+      UINT writtenBytes = 0;
+      f_write (&fp, buffer, next - buffer, &writtenBytes);
+      f_close (&fp);
     }
-  fresult = f_close(&fp);
-  if (fresult != FR_OK)
-    goto emergency_exit;
+  reboot_report_written = true;
+}
+
+static void write_line (FIL &fp, char *buffer, const char *label, uint32_t value)
+{
+  char *next = buffer;
+  UINT writtenBytes = 0;
+  append_string( next, (char *) label);
+  utox( next, value);
+  newline( next);
+  f_write (&fp, buffer, next - buffer, &writtenBytes);
+}
+
+//!< Writes the report saved by write_crash_dump() before the reset.
+//!< Caller holds fatfs_lock().
+void write_pending_crash_report (void)
+{
+  if ( ! crash_report_pending ())
+    return;
+
+  acquire_privileges(); // the report and the trace buffer are in protected RAM
+
+  FIL fp;
+  char *buffer = (char *)mem_buffer; // use global buffer here
+  char *next = buffer;
+  UINT writtenBytes = 0;
+  const char *extension = crash_report.user_initiated ? ".REBOOT" : ".CRASHDUMP";
+
+  // all files of one report share the base name. A report with the same
+  // time (or without one: 000000_000000) is overwritten.
+  char base_name[24];
+  format_time( base_name, crash_report.time);
+
+  next = buffer;
+  append_string( next, base_name);
+  append_string( next, (char *) extension);
+
+  if (f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
+    {
+      next = buffer;
+      report_header (next, crash_report.time_source, crash_report.user_initiated ? crash_report.reason : 0);
+
+      append_string( next, crash_report.file);
+      append_string( next, (char*)" Line: ");
+      next = my_itoa( next, crash_report.line);
+      newline( next);
+
+      append_string( next, (char*)"Task:     ");
+      append_string( next, crash_report.task);
+      newline( next);
+
+      f_write (&fp, buffer, next-buffer, &writtenBytes);
+
+      const register_dump_t &r = crash_report.registers;
+      write_line (fp, buffer, "IPSR:     ", r.IPSR);
+      write_line (fp, buffer, "PC:       ", r.stacked_pc);
+      write_line (fp, buffer, "LR:       ", r.stacked_lr);
+      write_line (fp, buffer, "BusFA:    ", r.Bus_Fault_Address);
+      write_line (fp, buffer, "MemA:     ", r.Bad_Memory_Address);
+      write_line (fp, buffer, "MemFS:    ", r.Memory_Fault_status);
+      write_line (fp, buffer, "FPU_S:    ", r.FPU_StatusControlRegister);
+      write_line (fp, buffer, "UsgFS:    ", r.Usage_Fault_Status_Register);
+      write_line (fp, buffer, "HardFS:   ", r.Hard_Fault_Status);
+
+      for( unsigned i=0; i<32; ++i)
+	if( crash_report.fpu[i] != 0x00) // only if the dump is populated
+	  {
+	    next = buffer;
+	    append_string( next, (char*)"FPU dump:");
+	    newline( next);
+	    for( unsigned k=0; k<32; ++k)
+	      {
+		utox( next, crash_report.fpu[k]);
+		newline( next);
+	      }
+	    f_write (&fp, buffer, next-buffer, &writtenBytes);
+	    break;
+	  }
+      f_close(&fp);
+    }
 
 #if configUSE_TRACE_FACILITY // ************************************************
+  extern RecorderDataType myTraceBuffer;
 
-extern RecorderDataType myTraceBuffer;
-
-  next = format_date_time( buffer, coordinates);
+  next = buffer;
+  append_string( next, base_name);
   append_string (next, ".bin");
-  fresult = f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
-  if (fresult != FR_OK)
-    goto emergency_exit;
-
-  for( uint8_t *ptr=(uint8_t *)&myTraceBuffer; ptr < (uint8_t *)&myTraceBuffer + sizeof(RecorderDataType); ptr += MEM_BUFSIZE)
+  if (f_open (&fp, buffer, FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
     {
-      unsigned blocksize = (uint8_t *)&myTraceBuffer + sizeof(RecorderDataType) - ptr;
-      if( blocksize > MEM_BUFSIZE)
-	blocksize = MEM_BUFSIZE;
-      // data needs to be copied out of CCM RAM
-      memcpy( mem_buffer, ptr, blocksize);
-      fresult = f_write (&fp, mem_buffer, blocksize, &writtenBytes);
-      if( writtenBytes < blocksize)
-	break;
+      for( size_t offset = 0; offset < sizeof(RecorderDataType); offset += MEM_BUFSIZE)
+	{
+	  size_t blocksize = sizeof(RecorderDataType) - offset;
+	  if( blocksize > MEM_BUFSIZE)
+	    blocksize = MEM_BUFSIZE;
+	  // data needs to be copied out of CCM RAM
+	  memcpy( mem_buffer, (uint8_t *)&myTraceBuffer + offset, blocksize);
+	  f_write (&fp, mem_buffer, blocksize, &writtenBytes);
+	  if( writtenBytes < blocksize)
+	    break;
+	}
+      f_close(&fp);
     }
-  fresult = f_close(&fp);
-  if (fresult != FR_OK)
-    goto emergency_exit;
-
 #endif // ************************************************************************
 
-  // log one complete set of output data independent of data logging status
-  next = format_date_time( buffer, coordinates);
+  // one complete set of output data independent of data logging status
+  next = buffer;
+  append_string( next, base_name);
   *next++ = '.';
   *next++  = 'f';
   format_2_digits( next, sizeof( state_vector_t) / sizeof(float));
 
-  fresult = f_open ( &fp, buffer, FA_CREATE_ALWAYS | FA_WRITE);
-  if (fresult != FR_OK)
-    goto emergency_exit;
+  if (f_open ( &fp, buffer, FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
+    {
+      f_write (&fp, (uint8_t*) crash_report.observations, sizeof( measurement_data_t), &writtenBytes);
+      f_write (&fp, (uint8_t*) crash_report.coordinates,  sizeof( D_GNSS_coordinates_t), &writtenBytes);
+      f_write (&fp, (uint8_t*) &crash_report.system_state, sizeof( uint32_t), &writtenBytes);
+      f_write (&fp, (uint8_t*) crash_report.state_vector,  sizeof( state_vector_t), &writtenBytes);
+      f_close( &fp);
+    }
 
-  fresult = f_write (&fp, (uint8_t*) &observations, sizeof( observations), &writtenBytes);
-  fresult = f_write (&fp, (uint8_t*) &coordinates,  sizeof( coordinates), &writtenBytes);
-  fresult = f_write (&fp, (uint8_t*) &system_state, sizeof( system_state), &writtenBytes);
-  fresult = f_write (&fp, (uint8_t*) &state_vector,  sizeof( state_vector), &writtenBytes);
-  f_close( &fp);
+  crash_report.magic = 0; // written once, even if the SD card failed
 
-emergency_exit:
-  f_mount ( 0, "", 0); // unmount uSD
-  delay( 100);
-  HAL_SD_DeInit (&hsd);
-  delay( 100);
-
-  while( true)
-    /* wake watchdog */;
+#if configUSE_TRACE_FACILITY
+  // tracing was held back since the start-up, see initialize_RTOS_memory()
+  prvTraceInitCortexM ();
+  vTraceClear ();
+  vTraceStart ();
+#endif
 }
 
 COMMON uint8_t firmware_SHA256_digest[32];

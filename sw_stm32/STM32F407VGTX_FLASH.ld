@@ -231,6 +231,15 @@ SECTIONS
     *(user_data)
 	__user_data_end__ = . ;
 
+	/* Crash report and trace buffer (uSD_helpers.cpp, system_support.cpp):
+	   past __user_data_end__, so initialize_RTOS_memory() does not zero
+	   them and a crash survives the warm reset until it is written to the
+	   SD card. In the alignment gap below the WLAN stacks. */
+	. = ALIGN(4);
+	__crash_report_start__ = . ;
+	*(noinit_crash_report)
+	__crash_report_end__ = . ;
+
 	/* Statically pre-aligned RestrictedTask stack buffers, reserved here
 	   instead of via pvPortMallocAlignedMemory() (which HardFaulted once
 	   the heap stopped reliably having a matching-aligned free block).
