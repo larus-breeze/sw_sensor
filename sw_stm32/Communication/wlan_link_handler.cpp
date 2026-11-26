@@ -978,6 +978,14 @@ static void handle_upload_end (const wlan_link_frame_header_t &header, const uin
     }
 
   f_close (&upload.file);
+
+  // the report saved in RAM at the reset would not survive the new firmware.
+  // upload.file (closed, in RAM): a FIL on this task's stack would be in CCM,
+  // where the SD DMA can't write from - the write then hung for 30 s.
+  acquire_privileges ();
+  write_reboot_report ("firmware update via WLAN", upload.file);
+  drop_privileges ();
+
   // Unmount while still holding the lock, not after releasing it (as this
   // used to) - releasing first left a window where another task could
   // acquire the lock and touch the same shared FATFS/SDIO hardware

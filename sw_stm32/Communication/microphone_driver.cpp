@@ -47,6 +47,7 @@ static_assert (MIC_I2S_CLOCK_HZ / (64 * 2 * MIC_I2SDIV) == (unsigned) MIC_SAMPLE
 #define MIC_DMA_BYTES		(MIC_DMA_HALFWORDS * sizeof(uint16_t))
 #define MIC_TIMEOUT_MS		100
 #define MIC_DETECTION_RECORDS	8	// ~2.75 s after start-up incl. settling
+#define MIC_LOST_BLOCKS_AFTER_MS 10000	// start-up (task initializations) may delay the MIC task: not counted
 
 enum
 {
@@ -207,7 +208,11 @@ static void microphone_runnable (void*)
 	}
 
       if ((notification & (MIC_NOTIFY_HALF | MIC_NOTIFY_COMPLETE)) == (MIC_NOTIFY_HALF | MIC_NOTIFY_COMPLETE))
-	++lost_blocks; // too late for one half, take the latest
+	{
+	  // too late for one half, take the latest
+	  if (xTaskGetTickCount () >= pdMS_TO_TICKS (MIC_LOST_BLOCKS_AFTER_MS))
+	    ++lost_blocks;
+	}
 
       // the half the DMA is not writing to is the latest complete one
       unsigned half = (DMA1_Stream0->NDTR > MIC_DMA_HALFWORDS / 2) ? 1 : 0;

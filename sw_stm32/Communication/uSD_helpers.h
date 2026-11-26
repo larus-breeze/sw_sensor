@@ -32,6 +32,12 @@ bool read_software_update (void);
 //!< user_initiated: an intentional reset (see reset_by_watchdog()), written
 //!< as *.REBOOT instead of *.CRASHDUMP
 void write_crash_dump( bool user_initiated);
+
+//!< *.REBOOT written at once, before a reset into a new firmware.
+//!< Caller holds fatfs_lock() and privileges. file: a closed FIL that may
+//!< be reused; NOT in CCM RAM (e.g. not on a WLAN task stack): FatFs writes
+//!< its sector buffer by DMA, and the DMA cannot access the CCM.
+void write_reboot_report (const char *reason, FIL &file);
 bool crash_report_pending (void);
 void write_pending_crash_report (void);
 bool write_EEPROM_dump( const char * file_path);

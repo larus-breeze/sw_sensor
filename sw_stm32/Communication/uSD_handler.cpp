@@ -378,6 +378,10 @@ restart:
       // watchdog is already armed and the copy routine doesn't feed it.
       // Reset instead; jump_to_pending_flash_update_if_any() picks it up
       // next boot, before the watchdog is armed again.
+      fatfs_lock ();
+      FIL report_file; // uSD task stack: in RAM, not CCM
+      write_reboot_report ("firmware update from the SD card", report_file);
+      fatfs_unlock ();
       reset_by_watchdog( "firmware update from the SD card");
       }
 

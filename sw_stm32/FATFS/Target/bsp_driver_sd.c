@@ -35,12 +35,25 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-/* A task preempted between sending the read/write command and reading its
-   response can miss it: once the DMA transfer has finished, the completion
+/* Reading: HAL_SD_ReadBlocks_DMA() starts the DMA and the data path, sends
+   CMD18 and then polls for its response. A task preempted for longer than
+   the data transfer (about 1 ms for 4 KB) misses it: the DMA completion
    interrupt sends CMD12 and clears the command flags, and the HAL then polls
    for up to SDIO_CMDTIMEOUT (5 s), starving the watchdog. Locking the
-   scheduler for the command phase (some 10 us) closes that window, see
-   documentation/wlan_link.md, "SD card driver". */
+   scheduler for the command phase closes that window, see
+   documentation/wlan_link.md, "SD card driver". Interrupts keep running.
+
+   Duration of the lock, SDIO_CK = 48 MHz / (ClockDiv 4 + 2) = 8 MHz:
+   CMD16 and CMD18, each 48 bit command + up to 64 clocks until the response
+   + 48 bit response = at most 20 us, plus some us of HAL code and the
+   interrupts that run meanwhile: typically 20-50 us. Without a response
+   the SDIO hardware flags a timeout after 64 clocks (8 us). Only if the
+   SDIO peripheral itself is stuck (no flag at all) the HAL polls for
+   SDIO_CMDTIMEOUT, 5 s; the watchdog resets the system before.
+
+   Writing needs no lock: HAL_SD_WriteBlocks_DMA() sends CMD25 and reads its
+   response before it starts the DMA and the data path, so no interrupt can
+   clear the flags meanwhile. */
 static int sd_command_phase_begin(void)
 {
   if (xTaskGetSchedulerState() != taskSCHEDULER_RUNNING)
@@ -197,13 +210,11 @@ __weak uint8_t BSP_SD_WriteBlocks_DMA(uint32_t *pData, uint32_t WriteAddr, uint3
 {
   uint8_t sd_state = MSD_OK;
 
-  /* Write block(s) in DMA transfer mode */
-  int locked = sd_command_phase_begin();
+  /* Write block(s) in DMA transfer mode, no lock: see sd_command_phase_begin() */
   if (HAL_SD_WriteBlocks_DMA(&hsd, (uint8_t *)pData, WriteAddr, NumOfBlocks) != HAL_OK)
   {
     sd_state = MSD_ERROR;
   }
-  sd_command_phase_end(locked);
 
   return sd_state;
 }

@@ -416,7 +416,7 @@ always works once the WiFi network is used.
 ## Microphone levels
 
 Test page `/audio` of the web UI for the microphone/ENL prototype
-(documentation/microphone_ENL.md). It polls `/microphone` (JSON) every
+(documentation/microphone_ENL.md), linked from the debug page. It polls `/microphone` (JSON) every
 250 ms; each poll is one `MICROPHONE_REQUEST`, answered with the latest
 250 ms record (`wlan_link_microphone_payload_t`: ENL, status, ENL band,
 broadband, peak and third-octave band levels). `available` is 0 when the firmware has
@@ -428,8 +428,9 @@ a new record from a repeated one. An older STM32 build NACKs the frame
 
 ## Debug page
 
-`http://larus.local/debug` (linked as "Debug files" from the Info table
-of the main page)
+`http://larus.local/debug` (linked as "Debug data" from the Info table
+of the main page; below the file list it links the microphone page
+`/audio` under "Audio levels")
 lists every file in the root directory of the SD card: crash and reboot
 reports (`*.CRASHDUMP`, `*.REBOOT`, `*.fNN`, trace `*.bin`), the
 configuration file and
@@ -561,19 +562,26 @@ both `uSD_handler_task` (flight logging) and `wlan_link_handler_task`
   The files are named after the GNSS time of the crash. Without a fix
   (a crash shortly after a reset) the time is estimated from the previous
   report plus the uptime, and the report says so (`Time:` line); with no
-  previous report it is `000000_000000`. A `_2`, `_3` ... suffix keeps
-  reports with the same name apart.
+  previous report it is `000000_000000`. A later report with the same time
+  overwrites the earlier one.
   Intentional resets (firmware update via WLAN or from the SD card, SD
   card inserted, CAN reset command) go through `reset_by_watchdog()` or set
   `user_reset_reason` and are written as `*.REBOOT` with a `Reboot:` line
   naming the reason. `*.CRASHDUMP` is only written for a real fault
   (exception, failed assertion, watchdog timeout). Firmware before this
   change named intentional resets `*.CRASHDUMP` and crashes `*.RESET`.
+  A firmware update writes its `*.REBOOT` (text only, no trace) before
+  the reset, as the report in RAM is dropped by the new firmware (other
+  firmware ID). The WLAN path writes it through `upload.file`: a `FIL` on
+  the WLAN task stack would be in CCM RAM, which the SD DMA cannot read
+  (the write hung for 30 s and left an empty file). A report that still waits for the SD card is not
+  overwritten by a later reset: after a crash without a card, the reset
+  on inserting it keeps the crash report.
 
 ### SD card driver
 
-`HAL_SD_ReadBlocks_DMA()`/`HAL_SD_WriteBlocks_DMA()` send the read/write
-command and then poll for its response flag. If the calling task is
+`HAL_SD_ReadBlocks_DMA()` starts the DMA and the data path, sends the read
+command and then polls for its response flag. If the calling task is
 preempted for longer than the data transfer (about 1 ms for a 4 KB chunk),
 the DMA completion interrupt runs first: it sends CMD12 and clears all
 command flags, and the HAL polls on for up to `SDIO_CMDTIMEOUT` (5 s) at
@@ -582,7 +590,9 @@ watchdog task) this starved the watchdog and reset the sensor, during long
 downloads and, as the ESP32 retried, in a reset loop. Higher-priority
 tasks such as the microphone task made the preemption more likely.
 `bsp_driver_sd.c` therefore suspends the scheduler for the command phase
-(some 10 us per access, interrupts stay enabled).
+of a read (typically 20-50 us, interrupts stay enabled; the worst case is
+in the comment there). Writes need no lock: `HAL_SD_WriteBlocks_DMA()`
+reads the command response before it starts the DMA.
 
 **Simplifying assumption**: the SD card stays inserted for the whole
 session — `wlan_link_handler_task` degrades reasonably if not (checks

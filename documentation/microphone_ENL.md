@@ -113,7 +113,7 @@ Not yet in `doc_larus/documentation/LRSX_log_file_format.md`.
 |------|------|---------|
 | 0    | uint32 | record counter, +1 per record since start (shows gaps) |
 | 1    | uint32 | ENL 0..999, 1 s window |
-| 2    | uint32 | status: bit 0 no signal, bits 16..31 lost DMA blocks (since start, saturating) |
+| 2    | uint32 | status: bit 0 no signal, bits 16..31 lost DMA blocks (from 10 s after start, saturating) |
 | 3    | float  | ENL filter output level, dBFS |
 | 4    | float  | broadband level (DC removed), dBFS |
 | 5    | float  | peak: largest raw sample, dBFS (0 = clipping) |

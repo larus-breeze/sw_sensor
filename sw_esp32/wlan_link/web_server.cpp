@@ -142,8 +142,7 @@ progress { width: 100%; }
        UART's TCP bridge (uart_bridge.cpp) - static, update here if it
        changes. -->
   <tr><td>NMEA data (TCP)</td><td id="nmeaEndpoint">-</td></tr>
-  <tr><td>Microphone</td><td><a href="/audio">Audio levels</a></td></tr>
-  <tr><td>Debug</td><td><a href="/debug">Debug files</a></td></tr>
+  <tr><td>Debug</td><td><a href="/debug">Debug data</a></td></tr>
 </table>
 
 <h2>WiFi client mode</h2>
@@ -940,7 +939,7 @@ canvas { width: 100%; height: 160px; display: block; }
 </head>
 <body>
 <h1>Audio levels</h1>
-<div class="small"><a href="/">&larr; Larus Sensor</a> &middot; ICS-43434, 8 kHz, new values every 250 ms</div>
+<div class="small"><a href="/debug">&larr; Debug</a> &middot; ICS-43434, 8 kHz, new values every 250 ms</div>
 
 <div id="status" class="status">Waiting for data...</div>
 
@@ -1056,7 +1055,7 @@ function update(d) {
   lastRecordTime = now;
 
   if (d.noSignal) setStatus("err", "No signal: samples constant - microphone missing or wiring fault (ENL 000).");
-  else setStatus("ok", "Microphone OK" + (d.lostBlocks ? " - " + d.lostBlocks + " DMA blocks lost since start" : ""));
+  else setStatus("ok", "Microphone OK" + (d.lostBlocks ? " - " + d.lostBlocks + " DMA blocks lost after start-up" : ""));
 
   document.getElementById("enlValue").textContent = String(d.enl).padStart(3, "0");
   document.getElementById("enlFill").style.width = (d.enl / 9.99) + "%";
@@ -1103,7 +1102,7 @@ static const char DEBUG_HTML[] PROGMEM = R"rawliteral(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Larus Debug Files</title>
+<title>Larus Debug Data</title>
 <style>
 :root { --fg: #222; --muted: #666; --grid: #ddd; --bg: #fff; --link: #2a6fb0; --warn: #d9a400; --err: #c02020; }
 @media (prefers-color-scheme: dark) {
@@ -1111,6 +1110,7 @@ static const char DEBUG_HTML[] PROGMEM = R"rawliteral(
 }
 body { font-family: sans-serif; max-width: 720px; margin: 1em auto; padding: 0 1em; color: var(--fg); background: var(--bg); }
 h1 { font-size: 1.3em; margin-bottom: 0.2em; }
+h2 { font-size: 1.1em; margin: 1.6em 0 0.3em; }
 a { color: var(--link); }
 .status { padding: 0.5em 0.8em; border-radius: 6px; border: 1px solid var(--grid); margin: 0.8em 0; display: none; }
 .status.warn { border-color: var(--warn); background: rgba(217,164,0,0.12); }
@@ -1133,9 +1133,11 @@ button { padding: 0.3em 0.8em; }
 </style>
 </head>
 <body>
-<h1>Debug files</h1>
+<h1>Debug data</h1>
+<h2>Files</h2>
 <p class="small">All files in the root directory of the flash storage. Folders (log files in <code>logger/</code>) are not shown. <a href="/">Back</a></p>
 <div id="message" class="status"></div>
+<div id="truncated" class="status warn">There are more files than this page can list - only the first ones are shown, and "Download all" and "Delete all" cover only these. Delete some and refresh to see the rest.</div>
 <div class="toolbar">
   <button id="refreshButton">Refresh</button>
   <button id="downloadAllButton">Download all</button>
@@ -1146,6 +1148,8 @@ button { padding: 0.3em 0.8em; }
   <thead><tr><th>Name</th><th>Size</th><th class="mod">Modified</th><th></th></tr></thead>
   <tbody id="fileTableBody"><tr><td colspan="4">Loading...</td></tr></tbody>
 </table>
+<h2>Audio levels</h2>
+<p class="small">Live ENL, levels and third-octave spectrum of the microphone: <a href="/audio">Audio levels</a></p>
 <script>
 let files = [];
 let busy = false;
@@ -1200,8 +1204,10 @@ async function refreshFiles() {
   if (busy) return;
   const body = document.getElementById('fileTableBody');
   await checkStatus();
+  const truncated = document.getElementById('truncated');
   if (blocked) {
     files = [];
+    truncated.style.display = 'none';
     body.innerHTML = '<tr><td colspan="4">-</td></tr>';
     updateButtons();
     return;
@@ -1210,8 +1216,10 @@ async function refreshFiles() {
   try {
     const r = await fetch('/files?root=1', { cache: 'no-store' });
     if (!r.ok) throw new Error(await r.text());
+    truncated.style.display = r.headers.get('X-Files-Truncated') === 'true' ? 'block' : 'none';
     files = (await r.json()).sort((a, b) => a.name.localeCompare(b.name));
   } catch (e) {
+    truncated.style.display = 'none';
     files = [];
     showMessage('Could not list the files: ' + e.message, 'err');
   }
